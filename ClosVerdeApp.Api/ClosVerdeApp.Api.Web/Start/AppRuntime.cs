@@ -28,6 +28,7 @@ public static class AppRuntime
 		app.UseAuthorization();
 
 		app.MapHub<ReservationHub>("/hubs/reservations");
+		app.MapHub<MessageHub>("/hubs/messages");
 
 		// Setup Controllers
 		app.MapControllers();

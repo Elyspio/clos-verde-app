@@ -89,6 +89,8 @@ export function DayCell({ day, currentMonth, reservations, currentUser, onSelect
 				<Stack spacing={0.5}>
 					{dayReservations.map((reservation) => {
 						const own = reservation.userId === currentUser?.id;
+						const pending = reservation.status === "Pending";
+						const hasObjection = pending && reservation.objectionCount > 0;
 						return (
 							<Box
 								component="button"
@@ -100,9 +102,17 @@ export function DayCell({ day, currentMonth, reservations, currentUser, onSelect
 									onSelectReservation(reservation);
 								}}
 								sx={{
-									bgcolor: own ? "var(--primary-blue)" : "var(--mint-soft)",
-									color: own ? "var(--surface)" : "#047857",
-									border: own ? "1px solid var(--primary-blue)" : "1px solid rgba(16, 185, 129, 0.28)",
+									bgcolor: hasObjection ? "rgba(245, 158, 11, 0.18)" : own ? "var(--primary-blue)" : "var(--mint-soft)",
+									color: hasObjection ? "#b45309" : own ? "var(--surface)" : "#047857",
+									border: hasObjection
+										? "1px dashed #b45309"
+										: pending
+											? own
+												? "1px dashed var(--primary-blue)"
+												: "1px dashed #047857"
+											: own
+												? "1px solid var(--primary-blue)"
+												: "1px solid rgba(16, 185, 129, 0.28)",
 									borderRadius: "8px",
 									fontSize: 11,
 									fontWeight: 800,
@@ -114,10 +124,12 @@ export function DayCell({ day, currentMonth, reservations, currentUser, onSelect
 									textOverflow: "ellipsis",
 									whiteSpace: "nowrap",
 									cursor: "pointer",
+									opacity: pending && !hasObjection ? 0.85 : 1,
 									transition: "filter 160ms ease, transform 160ms ease",
 									"&:hover": { filter: "brightness(0.97)", transform: "translateY(-1px)" },
 								}}
 							>
+								{pending ? "⏳ " : ""}
 								{format(parseISO(reservation.startDate), "HH:mm")} {reservation.userDisplayName}
 							</Box>
 						);

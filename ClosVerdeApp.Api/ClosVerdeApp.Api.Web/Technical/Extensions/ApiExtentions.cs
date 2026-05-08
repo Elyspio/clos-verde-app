@@ -6,6 +6,7 @@ using ClosVerdeApp.Api.Web.Technical.Hubs;
 using Microsoft.AspNetCore.Mvc.Formatters;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Hosting;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 
@@ -68,46 +69,52 @@ public static class ApiExtentions
 				}
 			);
 		services.AddSingleton<IReservationRealtimePublisher, ReservationHubPublisher>();
+		services.AddSingleton<IMessageRealtimePublisher, MessageHubPublisher>();
+		services.AddSingleton<Microsoft.AspNetCore.SignalR.IUserIdProvider, SubjectUserIdProvider>();
 
 		return services;
 	}
 
 	/// <summary>
-    ///     Setup CORS
+	///     Setup CORS. In Production, an empty <c>Cors:AllowedOrigins</c> aborts startup; the
+	///     permissive <c>AllowAnyOrigin</c> fallback is reserved for non-Production environments.
 	/// </summary>
-	/// <param name="services"></param>
- /// <param name="configuration"></param>
-	/// <returns></returns>
- public static IServiceCollection SetupCors(this IServiceCollection services, IConfiguration configuration)
+	public static IServiceCollection SetupCors(this IServiceCollection services, IConfiguration configuration, IHostEnvironment environment)
 	{
-     var allowedOrigins = configuration.GetSection("Cors:AllowedOrigins")
+		var allowedOrigins = configuration.GetSection("Cors:AllowedOrigins")
 			.Get<string[]>()?
 			.Where(origin => !string.IsNullOrWhiteSpace(origin))
 			.Select(origin => origin.Trim())
 			.Distinct(StringComparer.OrdinalIgnoreCase)
 			.ToArray() ?? [];
 
+		if (allowedOrigins.Length == 0 && environment.IsProduction())
+		{
+			throw new InvalidOperationException(
+				"CORS misconfiguration: Cors:AllowedOrigins must list at least one origin in Production. " +
+				"Refusing to fall back to AllowAnyOrigin.");
+		}
+
 		services.AddCors(options =>
+		{
+			options.AddDefaultPolicy(b =>
 			{
-				options.AddDefaultPolicy(b =>
-					{
-                     if (allowedOrigins.Length > 0)
-						{
-							b.WithOrigins(allowedOrigins);
-							b.AllowAnyHeader();
-							b.AllowAnyMethod();
-							b.AllowCredentials();
-						}
-						else
-						{
-							b.AllowAnyOrigin();
-							b.AllowAnyHeader();
-							b.AllowAnyMethod();
-						}
-					}
-				);
-			}
-		);
+				if (allowedOrigins.Length > 0)
+				{
+					b.WithOrigins(allowedOrigins);
+					b.AllowAnyHeader();
+					b.AllowAnyMethod();
+					b.AllowCredentials();
+				}
+				else
+				{
+					// Non-Production only — keeps local/dev workflows ergonomic.
+					b.AllowAnyOrigin();
+					b.AllowAnyHeader();
+					b.AllowAnyMethod();
+				}
+			});
+		});
 
 		return services;
 	}
