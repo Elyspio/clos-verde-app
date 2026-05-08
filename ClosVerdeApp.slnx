@@ -1,0 +1,15 @@
+<Solution>
+  <Configurations>
+    <Platform Name="x64" />
+  </Configurations>
+  <Folder Name="/Api/">
+    <Project Path="ClosVerdeApp.Api/ClosVerdeApp.Api.Abstractions/ClosVerdeApp.Api.Abstractions.csproj" />
+    <Project Path="ClosVerdeApp.Api/ClosVerdeApp.Api.Core/ClosVerdeApp.Api.Core.csproj" />
+    <Project Path="ClosVerdeApp.Api/ClosVerdeApp.Api.Web/ClosVerdeApp.Api.Web.csproj" />
+  </Folder>
+  <Folder Name="/Api/Adapters/">
+    <Project Path="ClosVerdeApp.Api/ClosVerdeApp.Api.Adapters.Mongo/ClosVerdeApp.Api.Adapters.Mongo.csproj" />
+    <Project Path="ClosVerdeApp.Api/ClosVerdeApp.Api.Adapters.Rest/ClosVerdeApp.Api.Adapters.Rest.csproj" />
+  </Folder>
+  <Project Path="ClosVerdeApp.AppHost/ClosVerdeApp.AppHost.csproj" />
+</Solution>

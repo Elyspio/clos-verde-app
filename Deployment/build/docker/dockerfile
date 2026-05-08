@@ -1,0 +1,30 @@
+# Building back
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS builder-back
+WORKDIR /src
+
+COPY ClosVerdeApp.Api/ ./ClosVerdeApp.Api/
+
+RUN dotnet publish ./ClosVerdeApp.Api/ClosVerdeApp.Api.Web/ClosVerdeApp.Api.Web.csproj \
+  -c Release \
+  -o /app/out
+
+# Building front
+FROM node:24 AS builder-front
+WORKDIR /src/ClosVerdeApp.Front
+
+COPY ClosVerdeApp.Front/package.json ClosVerdeApp.Front/pnpm-lock.yaml ClosVerdeApp.Front/pnpm-workspace.yaml ./
+RUN corepack enable && pnpm install --frozen-lockfile
+
+COPY ClosVerdeApp.Front/ ./
+RUN pnpm build
+
+# Running
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS production
+WORKDIR /back
+
+COPY --from=builder-back /app/out ./
+COPY --from=builder-front /src/ClosVerdeApp.Front/dist ./wwwroot
+
+ENV FRONT_PATH=/back/wwwroot
+
+ENTRYPOINT ["dotnet", "ClosVerdeApp.Api.Web.dll"]

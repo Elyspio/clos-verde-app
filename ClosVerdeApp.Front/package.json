@@ -1,0 +1,46 @@
+{
+	"name": "clos-verde-app-front",
+	"version": "0.1.0",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"dev": "vp dev",
+		"build": "tsc && vp build",
+		"refresh-api": "tsx scripts/refresh-api.ts",
+		"check:types": "tsc --noEmit",
+		"check:lint": "vp check --fix",
+		"format": "vp fmt",
+		"e2e": "pnpm --dir tests/e2e e2e",
+		"e2e:auth": "pnpm --dir tests/e2e e2e:auth",
+		"e2e:ui": "pnpm --dir tests/e2e e2e:ui"
+	},
+	"dependencies": {
+		"@emotion/react": "^11.14.0",
+		"@emotion/styled": "^11.14.1",
+		"@microsoft/signalr": "^10.0.0",
+		"@mui/icons-material": "^7.3.10",
+		"@mui/material": "^7.3.10",
+		"@mui/x-date-pickers": "^9.0.4",
+		"@reduxjs/toolkit": "^2.11.2",
+		"axios": "^1.16.0",
+		"date-fns": "^4.1.0",
+		"motion": "^12.38.0",
+		"oidc-client-ts": "^3.5.0",
+		"react": "^19.2.5",
+		"react-dom": "^19.2.5",
+		"react-oidc-context": "^3.3.1",
+		"react-redux": "^9.2.0",
+		"react-router-dom": "^7.14.2"
+	},
+	"devDependencies": {
+		"@elyspio/vite-eslint-config": "^5.0.3",
+		"@types/node": "^25.6.0",
+		"@types/react": "^19.2.14",
+		"@types/react-dom": "^19.2.3",
+		"tsx": "^4.21.0",
+		"typescript": "^6.0.3",
+		"vite": "catalog:",
+		"vite-plus": "catalog:"
+	},
+	"packageManager": "pnpm@10.33.2"
+}

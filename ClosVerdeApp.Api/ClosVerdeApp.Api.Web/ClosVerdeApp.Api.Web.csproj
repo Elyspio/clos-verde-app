@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+	<PropertyGroup>
+		<TargetFramework>net10.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<UserSecretsId>f60c5c41-cfe1-4a57-ae16-b1f4a799afdd</UserSecretsId>
+		<DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+		<EnablePreviewFeatures>True</EnablePreviewFeatures>
+		<Nullable>enable</Nullable>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.7" />
+		<PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="10.0.7" />
+		<PackageReference Include="Scrutor" Version="7.0.0" />
+		<PackageReference Include="Serilog.Extensions.Hosting" Version="10.0.0" />
+		<PackageReference Include="Serilog.Sinks.Console" Version="6.1.1" />
+		<PackageReference Include="Serilog.AspNetCore" Version="10.0.0" />
+		<PackageReference Include="Swashbuckle.AspNetCore" Version="10.1.7" />
+		<PackageReference Include="Swashbuckle.AspNetCore.Annotations" Version="10.1.7" />
+		<PackageReference Include="Swashbuckle.AspNetCore.Newtonsoft" Version="10.1.7" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\ClosVerdeApp.Api.Abstractions\ClosVerdeApp.Api.Abstractions.csproj" />
+		<ProjectReference Include="..\ClosVerdeApp.Api.Adapters.Rest\ClosVerdeApp.Api.Adapters.Rest.csproj" />
+		<ProjectReference Include="..\ClosVerdeApp.Api.Core\ClosVerdeApp.Api.Core.csproj" />
+		<ProjectReference Include="..\ClosVerdeApp.Api.Adapters.Mongo\ClosVerdeApp.Api.Adapters.Mongo.csproj" />
+	</ItemGroup>
+
+
+</Project>

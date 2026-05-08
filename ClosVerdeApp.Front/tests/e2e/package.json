@@ -1,0 +1,18 @@
+{
+	"name": "clos-verde-app-tests-e2e",
+	"version": "0.0.0",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"e2e": "playwright test --config config/playwright.config.ts",
+		"e2e:headed": "playwright test --config config/playwright.config.ts --project=chromium --headed",
+		"e2e:ui": "playwright test --config config/playwright.config.ts --ui",
+		"e2e:auth": "playwright test --config config/playwright.auth.config.ts --headed",
+		"e2e:install": "playwright install"
+	},
+	"devDependencies": {
+		"@playwright/test": "^1.58.2",
+		"date-fns": "^4.1.0",
+		"dotenv": "^17.3.1"
+	}
+}

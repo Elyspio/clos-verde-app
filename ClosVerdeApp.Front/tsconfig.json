@@ -1,0 +1,13 @@
+{
+	"extends": "@elyspio/vite-eslint-config/tsconfig.json",
+	"compilerOptions": {
+		"module": "esnext",
+		"moduleResolution": "bundler",
+		"downlevelIteration": null,
+		"paths": {
+			"@/*": ["./src/*"]
+		},
+		"types": ["vite/client"]
+	},
+	"include": ["src", "vite.config.ts", "scripts"]
+}

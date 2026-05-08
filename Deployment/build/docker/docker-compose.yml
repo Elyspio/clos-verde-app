@@ -1,0 +1,6 @@
+services:
+  clos-verde-app:
+    image: elyspio/clos-verde-app:${IMAGE_TAG}
+    build:
+      context: ../../..
+      dockerfile: Deployment/build/docker/dockerfile
