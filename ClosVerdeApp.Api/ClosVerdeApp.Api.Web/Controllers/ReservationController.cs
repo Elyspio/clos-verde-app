@@ -10,10 +10,14 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace ClosVerdeApp.Api.Web.Controllers;
 
+/// <summary>HTTP surface for reservations: list, CRUD, force-validate, and per-reservation objections.</summary>
 [Authorize]
 [Route("api/reservations")]
 [ApiController]
-public class ReservationController(IReservationService reservationService, ILogger<ReservationController> logger)
+public class ReservationController(
+	IReservationService reservationService,
+	IObjectionService objectionService,
+	ILogger<ReservationController> logger)
 	: TracingController(logger)
 {
 	private Guid CurrentUserId
@@ -81,5 +85,34 @@ public class ReservationController(IReservationService reservationService, ILogg
 
 		await reservationService.Delete(id, CurrentUserId);
 		return NoContent();
+	}
+
+	[HttpPost("{id:guid}/validate")]
+	[ProducesResponseType(typeof(Reservation), StatusCodes.Status200OK)]
+	[ProducesResponseType(StatusCodes.Status403Forbidden)]
+	[ProducesResponseType(StatusCodes.Status409Conflict)]
+	public async Task<IActionResult> ForceValidate(Guid id)
+	{
+		using var _ = LogController(Log.F(id));
+		return Ok(await reservationService.ForceValidate(id, CurrentUserId));
+	}
+
+	[HttpGet("{id:guid}/objections")]
+	[ProducesResponseType(typeof(List<Objection>), StatusCodes.Status200OK)]
+	public async Task<IActionResult> ListObjections(Guid id)
+	{
+		using var _ = LogController(Log.F(id));
+		return Ok(await reservationService.GetObjections(id));
+	}
+
+	[HttpPost("{id:guid}/objections")]
+	[ProducesResponseType(typeof(Objection), StatusCodes.Status201Created)]
+	[ProducesResponseType(StatusCodes.Status403Forbidden)]
+	[ProducesResponseType(StatusCodes.Status409Conflict)]
+	public async Task<IActionResult> CreateObjection(Guid id, [FromBody] CreateObjectionRequest request)
+	{
+		using var _ = LogController(Log.F(id));
+		var created = await objectionService.Object(id, CurrentUserId, CurrentDisplayName, request.Reason);
+		return Created($"/api/reservations/{id}/objections/{created.Id}", created);
 	}
 }

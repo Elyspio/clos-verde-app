@@ -1,15 +1,19 @@
-import { Box, Container, Stack, Typography } from "@mui/material";
+import { Badge, Box, Container, Stack, Typography } from "@mui/material";
 import { NavLink, Outlet } from "react-router-dom";
 import { UserMenu } from "./UserMenu";
 import { Home } from "@mui/icons-material";
+import { useAppSelector } from "@/store";
+import { selectUnreadTotal } from "@/store/modules/unread/unread.actions";
 
 const navItems = [
 	{ to: "/calendrier", label: "Calendrier" },
 	{ to: "/reserver", label: "Réserver" },
 	{ to: "/classement", label: "Classement" },
+	{ to: "/messages", label: "Messages", badge: true },
 ];
 
 export function AppShell() {
+	const unreadTotal = useAppSelector(selectUnreadTotal);
 	return (
 		<Box minHeight="100vh" display="flex" flexDirection="column" bgcolor="var(--app-bg)">
 			<Box
@@ -85,7 +89,15 @@ export function AppShell() {
 					>
 						{navItems.map((item) => (
 							<NavLink key={item.to} to={item.to}>
-								{item.label}
+								{item.badge && unreadTotal > 0 ? (
+									<Badge badgeContent={unreadTotal} color="error" sx={{ "& .MuiBadge-badge": { right: -10, top: 4, fontSize: 10, height: 16, minWidth: 16 } }}>
+										<Box component="span" sx={{ pr: 0.5 }}>
+											{item.label}
+										</Box>
+									</Badge>
+								) : (
+									item.label
+								)}
 							</NavLink>
 						))}
 					</Stack>

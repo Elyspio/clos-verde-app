@@ -6,7 +6,6 @@ export default defineConfig({
 	testDir: e2eRootDir,
 	testMatch: ["workflows/**/*.spec.ts"],
 	fullyParallel: false,
-	workers: 1,
 	timeout: 60_000,
 	outputDir: join(e2eRootDir, "test-results"),
 	reporter: [["html", { open: "never", outputFolder: join(e2eRootDir, "playwright-report") }]],

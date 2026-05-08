@@ -1,0 +1,13 @@
+<Project>
+	<!--
+		Workspace-wide overrides for vulnerable transitive dependencies.
+
+		Snappier 1.0.0 (GHSA-pggp-6c3x-2xmx, high severity) is pulled transitively by
+		MongoDB.Bson / MongoDB.Driver. Force every project under ClosVerdeApp.Api to resolve
+		Snappier 1.3.1 instead. This needs to live in every project that has MongoDB on its
+		transitive graph; placing it in Directory.Build.props ensures every csproj inherits it.
+	-->
+	<ItemGroup>
+		<PackageReference Include="Snappier" Version="1.3.1" />
+	</ItemGroup>
+</Project>

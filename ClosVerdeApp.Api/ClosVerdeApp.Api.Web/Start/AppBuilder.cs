@@ -1,7 +1,9 @@
 using Elyspio.Utils.Telemetry.Technical.Extensions;
 using ClosVerdeApp.Api.Abstractions.Interfaces.Injections;
+using ClosVerdeApp.Api.Abstractions.Models.Configuration;
 using ClosVerdeApp.Api.Adapters.Mongo.Injections;
 using ClosVerdeApp.Api.Adapters.Rest.Injections;
+using ClosVerdeApp.Api.Core.Background;
 using ClosVerdeApp.Api.Core.Injections;
 using ClosVerdeApp.Api.Web.Technical.Extensions;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -28,11 +30,30 @@ public sealed class AppBuilder
 		builder.Services.AddModule<MongoAdapterModule>(builder.Configuration);
 		builder.Services.AddModule<RestAdapterModule>(builder.Configuration);
 
+		builder.Services.Configure<ReservationOptions>(builder.Configuration.GetSection(ReservationOptions.SectionName));
+		builder.Services.Configure<KeycloakAdminOptions>(builder.Configuration.GetSection(KeycloakAdminOptions.SectionName));
+
+		// Backs the user-directory cache (populates @mention candidates) and the Keycloak admin
+		// access-token cache used by the REST adapter.
+		builder.Services.AddMemoryCache();
+
+		builder.Services.AddHostedService<ReservationStatusBackfill>();
+		builder.Services.AddHostedService<TopicSeeder>();
+		builder.Services.AddHostedService<ReservationValidationScanner>();
+
 		var authority = builder.Configuration["Keycloak:Authority"]
 			?? throw new InvalidOperationException("Keycloak:Authority must be configured.");
 		var clientId = builder.Configuration["Keycloak:ClientId"]
 			?? throw new InvalidOperationException("Keycloak:ClientId must be configured.");
 
+		// Token validation strategy:
+		// Keycloak does not put this API's identifier in the standard `aud` claim — public clients
+		// receive an `aud` of the realm/account, not of the resource server. Instead, the realm
+		// signs an `azp` (authorized party) claim that names the originating client. We disable
+		// the built-in audience check and assert `azp == Keycloak:ClientId` ourselves in
+		// `OnTokenValidated`, which is the authoritative binding for this realm. If the realm
+		// configuration ever changes to issue a proper resource audience, switch back to
+		// `ValidateAudience = true` with `ValidAudience` set to the resource id.
 		builder.Services
 			.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 			.AddJwtBearer(opts =>
@@ -44,7 +65,7 @@ public sealed class AppBuilder
 				{
 					ValidateIssuer = true,
 					ValidIssuer = authority,
-					ValidateAudience = false,
+					ValidateAudience = false, // see comment above; replaced by azp check below
 					ValidateLifetime = true,
 					ValidateIssuerSigningKey = true,
 					NameClaimType = "name",
@@ -71,7 +92,7 @@ public sealed class AppBuilder
 			.AddAppSwagger()
 			.AddAppOpenTelemetry(builder.Configuration);
 
-		builder.Services.SetupCors(builder.Configuration);
+		builder.Services.SetupCors(builder.Configuration, builder.Environment);
 
 		Application = builder.Build();
 	}

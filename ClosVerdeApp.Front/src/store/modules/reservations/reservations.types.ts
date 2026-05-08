@@ -28,6 +28,13 @@ export const overlapsMonth = (reservation: Reservation, year: number, month: num
 };
 
 export function refreshCachedMonths(state: ReservationsState, reservation: Reservation) {
+	// Cancelled reservations are hidden by the backend on read — treat the SignalR update as a
+	// removal so auto-cancelled rows don't linger in cached months until the next full refetch.
+	if (reservation.status === "Cancelled") {
+		removeFromCachedMonths(state, reservation.id);
+		return;
+	}
+
 	for (const [key, entries] of Object.entries(state.byMonth)) {
 		const parsed = parseMonthKey(key);
 		if (!parsed) continue;

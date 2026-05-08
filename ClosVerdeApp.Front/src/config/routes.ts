@@ -8,5 +8,7 @@ export const routes = {
 		calendar: { path: "/calendrier" },
 		reservation: { path: "/reserver" },
 		leaderboard: { path: "/classement" },
+		messages: { path: "/messages" },
+		messageTopic: { path: "/messages/:topicId" },
 	},
 } as const;

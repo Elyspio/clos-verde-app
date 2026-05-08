@@ -75,3 +75,16 @@ export async function cleanupReservations(request: APIRequestContext, ids: strin
 		throw new Error(`Le nettoyage E2E a échoué : ${failures.join(" | ")}`);
 	}
 }
+
+/**
+ * Best-effort cleanup of every reservation whose note starts with `e2e-`. Run this in a
+ * `beforeEach` hook so previously failed runs don't poison the day-search.
+ */
+export async function cleanupOrphanE2eReservations(request: APIRequestContext) {
+	const response = await request.get("/api/reservations");
+	if (!response.ok()) return;
+	const list = (await response.json()) as { id: string; note?: string | null }[];
+	const ids = list.filter((r) => typeof r.note === "string" && r.note.startsWith("e2e-")).map((r) => r.id);
+	if (ids.length === 0) return;
+	await cleanupReservations(request, ids);
+}

@@ -1,6 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <!-- Fond bleu avec bords arrondis (squircle) -->
-  <rect width="512" height="512" rx="110" fill="#2563EB"/>
-  <!-- Icône de la maison blanche -->
-  <path d="M256 140 L100 280 H148 V400 H364 V280 H412 Z" fill="#FFFFFF"/>
-</svg>
