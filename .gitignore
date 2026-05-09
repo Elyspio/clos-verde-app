@@ -27,3 +27,4 @@ ClosVerdeApp.Front/tests/e2e/playwright-report/
 *.user
 ClosVerdeApp.Front/src/core/api/generated/docs
 ClosVerdeApp.Front/dist
+skills-lock.json

@@ -1,0 +1,66 @@
+{
+	"mcpServers": {
+		"aspire": {
+			"type": "stdio",
+			"command": "aspire",
+			"args": [
+				"agent",
+				"mcp"
+			]
+		},
+		"playwright": {
+			"type": "stdio",
+			"command": "npx",
+			"args": [
+				"-y",
+				"@microsoft/mcp-server-playwright"
+			]
+		},
+		"sonarqube": {
+			"type": "local",
+			"command": "docker",
+			"args": [
+				"run",
+				"--init",
+				"--pull=always",
+				"-i",
+				"--rm",
+				"-e",
+				"SONARQUBE_TOKEN",
+				"-e",
+				"SONARQUBE_URL",
+				"-e",
+				"SONARQUBE_TOOLSETS",
+				"-e",
+				"SONARQUBE_PROJECT_KEY",
+				"mcp/sonarqube"
+			],
+			"env": {
+				"SONARQUBE_TOKEN": "${SONARQUBE_TOKEN}",
+				"SONARQUBE_URL": "http://swlvusinedocker2.coexya.lan:9100/",
+				"SONARQUBE_TOOLSETS": "analysis,issues,security-hotspots,quality-gates,rules,duplications,measures,dependency-risks,coverage",
+				"SONARQUBE_PROJECT_KEY": "Teleconsultations_Teleconsultations_4aa32ab4-1fd7-480f-8be4-ce3884093d8f"
+			},
+			"tools": [
+				"*"
+			]
+		},
+		"chrome-devtools": {
+			"type": "local",
+			"command": "npx",
+			"tools": [
+				"*"
+			],
+			"args": [
+				"-y",
+				"chrome-devtools-mcp@latest"
+			]
+		},
+		"slopwatch": {
+			"command": "npx",
+			"args": [
+				"slopwatch-mcp-server"
+			]
+		}
+	}
+}

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Atlassian MCP"
+  short_description: "Operate Jira and Confluence via MCP"
+  default_prompt: "Use $mcp-atlassian to query Jira and Confluence via MCP and return a concise French summary."
