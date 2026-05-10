@@ -1,7 +1,7 @@
 import { parseISO, set } from "date-fns";
 import type { Page } from "@playwright/test";
 import { expect, test } from "../../helpers/authenticated-test";
-import { calendarDayTestId, createRunId, monthsFromCurrentCalendar, toApiDateTime } from "../../helpers/date.helpers";
+import { calendarDayTestId, createRunId, monthsFromCurrentCalendar } from "../../helpers/date.helpers";
 import { cleanupOrphanE2eReservations, cleanupReservations, findFreeFutureDay } from "../../helpers/reservation-data.helpers";
 import type { ReservationFull } from "../../helpers/reservation-types";
 
@@ -52,9 +52,9 @@ test.describe("Reservation pending status", () => {
 		const created = (await createResponse.json()) as ReservationFull;
 		createdReservationIds.push(created.id);
 
-		expect(created.status).toBe("Pending");
-		expect(created.objectionCount).toBe(0);
-		expect(typeof created.validationDeadline).toBe("string");
+		expect(created.validation.status).toBe("Pending");
+		expect(created.objection ?? null).toBeNull();
+		expect(typeof created.validation.deadline).toBe("string");
 
 		// Calendar reflects the Pending state.
 		await expect(page).toHaveURL(/\/calendrier$/);
@@ -73,21 +73,20 @@ test.describe("Reservation pending status", () => {
 		const runId = createRunId();
 		const reservationDay = await findFreeFutureDay(apiClient);
 
-		// Build start/end as LOCAL datetimes via toApiDateTime (NOT toISOString, which shifts to UTC).
 		const start = set(reservationDay, { hours: 9, minutes: 0, seconds: 0, milliseconds: 0 });
 		const end = set(reservationDay, { hours: 11, minutes: 0, seconds: 0, milliseconds: 0 });
 
 		const createResponse = await apiClient.post("/api/reservations", {
 			data: {
-				startDate: toApiDateTime(start),
-				endDate: toApiDateTime(end),
+				startDate: start.toISOString(),
+				endDate: end.toISOString(),
 				note: `e2e-decision-${runId}`,
 			},
 		});
 		expect(createResponse.status(), `Création API: ${await createResponse.text()}`).toBe(201);
 		const reservation = (await createResponse.json()) as ReservationFull;
 		createdReservationIds.push(reservation.id);
-		expect(reservation.status).toBe("Pending");
+		expect(reservation.validation.status).toBe("Pending");
 
 		// Stub GETs used by the calendar and the panel to inject an objection scenario without
 		// needing a second authenticated user. The force-validate POST flows through to the real backend.
@@ -112,29 +111,29 @@ test.describe("Reservation pending status", () => {
 
 			const body = (await original.json()) as ReservationFull[] | ReservationFull;
 			const enrich = (r: ReservationFull): ReservationFull =>
-				r.id === reservation.id ? { ...r, status: "Pending", objectionCount: 1, topicId: "00000000-0000-0000-0000-000000000001" } : r;
+				r.id === reservation.id
+					? {
+							...r,
+							validation: {
+								...r.validation,
+								status: "Pending",
+							},
+							objection: {
+								id: reservation.id,
+								reservationId: reservation.id,
+								user: {
+									id: "00000000-0000-0000-0000-000000000aaa",
+									displayName: "Test Objector",
+								},
+								reason: `e2e-objection-${runId}`,
+								createdAt: new Date().toISOString(),
+							},
+							topicId: "00000000-0000-0000-0000-000000000001",
+						}
+					: r;
 
 			const enriched = Array.isArray(body) ? body.map(enrich) : enrich(body);
 			await route.fulfill({ json: enriched });
-		});
-
-		await page.route(`**/api/reservations/${reservation.id}/objections`, async (route) => {
-			if (route.request().method() !== "GET") {
-				await route.continue();
-				return;
-			}
-			await route.fulfill({
-				json: [
-					{
-						id: "00000000-0000-0000-0000-000000000abc",
-						reservationId: reservation.id,
-						userId: "00000000-0000-0000-0000-000000000aaa",
-						userDisplayName: "Test Objector",
-						reason: `e2e-objection-${runId}`,
-						createdAt: new Date().toISOString(),
-					},
-				],
-			});
 		});
 
 		await page.goto("/calendrier");
@@ -143,7 +142,7 @@ test.describe("Reservation pending status", () => {
 		await dayCell.getByTestId(`reservation-pill-${reservation.id}`).click();
 
 		await expect(page.getByTestId("creator-decision-panel")).toBeVisible();
-		await expect(page.getByTestId("creator-decision-panel")).toContainText("1 objection");
+		await expect(page.getByTestId("creator-decision-panel")).toContainText("Une objection");
 		await expect(page.getByTestId("creator-decision-panel")).toContainText(`e2e-objection-${runId}`);
 
 		const validatePromise = page.waitForResponse((response) => {
@@ -154,6 +153,6 @@ test.describe("Reservation pending status", () => {
 		const validateResponse = await validatePromise;
 		expect(validateResponse.status(), `POST /validate: ${await validateResponse.text()}`).toBe(200);
 		const validated = (await validateResponse.json()) as ReservationFull;
-		expect(validated.status).toBe("Validated");
+		expect(validated.validation.status).toBe("Validated");
 	});
 });

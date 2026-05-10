@@ -1,10 +1,10 @@
-import { Alert, Box, Button, CircularProgress, Stack, Typography } from "@mui/material";
-import { useEffect, useState } from "react";
+import { Alert, Box, Button, Stack, Typography } from "@mui/material";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
-import { extractApiError } from "@/core/api/client";
-import { reservationApi } from "@/core/api/reservation.api";
-import type { Objection, Reservation } from "@/types/models";
+import { extractApiError } from "@apis/rest/api/clients/api.client";
+import { reservationsService } from "@/core/services/reservations.service";
+import type { Reservation } from "@apis/rest/api/generated";
 
 type Props = {
 	reservation: Reservation;
@@ -17,34 +17,15 @@ type Props = {
  */
 export function CreatorDecisionPanel({ reservation, onChanged }: Props) {
 	const navigate = useNavigate();
-	const [objections, setObjections] = useState<Objection[] | null>(null);
 	const [submitting, setSubmitting] = useState(false);
 	const [error, setError] = useState<string | null>(null);
-
-	useEffect(() => {
-		if (reservation.objectionCount === 0) {
-			setObjections([]);
-			return;
-		}
-		let cancelled = false;
-		void reservationApi
-			.listObjections(reservation.id)
-			.then((data) => {
-				if (!cancelled) setObjections(data);
-			})
-			.catch((e) => {
-				if (!cancelled) setError(extractApiError(e));
-			});
-		return () => {
-			cancelled = true;
-		};
-	}, [reservation.id, reservation.objectionCount]);
+	const objection = reservation.objection;
 
 	const validate = async () => {
 		setSubmitting(true);
 		setError(null);
 		try {
-			await reservationApi.forceValidate(reservation.id);
+			await reservationsService.forceValidate(reservation.id);
 			onChanged?.();
 		} catch (e) {
 			setError(extractApiError(e, "Validation impossible."));
@@ -57,7 +38,7 @@ export function CreatorDecisionPanel({ reservation, onChanged }: Props) {
 		setSubmitting(true);
 		setError(null);
 		try {
-			await reservationApi.remove(reservation.id);
+			await reservationsService.remove(reservation.id);
 			onChanged?.();
 		} catch (e) {
 			setError(extractApiError(e, "Annulation impossible."));
@@ -85,9 +66,7 @@ export function CreatorDecisionPanel({ reservation, onChanged }: Props) {
 				p: { xs: 2, sm: 2.5 },
 			}}
 		>
-			<Typography sx={{ fontSize: 16, fontWeight: 900, color: "#b45309" }}>
-				{reservation.objectionCount} objection{reservation.objectionCount > 1 ? "s" : ""} sur votre réservation
-			</Typography>
+			<Typography sx={{ fontSize: 16, fontWeight: 900, color: "#b45309" }}>Une objection sur votre réservation</Typography>
 			<Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
 				La validation automatique est suspendue. Discutez puis tranchez&nbsp;: validez quand même, modifiez ou annulez.
 			</Typography>
@@ -97,24 +76,20 @@ export function CreatorDecisionPanel({ reservation, onChanged }: Props) {
 				</Alert>
 			)}
 			<Stack spacing={1} sx={{ mt: 2, mb: 2 }}>
-				{objections === null ? (
-					<CircularProgress size={18} />
-				) : (
-					objections.map((o) => (
-						<Box key={o.id} sx={{ p: 1.25, borderRadius: 1.5, bgcolor: "var(--surface)", border: "1px solid var(--line)" }}>
-							<Typography sx={{ fontSize: 12, fontWeight: 700 }}>
-								{o.userDisplayName}{" "}
-								<Typography component="span" sx={{ color: "var(--ink-mute)", fontSize: 11, fontWeight: 500 }}>
-									— {format(new Date(o.createdAt), "dd/MM HH:mm")}
-								</Typography>
+				{objection && (
+					<Box sx={{ p: 1.25, borderRadius: 1.5, bgcolor: "var(--surface)", border: "1px solid var(--line)" }}>
+						<Typography sx={{ fontSize: 12, fontWeight: 700 }}>
+							{objection.user.displayName}{" "}
+							<Typography component="span" sx={{ color: "var(--ink-mute)", fontSize: 11, fontWeight: 500 }}>
+								— {format(new Date(objection.createdAt), "dd/MM HH:mm")}
 							</Typography>
-							{o.reason && (
-								<Typography variant="body2" sx={{ mt: 0.5 }}>
-									{o.reason}
-								</Typography>
-							)}
-						</Box>
-					))
+						</Typography>
+						{objection.reason && (
+							<Typography variant="body2" sx={{ mt: 0.5 }}>
+								{objection.reason}
+							</Typography>
+						)}
+					</Box>
 				)}
 			</Stack>
 			<Stack direction={{ xs: "column", sm: "row" }} spacing={1.25} flexWrap="wrap">

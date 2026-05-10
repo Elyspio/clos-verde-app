@@ -1,4 +1,4 @@
-import type { Topic } from "@/types/models";
+import type { Topic } from "@apis/rest/api/generated";
 
 export type TopicsState = {
 	byId: Record<string, Topic>;

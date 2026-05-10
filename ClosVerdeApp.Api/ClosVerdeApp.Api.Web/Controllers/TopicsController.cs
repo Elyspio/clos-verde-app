@@ -1,10 +1,10 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using ClosVerdeApp.Api.Abstractions.Common.Helpers;
-using ClosVerdeApp.Api.Abstractions.Common.Technical.Tracing;
 using ClosVerdeApp.Api.Abstractions.Exceptions;
 using ClosVerdeApp.Api.Abstractions.Interfaces.Services;
 using ClosVerdeApp.Api.Abstractions.Models.Transports;
+using Elyspio.Utils.Telemetry.Tracing.Elements;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -38,7 +38,7 @@ public class TopicsController(
 	[ProducesResponseType(typeof(List<TopicListItem>), StatusCodes.Status200OK)]
 	public async Task<IActionResult> List()
 	{
-		using var _ = LogController();
+		using var logger = LogController();
 		return Ok(await topicService.ListForUser(CurrentUserId));
 	}
 
@@ -46,7 +46,7 @@ public class TopicsController(
 	[ProducesResponseType(typeof(Topic), StatusCodes.Status200OK)]
 	public async Task<IActionResult> Get(Guid id)
 	{
-		using var _ = LogController(Log.F(id));
+		using var logger = LogController(Log.F(id));
 		return Ok(await topicService.GetById(id));
 	}
 
@@ -54,7 +54,7 @@ public class TopicsController(
 	[ProducesResponseType(typeof(Topic), StatusCodes.Status201Created)]
 	public async Task<IActionResult> Create([FromBody] CreateTopicRequest request)
 	{
-		using var _ = LogController(Log.F(request.Name));
+		using var logger = LogController(Log.F(request.Name));
 		var topic = await topicService.CreateCustom(request.Name, CurrentUserId, CurrentDisplayName);
 		return Created($"/api/topics/{topic.Id}", topic);
 	}
@@ -64,7 +64,7 @@ public class TopicsController(
 	[ProducesResponseType(StatusCodes.Status403Forbidden)]
 	public async Task<IActionResult> Rename(Guid id, [FromBody] RenameTopicRequest request)
 	{
-		using var _ = LogController($"{Log.F(id)} {Log.F(request.Name)}");
+		using var logger = LogController($"{Log.F(id)} {Log.F(request.Name)}");
 		return Ok(await topicService.Rename(id, request.Name, CurrentUserId));
 	}
 
@@ -73,25 +73,25 @@ public class TopicsController(
 	[ProducesResponseType(StatusCodes.Status403Forbidden)]
 	public async Task<IActionResult> Delete(Guid id)
 	{
-		using var _ = LogController(Log.F(id));
+		using var logger = LogController(Log.F(id));
 		await topicService.Delete(id, CurrentUserId);
 		return NoContent();
 	}
 
 	[HttpPost("{id:guid}/read")]
-	[ProducesResponseType(StatusCodes.Status200OK)]
+	[ProducesResponseType(StatusCodes.Status204NoContent)]
 	public async Task<IActionResult> MarkRead(Guid id, [FromBody] MarkReadRequest? request)
 	{
-		using var _ = LogController(Log.F(id));
-		var at = await messageService.MarkRead(id, CurrentUserId, request?.At);
-		return Ok(new { lastReadAt = at });
+		using var logger = LogController(Log.F(id));
+		await messageService.MarkRead(id, CurrentUserId, request?.At);
+		return NoContent();
 	}
 
 	[HttpGet("{id:guid}/messages")]
 	[ProducesResponseType(typeof(List<Message>), StatusCodes.Status200OK)]
 	public async Task<IActionResult> ListMessages(Guid id, [FromQuery] DateTime? before, [FromQuery] int? limit)
 	{
-		using var _ = LogController($"{Log.F(id)} {Log.F(before)} {Log.F(limit)}");
+		using var logger = LogController($"{Log.F(id)} {Log.F(before)} {Log.F(limit)}");
 		return Ok(await messageService.List(id, before, limit ?? 50));
 	}
 
@@ -99,8 +99,35 @@ public class TopicsController(
 	[ProducesResponseType(typeof(Message), StatusCodes.Status201Created)]
 	public async Task<IActionResult> PostMessage(Guid id, [FromBody] PostMessageRequest request)
 	{
-		using var _ = LogController(Log.F(id));
+		using var logger = LogController(Log.F(id));
 		var msg = await messageService.Post(id, CurrentUserId, CurrentDisplayName, request.ContentHtml);
 		return Created($"/api/messages/{msg.Id}", msg);
+	}
+
+	[HttpGet("me/engaged")]
+	[ProducesResponseType(typeof(List<Guid>), StatusCodes.Status200OK)]
+	public async Task<IActionResult> ListEngaged()
+	{
+		using var logger = LogController();
+		return Ok(await topicService.ListEngagedTopicIds(CurrentUserId));
+	}
+
+	[HttpPut("{id:guid}/mute")]
+	[ProducesResponseType(StatusCodes.Status204NoContent)]
+	[ProducesResponseType(StatusCodes.Status404NotFound)]
+	public async Task<IActionResult> Mute(Guid id)
+	{
+		using var logger = LogController(Log.F(id));
+		await topicService.Mute(id, CurrentUserId);
+		return NoContent();
+	}
+
+	[HttpDelete("{id:guid}/mute")]
+	[ProducesResponseType(StatusCodes.Status204NoContent)]
+	public async Task<IActionResult> Unmute(Guid id)
+	{
+		using var logger = LogController(Log.F(id));
+		await topicService.Unmute(id, CurrentUserId);
+		return NoContent();
 	}
 }

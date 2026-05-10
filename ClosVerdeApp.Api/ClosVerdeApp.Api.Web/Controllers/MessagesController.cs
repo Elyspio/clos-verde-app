@@ -1,10 +1,10 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using ClosVerdeApp.Api.Abstractions.Common.Helpers;
-using ClosVerdeApp.Api.Abstractions.Common.Technical.Tracing;
 using ClosVerdeApp.Api.Abstractions.Exceptions;
 using ClosVerdeApp.Api.Abstractions.Interfaces.Services;
 using ClosVerdeApp.Api.Abstractions.Models.Transports;
+using Elyspio.Utils.Telemetry.Tracing.Elements;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -35,7 +35,7 @@ public class MessagesController(
 	[ProducesResponseType(StatusCodes.Status403Forbidden)]
 	public async Task<IActionResult> Edit(Guid id, [FromBody] PostMessageRequest request)
 	{
-		using var _ = LogController(Log.F(id));
+		using var logger = LogController(Log.F(id));
 		return Ok(await messageService.Edit(id, CurrentUserId, request.ContentHtml));
 	}
 
@@ -44,7 +44,7 @@ public class MessagesController(
 	[ProducesResponseType(StatusCodes.Status403Forbidden)]
 	public async Task<IActionResult> Delete(Guid id)
 	{
-		using var _ = LogController(Log.F(id));
+		using var logger = LogController(Log.F(id));
 		return Ok(await messageService.SoftDelete(id, CurrentUserId));
 	}
 }

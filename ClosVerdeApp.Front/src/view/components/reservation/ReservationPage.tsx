@@ -26,7 +26,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "@/store";
 import { routes } from "@/config/routes";
 import { clearCreateState, createReservation, fetchMonthReservations, selectMonth, updateReservation } from "@/store/modules/reservations/reservations.actions";
-import type { Reservation } from "@/types/models";
+import type { Reservation } from "@apis/rest/api/generated";
 import { reservationPeriodLabel } from "@/view/components/calendar/date-utils";
 
 type ReservationLocationState = {
@@ -42,9 +42,7 @@ type AvailabilitySlot = {
 	reservation?: Reservation;
 };
 
-function serializeDateTime(date: Date) {
-	return format(date, "yyyy-MM-dd'T'HH:mm:ss");
-}
+const serializeDateTime = (date: Date) => date.toISOString();
 
 function durationLabel(minutes: number) {
 	const days = Math.floor(minutes / 1440);
@@ -369,7 +367,7 @@ export function ReservationPage() {
 												{format(slot.start, "HH'h'mm")} - {format(slot.end, "HH'h'mm")}
 											</Typography>
 											<Typography sx={{ fontWeight: 800, color: free ? "#047857" : "var(--ink-soft)" }}>
-												{free ? "Libre" : `Occupé par ${slot.reservation?.userDisplayName ?? "un utilisateur"}`}
+												{free ? "Libre" : `Occupé par ${slot.reservation?.user.displayName ?? "un utilisateur"}`}
 											</Typography>
 											<Typography sx={{ color: "var(--ink-mute)", fontSize: 12 }}>
 												{free

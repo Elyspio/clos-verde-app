@@ -46,7 +46,6 @@ export async function seedAuthenticatedSession(page: Page, user: SeededOidcUser)
 		({ key, value, token }) => {
 			window.localStorage.setItem(key, value);
 			window.localStorage.setItem("clos-verde-app.token", token);
-			window.localStorage.setItem("clos-verde-app.remember", "true");
 		},
 		{ key: oidcStorageKey, value: oidcStorageValue, token: accessToken },
 	);

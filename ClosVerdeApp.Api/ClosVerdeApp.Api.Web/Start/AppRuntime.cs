@@ -35,9 +35,6 @@ public static class AppRuntime
 
 		if (!app.Environment.IsProduction()) return app;
 
-		// Start SPA serving
-		app.UseRouting();
-
 		app.UseStaticFiles();
 
 		app.MapWhen(ctx => !ctx.Request.Path.StartsWithSegments("/api"), appBuilder =>

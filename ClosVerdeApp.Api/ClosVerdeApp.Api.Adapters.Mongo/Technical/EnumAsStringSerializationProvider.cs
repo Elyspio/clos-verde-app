@@ -13,14 +13,12 @@ public sealed class EnumAsStringSerializationProvider : BsonSerializationProvide
 		if (!type.IsEnum) return null!;
 
 		var enumSerializerType = typeof(EnumSerializer<>).MakeGenericType(type);
-		var enumSerializerConstructor = enumSerializerType.GetConstructor(new[]
-		{
+		var enumSerializerConstructor = enumSerializerType.GetConstructor([
 			typeof(BsonType)
-		});
-		var enumSerializer = (IBsonSerializer?)enumSerializerConstructor?.Invoke(new object[]
-		{
+		]);
+		var enumSerializer = (IBsonSerializer?)enumSerializerConstructor?.Invoke([
 			BsonType.String
-		});
+		]);
 
 		return enumSerializer!;
 	}

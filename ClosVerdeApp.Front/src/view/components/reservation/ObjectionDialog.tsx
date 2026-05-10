@@ -1,8 +1,8 @@
 import { Alert, Button, Dialog, DialogActions, DialogContent, DialogTitle, Stack, TextField, Typography } from "@mui/material";
 import { useState } from "react";
-import { extractApiError } from "@/core/api/client";
-import { reservationApi } from "@/core/api/reservation.api";
-import type { Reservation } from "@/types/models";
+import { extractApiError } from "@apis/rest/api/clients/api.client";
+import { reservationsService } from "@/core/services/reservations.service";
+import type { Reservation } from "@apis/rest/api/generated";
 
 type Props = {
 	reservation: Reservation | null;
@@ -32,7 +32,7 @@ export function ObjectionDialog({ reservation, onClose }: Props) {
 		setSubmitting(true);
 		setError(null);
 		try {
-			await reservationApi.createObjection(reservation.id, reason.trim() || undefined);
+			await reservationsService.createObjection(reservation.id, reason.trim() || undefined);
 			handleClose();
 		} catch (e) {
 			setError(extractApiError(e, "Objection impossible."));
@@ -48,7 +48,7 @@ export function ObjectionDialog({ reservation, onClose }: Props) {
 				<Stack spacing={2} sx={{ mt: 1 }}>
 					{reservation && (
 						<Typography variant="body2" color="text.secondary">
-							Réservation de {reservation.userDisplayName}. Une objection bloque la validation automatique et ouvre un fil de discussion.
+							Réservation de {reservation.user.displayName}. Une objection bloque la validation automatique et ouvre un fil de discussion.
 						</Typography>
 					)}
 					{error && <Alert severity="warning">{error}</Alert>}

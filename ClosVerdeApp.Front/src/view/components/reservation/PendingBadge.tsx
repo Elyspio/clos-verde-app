@@ -1,7 +1,7 @@
 import { Chip } from "@mui/material";
 import { Schedule } from "@mui/icons-material";
 import { useEffect, useState } from "react";
-import type { Reservation } from "@/types/models";
+import type { Reservation } from "@apis/rest/api/generated";
 
 function formatRemaining(ms: number): string {
 	if (ms <= 0) return "validation imminente";
@@ -21,7 +21,7 @@ function formatRemaining(ms: number): string {
  * and switches to an "objection en cours" state when the reservation has at least one objection.
  */
 export function PendingBadge({ reservation, compact = false }: { reservation: Reservation; compact?: boolean }) {
-	const deadline = new Date(reservation.validationDeadline).getTime();
+	const deadline = new Date(reservation.validation.deadline).getTime();
 	const [now, setNow] = useState(Date.now());
 
 	useEffect(() => {
@@ -29,17 +29,17 @@ export function PendingBadge({ reservation, compact = false }: { reservation: Re
 		return () => window.clearInterval(id);
 	}, []);
 
-	if (reservation.status !== "Pending") return null;
+	if (reservation.validation.status !== "Pending") return null;
 
 	const remaining = deadline - now;
 	const label = compact ? `En attente · ${formatRemaining(remaining)}` : `En attente — validation auto dans ${formatRemaining(remaining)}`;
 
-	const hasObjection = reservation.objectionCount > 0;
+	const hasObjection = Boolean(reservation.objection);
 
 	return (
 		<Chip
 			data-testid="pending-badge"
-			data-objection-count={reservation.objectionCount}
+			data-objection-count={hasObjection ? 1 : 0}
 			size="small"
 			icon={<Schedule sx={{ fontSize: 14 }} />}
 			label={hasObjection ? "En attente — objection en cours" : label}

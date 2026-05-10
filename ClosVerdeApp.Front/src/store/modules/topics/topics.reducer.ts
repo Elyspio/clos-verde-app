@@ -1,5 +1,5 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import type { Topic } from "@/types/models";
+import type { Topic } from "@apis/rest/api/generated";
 import { createTopic, deleteTopic, fetchTopics, renameTopic } from "./topics.async.actions";
 import type { TopicsState } from "./topics.types";
 

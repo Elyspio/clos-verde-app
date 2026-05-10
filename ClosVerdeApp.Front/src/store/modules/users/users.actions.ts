@@ -1,5 +1,5 @@
 import { createSelector } from "@reduxjs/toolkit";
-import type { DirectoryUser } from "@/types/models";
+import type { DirectoryUser } from "@apis/rest/api/generated";
 import type { UsersState } from "./users.types";
 
 export { fetchUsers } from "./users.async.actions";

@@ -1,13 +1,14 @@
 import { Alert, Box, Button, CircularProgress, Stack, Typography } from "@mui/material";
-import { Edit, DeleteOutline } from "@mui/icons-material";
+import { DeleteOutline, Edit, NotificationsActive, NotificationsOff } from "@mui/icons-material";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAuth } from "react-oidc-context";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "@/store";
 import { fetchMessages, postMessage, editMessage, deleteMessage, selectMessages, selectMessagesStatus } from "@/store/modules/messages/messages.actions";
 import { selectTopicById, deleteTopic, renameTopic, markTopicRead } from "@/store/modules/topics/topics.actions";
+import { muteTopic, selectIsTopicMuted, unmuteTopic } from "@/store/modules/notifications/notifications.actions";
 import { setFocusedTopic } from "@/store/modules/unread/unread.actions";
-import type { Message } from "@/types/models";
+import type { Message } from "@apis/rest/api/generated";
 import { MessageComposer } from "./MessageComposer";
 import { MessageList } from "./MessageList";
 import { RenameTopicDialog } from "./RenameTopicDialog";
@@ -25,6 +26,7 @@ export function TopicView() {
 	const topic = useAppSelector((s) => selectTopicById(s, topicId));
 	const messages = useAppSelector((s) => selectMessages(s, topicId));
 	const status = useAppSelector((s) => selectMessagesStatus(s, topicId));
+	const isMuted = useAppSelector((s) => selectIsTopicMuted(s, topicId));
 	const userId = auth.user?.profile?.sub;
 	const lastMarkedReadRef = useRef<{ topicId: string | null; at: string | null }>({ topicId: null, at: null });
 	const [editingMessage, setEditingMessage] = useState<Message | null>(null);
@@ -99,6 +101,11 @@ export function TopicView() {
 		void navigate("/messages");
 	}, [dispatch, navigate, topic]);
 
+	const handleToggleMute = useCallback(async () => {
+		if (!topic) return;
+		await dispatch(isMuted ? unmuteTopic(topic.id) : muteTopic(topic.id)).unwrap();
+	}, [dispatch, isMuted, topic]);
+
 	if (!topic) {
 		return (
 			<Box sx={{ p: 3 }}>
@@ -118,16 +125,32 @@ export function TopicView() {
 					</Typography>
 					{topic.kind === "Reservation" && <Typography sx={{ fontSize: 11, color: "var(--ink-mute)" }}>Discussion liée à une réservation</Typography>}
 				</Box>
-				{isOwnerOfCustom && (
-					<Stack direction="row" spacing={1}>
-						<Button data-testid="topic-rename-button" size="small" startIcon={<Edit fontSize="inherit" />} onClick={() => setRenameOpen(true)}>
-							Renommer
-						</Button>
-						<Button data-testid="topic-delete-button" size="small" color="error" startIcon={<DeleteOutline fontSize="inherit" />} onClick={() => setDeleteOpen(true)}>
-							Supprimer
-						</Button>
-					</Stack>
-				)}
+				<Stack direction="row" spacing={1}>
+					<Button
+						data-testid="topic-mute-button"
+						size="small"
+						startIcon={isMuted ? <NotificationsActive fontSize="inherit" /> : <NotificationsOff fontSize="inherit" />}
+						onClick={handleToggleMute}
+					>
+						{isMuted ? "Réactiver" : "Muter"}
+					</Button>
+					{isOwnerOfCustom && (
+						<>
+							<Button data-testid="topic-rename-button" size="small" startIcon={<Edit fontSize="inherit" />} onClick={() => setRenameOpen(true)}>
+								Renommer
+							</Button>
+							<Button
+								data-testid="topic-delete-button"
+								size="small"
+								color="error"
+								startIcon={<DeleteOutline fontSize="inherit" />}
+								onClick={() => setDeleteOpen(true)}
+							>
+								Supprimer
+							</Button>
+						</>
+					)}
+				</Stack>
 			</Stack>
 			<Box sx={{ flex: 1, overflowY: "auto", bgcolor: "var(--app-bg)" }}>
 				{status === "loading" && messages.length === 0 ? (

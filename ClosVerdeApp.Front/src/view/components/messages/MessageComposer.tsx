@@ -9,7 +9,7 @@ import type { Instance } from "tippy.js";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useAppSelector } from "@/store";
 import { selectUsers } from "@/store/modules/users/users.actions";
-import type { DirectoryUser } from "@/types/models";
+import type { DirectoryUser } from "@apis/rest/api/generated";
 import { MentionList, type MentionListRef } from "./MentionList";
 
 type Mentionable = { id: string; label: string };

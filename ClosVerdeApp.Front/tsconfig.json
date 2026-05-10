@@ -5,7 +5,9 @@
 		"moduleResolution": "bundler",
 		"downlevelIteration": null,
 		"paths": {
-			"@/*": ["./src/*"]
+			"@/*": ["./src/*"],
+			"@apis/*": ["./src/core/apis/*"],
+			"@services/*": ["./src/core/services/*"]
 		},
 		"types": ["vite/client"]
 	},

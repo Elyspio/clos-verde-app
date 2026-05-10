@@ -1,5 +1,5 @@
 import { createSelector } from "@reduxjs/toolkit";
-import type { Topic } from "@/types/models";
+import type { Topic } from "@apis/rest/api/generated";
 import type { TopicsState } from "./topics.types";
 
 export { topicCreated, topicUpdated, topicDeleted } from "./topics.reducer";

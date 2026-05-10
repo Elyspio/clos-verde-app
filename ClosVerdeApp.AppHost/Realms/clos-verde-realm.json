@@ -1,0 +1,205 @@
+{
+	"realm": "clos-verde",
+	"enabled": true,
+	"sslRequired": "external",
+	"registrationAllowed": false,
+	"loginWithEmailAllowed": true,
+	"duplicateEmailsAllowed": false,
+	"resetPasswordAllowed": true,
+	"editUsernameAllowed": false,
+	"bruteForceProtected": false,
+	"accessTokenLifespan": 1800,
+	"ssoSessionIdleTimeout": 1800,
+	"ssoSessionMaxLifespan": 36000,
+	"defaultSignatureAlgorithm": "RS256",
+	"clients": [
+		{
+			"clientId": "cv_dev-front",
+			"name": "Clos Verde – SPA (local)",
+			"enabled": true,
+			"protocol": "openid-connect",
+			"publicClient": true,
+			"standardFlowEnabled": true,
+			"directAccessGrantsEnabled": true,
+			"implicitFlowEnabled": false,
+			"serviceAccountsEnabled": false,
+			"redirectUris": [
+				"https://localhost:3000/*",
+				"http://localhost:3000/*"
+			],
+			"webOrigins": [
+				"+"
+			],
+			"attributes": {
+				"post.logout.redirect.uris": "https://localhost:3000/*##http://localhost:3000/*",
+				"pkce.code.challenge.method": "S256"
+			},
+			"defaultClientScopes": [
+				"web-origins",
+				"acr",
+				"profile",
+				"roles",
+				"basic",
+				"email"
+			],
+			"optionalClientScopes": [
+				"address",
+				"phone",
+				"offline_access",
+				"microprofile-jwt"
+			]
+		},
+		{
+			"clientId": "cv_dev-api",
+			"name": "Clos Verde – API service account (local)",
+			"enabled": true,
+			"protocol": "openid-connect",
+			"publicClient": false,
+			"standardFlowEnabled": false,
+			"directAccessGrantsEnabled": false,
+			"implicitFlowEnabled": false,
+			"serviceAccountsEnabled": true,
+			"secret": "dev-cv-aspire-secret-FAKE-DO-NOT-DEPLOY",
+			"defaultClientScopes": [
+				"web-origins",
+				"acr",
+				"profile",
+				"roles",
+				"basic",
+				"email"
+			]
+		}
+	],
+	"users": [
+		{
+			"id": "00000000-0000-4000-8000-000000000001",
+			"username": "alice.martin",
+			"enabled": true,
+			"emailVerified": true,
+			"firstName": "Alice",
+			"lastName": "Martin",
+			"email": "alice.martin@clos-verde.local",
+			"credentials": [
+				{ "type": "password", "value": "password", "temporary": false }
+			]
+		},
+		{
+			"id": "00000000-0000-4000-8000-000000000002",
+			"username": "bastien.deyevenayagam",
+			"enabled": true,
+			"emailVerified": true,
+			"firstName": "Bastien",
+			"lastName": "Deyeveneyagam",
+			"email": "bastien.deyeveneyagam@clos-verde.local",
+			"credentials": [
+				{ "type": "password", "value": "password", "temporary": false }
+			]
+		},
+		{
+			"id": "00000000-0000-4000-8000-000000000003",
+			"username": "camille.dubois",
+			"enabled": true,
+			"emailVerified": true,
+			"firstName": "Camille",
+			"lastName": "Dubois",
+			"email": "camille.dubois@clos-verde.local",
+			"credentials": [
+				{ "type": "password", "value": "password", "temporary": false }
+			]
+		},
+		{
+			"id": "00000000-0000-4000-8000-000000000004",
+			"username": "david.laurent",
+			"enabled": true,
+			"emailVerified": true,
+			"firstName": "David",
+			"lastName": "Laurent",
+			"email": "david.laurent@clos-verde.local",
+			"credentials": [
+				{ "type": "password", "value": "password", "temporary": false }
+			]
+		},
+		{
+			"id": "00000000-0000-4000-8000-000000000005",
+			"username": "elodie.petit",
+			"enabled": true,
+			"emailVerified": true,
+			"firstName": "Élodie",
+			"lastName": "Petit",
+			"email": "elodie.petit@clos-verde.local",
+			"credentials": [
+				{ "type": "password", "value": "password", "temporary": false }
+			]
+		},
+		{
+			"id": "00000000-0000-4000-8000-000000000006",
+			"username": "francois.garnier",
+			"enabled": true,
+			"emailVerified": true,
+			"firstName": "François",
+			"lastName": "Garnier",
+			"email": "francois.garnier@clos-verde.local",
+			"credentials": [
+				{ "type": "password", "value": "password", "temporary": false }
+			]
+		},
+		{
+			"id": "00000000-0000-4000-8000-000000000007",
+			"username": "gabrielle.roux",
+			"enabled": true,
+			"emailVerified": true,
+			"firstName": "Gabrielle",
+			"lastName": "Roux",
+			"email": "gabrielle.roux@clos-verde.local",
+			"credentials": [
+				{ "type": "password", "value": "password", "temporary": false }
+			]
+		},
+		{
+			"id": "00000000-0000-4000-8000-000000000008",
+			"username": "hugo.lefebvre",
+			"enabled": true,
+			"emailVerified": true,
+			"firstName": "Hugo",
+			"lastName": "Lefebvre",
+			"email": "hugo.lefebvre@clos-verde.local",
+			"credentials": [
+				{ "type": "password", "value": "password", "temporary": false }
+			]
+		},
+		{
+			"id": "00000000-0000-4000-8000-000000000009",
+			"username": "ines.mercier",
+			"enabled": true,
+			"emailVerified": true,
+			"firstName": "Inès",
+			"lastName": "Mercier",
+			"email": "ines.mercier@clos-verde.local",
+			"credentials": [
+				{ "type": "password", "value": "password", "temporary": false }
+			]
+		},
+		{
+			"id": "00000000-0000-4000-8000-000000000010",
+			"username": "julien.bernard",
+			"enabled": true,
+			"emailVerified": true,
+			"firstName": "Julien",
+			"lastName": "Bernard",
+			"email": "julien.bernard@clos-verde.local",
+			"credentials": [
+				{ "type": "password", "value": "password", "temporary": false }
+			]
+		},
+		{
+			"username": "service-account-cv_dev-api",
+			"enabled": true,
+			"serviceAccountClientId": "cv_dev-api",
+			"clientRoles": {
+				"realm-management": [
+					"view-users"
+				]
+			}
+		}
+	]
+}

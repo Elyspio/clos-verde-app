@@ -1,5 +1,5 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import type { Reservation } from "@/types/models";
+import type { Reservation } from "@apis/rest/api/generated";
 import { createReservation, deleteReservation, fetchLeaderboard, fetchMonthReservations, updateReservation } from "./reservations.async.actions";
 import { monthKey, refreshCachedMonths, removeFromCachedMonths, type ReservationsState } from "./reservations.types";
 

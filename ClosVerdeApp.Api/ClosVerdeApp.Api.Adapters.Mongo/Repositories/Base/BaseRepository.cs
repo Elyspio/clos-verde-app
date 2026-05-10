@@ -1,8 +1,12 @@
-using ClosVerdeApp.Api.Abstractions.Common.Technical.Tracing;
+
 using ClosVerdeApp.Api.Adapters.Mongo.Technical;
+using Elyspio.Utils.Telemetry.Tracing.Elements;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
+using Serilog;
+using Serilog.Core;
+using ILogger = Microsoft.Extensions.Logging.ILogger;
 
 namespace ClosVerdeApp.Api.Adapters.Mongo.Repositories.Base;
 
@@ -59,8 +63,6 @@ public abstract class BaseRepository<T> : TracingAdapter
 
 		if (foundIndex) return;
 
-		Logger.LogWarning($"Property {_collectionName}.{indexName} is not indexed, creating one");
 		EntityCollection.Indexes.CreateOne(indexModel);
-		Logger.LogWarning($"Property {_collectionName}.{indexName} is now indexed");
 	}
 }

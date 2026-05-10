@@ -2,7 +2,8 @@ import { Add } from "@mui/icons-material";
 import { Box, Button, Stack, Typography } from "@mui/material";
 import { differenceInMinutes, endOfDay, format, isAfter, isBefore, isSameMonth, isToday, parseISO, startOfDay, startOfToday } from "date-fns";
 import { useNavigate } from "react-router-dom";
-import type { AuthUser, Reservation } from "@/types/models";
+import type { Reservation } from "@apis/rest/api/generated";
+import type { AuthUser } from "@/core/auth/auth.types";
 
 type DayCellProps = {
 	day: Date;
@@ -88,9 +89,9 @@ export function DayCell({ day, currentMonth, reservations, currentUser, onSelect
 				</Typography>
 				<Stack spacing={0.5}>
 					{dayReservations.map((reservation) => {
-						const own = reservation.userId === currentUser?.id;
-						const pending = reservation.status === "Pending";
-						const hasObjection = pending && reservation.objectionCount > 0;
+						const own = reservation.user.id === currentUser?.id;
+						const pending = reservation.validation.status === "Pending";
+						const hasObjection = pending && Boolean(reservation.objection);
 						return (
 							<Box
 								component="button"
@@ -130,7 +131,7 @@ export function DayCell({ day, currentMonth, reservations, currentUser, onSelect
 								}}
 							>
 								{pending ? "⏳ " : ""}
-								{format(parseISO(reservation.startDate), "HH:mm")} {reservation.userDisplayName}
+								{format(parseISO(reservation.startDate), "HH:mm")} {reservation.user.displayName}
 							</Box>
 						);
 					})}

@@ -1,4 +1,4 @@
-import type { DirectoryUser } from "@/types/models";
+import type { DirectoryUser } from "@apis/rest/api/generated";
 
 export type UsersState = {
 	byId: Record<string, DirectoryUser>;

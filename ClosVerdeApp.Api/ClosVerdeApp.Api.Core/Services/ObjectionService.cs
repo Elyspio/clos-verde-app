@@ -1,12 +1,12 @@
 using ClosVerdeApp.Api.Abstractions.Common.Extensions;
 using ClosVerdeApp.Api.Abstractions.Common.Helpers;
-using ClosVerdeApp.Api.Abstractions.Common.Technical.Tracing;
 using ClosVerdeApp.Api.Abstractions.Exceptions;
 using ClosVerdeApp.Api.Abstractions.Interfaces.Repositories;
 using ClosVerdeApp.Api.Abstractions.Interfaces.Services;
 using ClosVerdeApp.Api.Abstractions.Models.Entities;
 using ClosVerdeApp.Api.Abstractions.Models.Entities.Enums;
 using ClosVerdeApp.Api.Abstractions.Models.Transports;
+using Elyspio.Utils.Telemetry.Tracing.Elements;
 using Microsoft.Extensions.Logging;
 
 namespace ClosVerdeApp.Api.Core.Services;
@@ -18,7 +18,6 @@ namespace ClosVerdeApp.Api.Core.Services;
 /// </summary>
 public class ObjectionService(
 	IReservationRepository reservationRepository,
-	IObjectionRepository objectionRepository,
 	ITopicRepository topicRepository,
 	IMessageService messageService,
 	IReservationRealtimePublisher reservationRealtimePublisher,
@@ -28,32 +27,32 @@ public class ObjectionService(
 {
 	public async Task<Objection> Object(Guid reservationId, Guid currentUserId, string currentDisplayName, string? reason)
 	{
-		using var _ = LogService($"{Log.F(reservationId)} {Log.F(currentUserId)}");
+		using var logger = LogService($"{Log.F(reservationId)} {Log.F(currentUserId)}");
 
 		var reservation = await reservationRepository.GetById(reservationId)
 			?? throw new HttpException.NotFound<ReservationEntity>(reservationId);
 
-		if (reservation.UserId == currentUserId)
+		if (reservation.User.Id == currentUserId)
 			throw new HttpException.Forbidden("Vous ne pouvez pas vous opposer à votre propre réservation.");
 
-		if (reservation.Status != ReservationStatus.Pending)
+		if (reservation.Validation.Status != ReservationStatus.Pending)
 			throw new HttpException.Conflict("Cette réservation n'est plus en attente de validation.");
 
-		if (DateTime.UtcNow >= reservation.ValidationDeadline)
+		if (DateTime.UtcNow >= reservation.Validation.Deadline)
 			throw new HttpException.Conflict("Le délai pour s'opposer est dépassé.");
 
-		var inserted = await objectionRepository.TryAdd(reservationId, currentUserId, currentDisplayName, reason);
-		if (inserted is null)
-			throw new HttpException.Conflict("Vous avez déjà soulevé une objection sur cette réservation.");
+		if (reservation.Objection is not null)
+			throw new HttpException.Conflict("Une objection est déjà en cours sur cette réservation.");
 
-		var bumped = await reservationRepository.TryIncrementObjectionCount(reservationId);
-		if (!bumped)
+		var objection = new ReservationObjectionEntity
 		{
-			// Reservation moved away from Pending in a race — remove only the row we just inserted,
-			// not every objection on the reservation.
-			await objectionRepository.RemoveByReservationAndUser(reservationId, currentUserId);
-			throw new HttpException.Conflict("La réservation a changé d'état entre-temps.");
-		}
+			User = new ReservationUserRef { Id = currentUserId, DisplayName = currentDisplayName },
+			Reason = string.IsNullOrWhiteSpace(reason) ? null : reason.Trim()
+		};
+
+		var inserted = await reservationRepository.TrySetObjection(reservationId, objection);
+		if (!inserted)
+			throw new HttpException.Conflict("Une objection est déjà en cours ou la réservation a changé d'état entre-temps.");
 
 		// Lazy-create topic for the discussion.
 		var topicId = await EnsureReservationTopic(reservation, currentDisplayName);
@@ -70,7 +69,7 @@ public class ObjectionService(
 			await reservationRealtimePublisher.PublishUpdated(transport);
 		}
 
-		return ToObjectionTransport(inserted);
+		return ToObjectionTransport(reservationId, objection);
 	}
 
 	private async Task<Guid> EnsureReservationTopic(ReservationEntity reservation, string displayName)
@@ -117,7 +116,7 @@ public class ObjectionService(
 	private static string BuildTopicName(ReservationEntity reservation)
 	{
 		var localStart = reservation.StartDate.ToLocalTime();
-		return $"Réservation du {localStart:dd/MM} par {reservation.UserDisplayName}";
+		return $"Réservation du {localStart:dd/MM} par {reservation.User.DisplayName}";
 	}
 
 	private static string BuildObjectionMessageHtml(string author, string? reason)
@@ -133,26 +132,30 @@ public class ObjectionService(
 	private static Reservation ToReservationTransport(ReservationEntity e) => new()
 	{
 		Id = e.Id.AsGuid(),
-		UserId = e.UserId,
-		UserDisplayName = e.UserDisplayName,
+		User = new UserRef { Id = e.User.Id, DisplayName = e.User.DisplayName },
 		StartDate = e.StartDate,
 		EndDate = e.EndDate,
 		Note = e.Note,
 		CreatedAt = e.CreatedAt,
-		Status = e.Status,
-		ValidationDeadline = e.ValidationDeadline,
+		Validation = new ReservationValidationDto
+		{
+			Status = e.Validation.Status,
+			Deadline = e.Validation.Deadline,
+			ValidatedAt = e.Validation.ValidatedAt,
+			CancelledAt = e.Validation.CancelledAt,
+		},
 		TopicId = e.TopicId,
-		ObjectionCount = e.ObjectionCount,
-		ValidatedAt = e.ValidatedAt,
-		CancelledAt = e.CancelledAt
+		Objection = ToObjectionTransport(e),
 	};
 
-	private static Objection ToObjectionTransport(ObjectionEntity e) => new()
+	private static Objection? ToObjectionTransport(ReservationEntity e) =>
+		e.Objection is null ? null : ToObjectionTransport(e.Id.AsGuid(), e.Objection);
+
+	private static Objection ToObjectionTransport(Guid reservationId, ReservationObjectionEntity e) => new()
 	{
 		Id = e.Id.AsGuid(),
-		ReservationId = e.ReservationId,
-		UserId = e.UserId,
-		UserDisplayName = e.UserDisplayName,
+		ReservationId = reservationId,
+		User = new UserRef { Id = e.User.Id, DisplayName = e.User.DisplayName },
 		Reason = e.Reason,
 		CreatedAt = e.CreatedAt
 	};

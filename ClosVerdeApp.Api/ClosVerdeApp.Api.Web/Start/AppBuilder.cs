@@ -21,6 +21,7 @@ public sealed class AppBuilder
 		var builder = WebApplication.CreateBuilder(args);
 
 		builder.Configuration.AddJsonFile("appsettings.docker.json", true, true);
+		builder.Configuration.AddJsonFile("appsettings.secrets.json", true, true);
 
 		builder.AddLogging();
 		builder.AddServiceDefaults();
@@ -32,12 +33,12 @@ public sealed class AppBuilder
 
 		builder.Services.Configure<ReservationOptions>(builder.Configuration.GetSection(ReservationOptions.SectionName));
 		builder.Services.Configure<KeycloakAdminOptions>(builder.Configuration.GetSection(KeycloakAdminOptions.SectionName));
+		builder.Services.Configure<PushNotificationOptions>(builder.Configuration.GetSection(PushNotificationOptions.SectionName));
 
 		// Backs the user-directory cache (populates @mention candidates) and the Keycloak admin
 		// access-token cache used by the REST adapter.
 		builder.Services.AddMemoryCache();
 
-		builder.Services.AddHostedService<ReservationStatusBackfill>();
 		builder.Services.AddHostedService<TopicSeeder>();
 		builder.Services.AddHostedService<ReservationValidationScanner>();
 
@@ -54,12 +55,16 @@ public sealed class AppBuilder
 		// `OnTokenValidated`, which is the authoritative binding for this realm. If the realm
 		// configuration ever changes to issue a proper resource audience, switch back to
 		// `ValidateAudience = true` with `ValidAudience` set to the resource id.
+		// In Development the local Aspire Keycloak runs on plain HTTP; relaxing this lets the issuer
+		// metadata be fetched without a self-signed cert. Production keeps the strict default.
+		var requireHttpsMetadata = !builder.Environment.IsDevelopment();
+
 		builder.Services
 			.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 			.AddJwtBearer(opts =>
 			{
 				opts.Authority = authority;
-				opts.RequireHttpsMetadata = true;
+				opts.RequireHttpsMetadata = requireHttpsMetadata;
 				opts.MapInboundClaims = false;
 				opts.TokenValidationParameters = new TokenValidationParameters
 				{

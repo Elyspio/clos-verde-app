@@ -5,6 +5,7 @@ using ClosVerdeApp.Api.Abstractions.Models.Entities;
 using ClosVerdeApp.Api.Adapters.Mongo.Repositories.Base;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using MongoDB.Bson;
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
 
@@ -14,26 +15,29 @@ internal class MessageRepository : BaseRepository<MessageEntity>, IMessageReposi
 {
 	public MessageRepository(IConfiguration configuration, ILogger<BaseRepository<MessageEntity>> logger) : base(configuration, logger)
 	{
-		CreateIndexIfMissing(new[] { nameof(MessageEntity.TopicId), nameof(MessageEntity.CreatedAt) });
-		CreateIndexIfMissing(new[] { nameof(MessageEntity.AuthorUserId) });
+		CreateIndexIfMissing([nameof(MessageEntity.TopicId), "_id"]);
+		CreateIndexIfMissing([nameof(MessageEntity.AuthorUserId)]);
 	}
 
 	public async Task<List<MessageEntity>> GetByTopic(Guid topicId, DateTime? before, int limit)
 	{
-		using var _ = LogAdapter($"{Log.F(topicId)} {Log.F(before)} {Log.F(limit)}");
+		using var logger = LogAdapter($"{Log.F(topicId)} {Log.F(before)} {Log.F(limit)}");
 		var q = EntityCollection.AsQueryable().Where(m => m.TopicId == topicId);
 		if (before.HasValue)
-			q = q.Where(m => m.CreatedAt < before.Value);
+		{
+			var beforeId = ToObjectIdLowerBound(before.Value);
+			q = q.Where(m => m.Id < beforeId);
+		}
 
 		// Take last `limit`, but ordered ascending for display.
-		var page = await q.OrderByDescending(m => m.CreatedAt).Take(limit).ToListAsync();
+		var page = await q.OrderByDescending(m => m.Id).Take(limit).ToListAsync();
 		page.Reverse();
 		return page;
 	}
 
 	public async Task<MessageEntity?> GetById(Guid id)
 	{
-		using var _ = LogAdapter($"{Log.F(id)}");
+		using var logger = LogAdapter($"{Log.F(id)}");
 		var oid = id.AsObjectId();
 		return await EntityCollection.AsQueryable().FirstOrDefaultAsync(m => m.Id == oid);
 	}
@@ -46,7 +50,7 @@ internal class MessageRepository : BaseRepository<MessageEntity>, IMessageReposi
 		List<Guid> mentions,
 		bool isSystem)
 	{
-		using var _ = LogAdapter($"{Log.F(topicId)} {Log.F(authorUserId)}");
+		using var logger = LogAdapter($"{Log.F(topicId)} {Log.F(authorUserId)}");
 
 		var entity = new MessageEntity
 		{
@@ -54,8 +58,7 @@ internal class MessageRepository : BaseRepository<MessageEntity>, IMessageReposi
 			AuthorUserId = authorUserId,
 			AuthorDisplayName = authorDisplayName,
 			ContentHtml = contentHtml,
-			Mentions = mentions ?? new List<Guid>(),
-			CreatedAt = DateTime.UtcNow,
+			Mentions = mentions ?? [],
 			IsSystem = isSystem
 		};
 
@@ -65,11 +68,11 @@ internal class MessageRepository : BaseRepository<MessageEntity>, IMessageReposi
 
 	public async Task<MessageEntity?> Update(Guid id, string contentHtml, List<Guid> mentions)
 	{
-		using var _ = LogAdapter($"{Log.F(id)}");
+		using var logger = LogAdapter($"{Log.F(id)}");
 		var oid = id.AsObjectId();
 		var update = Builders<MessageEntity>.Update
 			.Set(m => m.ContentHtml, contentHtml)
-			.Set(m => m.Mentions, mentions ?? new List<Guid>())
+			.Set(m => m.Mentions, mentions ?? [])
 			.Set(m => m.EditedAt, DateTime.UtcNow);
 
 		return await EntityCollection.FindOneAndUpdateAsync(
@@ -80,12 +83,12 @@ internal class MessageRepository : BaseRepository<MessageEntity>, IMessageReposi
 
 	public async Task<MessageEntity?> SoftDelete(Guid id)
 	{
-		using var _ = LogAdapter($"{Log.F(id)}");
+		using var logger = LogAdapter($"{Log.F(id)}");
 		var oid = id.AsObjectId();
 		var update = Builders<MessageEntity>.Update
 			.Set(m => m.IsDeleted, true)
 			.Set(m => m.ContentHtml, string.Empty)
-			.Set(m => m.Mentions, new List<Guid>())
+			.Set(m => m.Mentions, [])
 			.Set(m => m.EditedAt, DateTime.UtcNow);
 
 		return await EntityCollection.FindOneAndUpdateAsync(
@@ -96,16 +99,35 @@ internal class MessageRepository : BaseRepository<MessageEntity>, IMessageReposi
 
 	public async Task DeleteByTopic(Guid topicId)
 	{
-		using var _ = LogAdapter($"{Log.F(topicId)}");
+		using var logger = LogAdapter($"{Log.F(topicId)}");
 		await EntityCollection.DeleteManyAsync(m => m.TopicId == topicId);
 	}
 
 	public async Task<int> CountAfter(Guid topicId, DateTime after, Guid excludeAuthorId)
 	{
-		using var _ = LogAdapter($"{Log.F(topicId)} {Log.F(after)}");
+		using var logger = LogAdapter($"{Log.F(topicId)} {Log.F(after)}");
+		var afterId = ToObjectIdLowerBound(after);
 		var count = await EntityCollection.AsQueryable()
-			.Where(m => m.TopicId == topicId && m.CreatedAt > after && m.AuthorUserId != excludeAuthorId && !m.IsDeleted)
+			.Where(m => m.TopicId == topicId && m.Id > afterId && m.AuthorUserId != excludeAuthorId && !m.IsDeleted)
 			.CountAsync();
 		return (int)count;
+	}
+
+	private static ObjectId ToObjectIdLowerBound(DateTime value)
+	{
+		var utc = value.AsUtc();
+		return utc <= DateTime.UnixEpoch ? ObjectId.Empty : ObjectId.GenerateNewId(utc);
+	}
+
+	public async Task<List<Guid>> GetEngagedTopicIds(Guid userId)
+	{
+		using var logger = LogAdapter($"{Log.F(userId)}");
+		var filter = Builders<MessageEntity>.Filter.And(
+			Builders<MessageEntity>.Filter.Eq(m => m.IsDeleted, false),
+			Builders<MessageEntity>.Filter.Or(
+				Builders<MessageEntity>.Filter.Eq(m => m.AuthorUserId, userId),
+				Builders<MessageEntity>.Filter.AnyEq(m => m.Mentions, userId)));
+
+		return await EntityCollection.Distinct(m => m.TopicId, filter).ToListAsync();
 	}
 }

@@ -1,4 +1,4 @@
-import type { Message } from "@/types/models";
+import type { Message } from "@apis/rest/api/generated";
 import type { MessagesState } from "./messages.types";
 
 export { messageCreated, messageUpdated, messageDeleted, topicCleared } from "./messages.reducer";
