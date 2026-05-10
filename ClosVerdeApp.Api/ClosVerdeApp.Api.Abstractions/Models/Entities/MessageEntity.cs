@@ -1,4 +1,5 @@
 using ClosVerdeApp.Api.Abstractions.Interfaces.Business;
+using ClosVerdeApp.Api.Abstractions.Common.Extensions;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 
@@ -25,9 +26,10 @@ public class MessageEntity : IEntity
 	public string ContentHtml { get; set; } = string.Empty;
 
 	[BsonGuidRepresentation(GuidRepresentation.Standard)]
-	public List<Guid> Mentions { get; set; } = new();
+	public List<Guid> Mentions { get; set; } = [];
 
-	public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+	[BsonIgnore]
+	public DateTime CreatedAt => Id.GetCreatedAt();
 
 	public DateTime? EditedAt { get; set; }
 

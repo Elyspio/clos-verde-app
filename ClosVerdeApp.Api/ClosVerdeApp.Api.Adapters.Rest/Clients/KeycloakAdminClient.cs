@@ -71,7 +71,7 @@ public sealed class KeycloakAdminClient(
 	private static async Task<List<DirectoryUser>> ParseUsersAsync(HttpResponseMessage response, CancellationToken cancellationToken)
 	{
 		var raw = await response.Content.ReadFromJsonAsync<List<KeycloakUserDto>>(cancellationToken: cancellationToken)
-			?? new List<KeycloakUserDto>();
+			?? [];
 
 		var directory = new List<DirectoryUser>(raw.Count);
 		foreach (var u in raw)
@@ -110,15 +110,14 @@ public sealed class KeycloakAdminClient(
 			throw new InvalidOperationException("Keycloak:Admin:TokenEndpoint is not configured.");
 
 		var client = httpClientFactory.CreateClient(HttpClientName);
-		using var request = new HttpRequestMessage(HttpMethod.Post, opts.TokenEndpoint)
-		{
-			Content = new FormUrlEncodedContent(new[]
-			{
-				new KeyValuePair<string, string>("grant_type", "client_credentials"),
-				new KeyValuePair<string, string>("client_id", opts.ClientId),
-				new KeyValuePair<string, string>("client_secret", opts.ClientSecret)
-			})
-		};
+		
+		using var request = new HttpRequestMessage(HttpMethod.Post, opts.TokenEndpoint);
+		
+		request.Content = new FormUrlEncodedContent([
+			new KeyValuePair<string, string>("grant_type", "client_credentials"),
+			new KeyValuePair<string, string>("client_id", opts.ClientId),
+			new KeyValuePair<string, string>("client_secret", opts.ClientSecret)
+		]);
 
 		using var response = await client.SendAsync(request, cancellationToken);
 		response.EnsureSuccessStatusCode();

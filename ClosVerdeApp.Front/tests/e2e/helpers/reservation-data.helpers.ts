@@ -1,6 +1,6 @@
 import { addMonths, eachDayOfInterval, endOfMonth, isBefore, startOfMonth } from "date-fns";
 import type { APIRequestContext } from "@playwright/test";
-import type { CreateReservationRequest, Reservation } from "../../../src/core/api/generated";
+import type { CreateReservationRequest, Reservation } from "../../../src/core/apis/rest/api/generated";
 import { futureSearchStartDate } from "./date.helpers";
 
 function coversDay(reservation: Reservation, day: Date) {

@@ -25,4 +25,8 @@ public interface ITopicRepository
 
 	/// <summary>Decrements the visible MessageCount without touching LastMessageAt. Used on soft-delete.</summary>
 	Task DecrementMessageCount(Guid id);
+
+	Task MarkRead(Guid id, Guid userId, DateTime at);
+	Task Mute(Guid id, Guid userId);
+	Task Unmute(Guid id, Guid userId);
 }

@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="fr">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Clos Verde - Configuration API des notifications Web Push</title>
+	<style>
+		:root {
+			color-scheme: light;
+			--ink: #17202a;
+			--muted: #52606d;
+			--line: #d8dee4;
+			--surface: #ffffff;
+			--soft: #f6f8fa;
+			--accent: #2563eb;
+		}
+
+		body {
+			margin: 0;
+			background: var(--soft);
+			color: var(--ink);
+			font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+			line-height: 1.55;
+		}
+
+		main {
+			max-width: 960px;
+			margin: 0 auto;
+			padding: 48px 24px 72px;
+			background: var(--surface);
+			min-height: 100vh;
+			box-sizing: border-box;
+		}
+
+		h1, h2 {
+			line-height: 1.2;
+		}
+
+		h1 {
+			margin: 0 0 12px;
+			font-size: 2rem;
+		}
+
+		h2 {
+			margin-top: 36px;
+			padding-top: 24px;
+			border-top: 1px solid var(--line);
+			font-size: 1.35rem;
+		}
+
+		p, li {
+			color: var(--muted);
+		}
+
+		code {
+			background: var(--soft);
+			border: 1px solid var(--line);
+			border-radius: 6px;
+			padding: 0.1rem 0.3rem;
+			color: var(--ink);
+		}
+
+		pre {
+			overflow-x: auto;
+			background: #0f172a;
+			color: #e2e8f0;
+			border-radius: 8px;
+			padding: 16px;
+			line-height: 1.45;
+		}
+
+		pre code {
+			background: transparent;
+			border: 0;
+			padding: 0;
+			color: inherit;
+		}
+
+		table {
+			width: 100%;
+			border-collapse: collapse;
+			margin: 16px 0;
+		}
+
+		th, td {
+			border: 1px solid var(--line);
+			padding: 10px 12px;
+			text-align: left;
+			vertical-align: top;
+		}
+
+		th {
+			background: var(--soft);
+		}
+
+		.note {
+			border-left: 4px solid var(--accent);
+			background: #eff6ff;
+			padding: 12px 16px;
+			color: var(--ink);
+		}
+	</style>
+</head>
+<body>
+<main>
+	<h1>Configuration API des notifications Web Push</h1>
+	<p>
+		Cette page décrit la configuration côté API pour autoriser les notifications navigateur
+		quand un utilisateur est mentionné dans un sujet non muet ou quand une nouvelle réservation
+		est créée.
+	</p>
+
+	<h2>Principe</h2>
+	<p>
+		Le navigateur demande la permission via <code>requestNotificationPermission()</code>.
+		Si l'utilisateur accepte, le frontend crée un abonnement Push API et l'enregistre auprès de
+		l'API. L'API conserve cet abonnement par utilisateur et envoie ensuite les notifications via
+		Web Push, même quand le site n'est pas ouvert.
+	</p>
+
+	<h2>Variables API requises</h2>
+	<p>
+		La section de configuration s'appelle <code>PushNotifications</code>. En développement,
+		elle peut rester désactivée. En production, les trois valeurs VAPID doivent être définies.
+	</p>
+
+	<h2>Principe de fonctionnement de VAPID</h2>
+	<p>
+		VAPID signifie <em>Voluntary Application Server Identification</em>. C'est le mécanisme standard
+		qui permet à l'API Clos Verde de s'identifier auprès des services push des navigateurs
+		(Chrome/Edge, Firefox, Safari compatible Web Push) sans créer un compte fournisseur par
+		navigateur.
+	</p>
+	<p>
+		Le système repose sur une paire de clés asymétriques :
+	</p>
+	<ul>
+		<li>la <strong>clé publique</strong> est envoyée au frontend via <code>/api/notifications/vapid-public-key</code> ;</li>
+		<li>la <strong>clé privée</strong> reste uniquement côté API et sert à signer les envois Web Push.</li>
+	</ul>
+	<p>
+		Lorsque l'utilisateur clique sur <strong>Activer les notifications</strong>, le frontend demande
+		d'abord la permission navigateur. Si elle est accordée, il récupère la clé publique VAPID
+		de l'API et appelle <code>registration.pushManager.subscribe(...)</code>. Le navigateur crée alors
+		un abonnement contenant :
+	</p>
+	<ul>
+		<li>un <code>endpoint</code>, c'est-à-dire l'URL du service push du navigateur ;</li>
+		<li>une clé <code>p256dh</code>, utilisée pour chiffrer le contenu envoyé ;</li>
+		<li>un secret <code>auth</code>, utilisé par le protocole Web Push.</li>
+	</ul>
+	<p>
+		Cet abonnement est enregistré par l'API pour l'utilisateur connecté. Quand un événement doit
+		notifier l'utilisateur, l'API construit un petit payload JSON puis contacte l'<code>endpoint</code>
+		du navigateur. La librairie Web Push signe la requête avec la clé privée VAPID et ajoute un
+		JWT d'identification contenant notamment le <code>Subject</code>. Le service push vérifie cette
+		signature avec la clé publique associée à l'abonnement.
+	</p>
+	<p>
+		La clé privée VAPID n'est pas une clé de permission utilisateur. Elle prouve seulement que
+		l'API qui envoie la notification est bien le serveur applicatif qui a demandé l'abonnement.
+		La permission utilisateur reste gérée par le navigateur : si l'utilisateur refuse ou révoque
+		la permission, l'API ne peut pas forcer l'affichage d'une notification.
+	</p>
+	<p>
+		Le contenu de notification transite par le service push du navigateur, mais il est chiffré
+		avec les informations de l'abonnement. L'API ne doit tout de même envoyer que des données
+		courtes et non sensibles : titre, extrait, URL relative et tag de notification.
+	</p>
+
+	<table>
+		<thead>
+		<tr>
+			<th>Clé</th>
+			<th>Description</th>
+		</tr>
+		</thead>
+		<tbody>
+		<tr>
+			<td><code>PushNotifications:Enabled</code></td>
+			<td><code>true</code> pour activer l'exposition de la clé publique et l'envoi Web Push.</td>
+		</tr>
+		<tr>
+			<td><code>PushNotifications:Subject</code></td>
+			<td>Contact VAPID. Utiliser une URL ou une adresse email, par exemple <code>mailto:admin@example.com</code>.</td>
+		</tr>
+		<tr>
+			<td><code>PushNotifications:PublicKey</code></td>
+			<td>Clé publique VAPID retournée au frontend.</td>
+		</tr>
+		<tr>
+			<td><code>PushNotifications:PrivateKey</code></td>
+			<td>Clé privée VAPID utilisée uniquement par l'API. Ne jamais l'exposer au frontend.</td>
+		</tr>
+		</tbody>
+	</table>
+
+	<h2>Exemple appsettings</h2>
+	<pre><code>{
+  "PushNotifications": {
+    "Enabled": true,
+    "Subject": "mailto:admin@example.com",
+    "PublicKey": "B...",
+    "PrivateKey": "..."
+  }
+}</code></pre>
+
+	<h2>Exemple variables d'environnement</h2>
+	<p>
+		En conteneur ou en hébergement cloud, préférer les variables d'environnement afin de ne pas
+		commiter la clé privée.
+	</p>
+
+	<pre><code>PushNotifications__Enabled=true
+PushNotifications__Subject=mailto:admin@example.com
+PushNotifications__PublicKey=B...
+PushNotifications__PrivateKey=...</code></pre>
+
+	<h2>Endpoints utilisés par le frontend</h2>
+	<table>
+		<thead>
+		<tr>
+			<th>Méthode</th>
+			<th>Route</th>
+			<th>Rôle</th>
+		</tr>
+		</thead>
+		<tbody>
+		<tr>
+			<td><code>GET</code></td>
+			<td><code>/api/notifications/vapid-public-key</code></td>
+			<td>Retourne la clé publique VAPID si les notifications sont activées.</td>
+		</tr>
+		<tr>
+			<td><code>PUT</code></td>
+			<td><code>/api/notifications/push-subscription</code></td>
+			<td>Enregistre ou remplace l'abonnement Push API du navigateur pour l'utilisateur connecté.</td>
+		</tr>
+		<tr>
+			<td><code>DELETE</code></td>
+			<td><code>/api/notifications/push-subscription</code></td>
+			<td>Supprime l'abonnement du navigateur pour l'utilisateur connecté.</td>
+		</tr>
+		</tbody>
+	</table>
+
+	<h2>Générer des clés VAPID</h2>
+	<p>
+		Utiliser un générateur VAPID compatible Web Push. Exemple avec l'outil Node <code>web-push</code> :
+	</p>
+	<pre><code>npx web-push generate-vapid-keys</code></pre>
+	<p>
+		Copier la clé publique dans <code>PushNotifications:PublicKey</code> et la clé privée dans
+		<code>PushNotifications:PrivateKey</code>.
+	</p>
+
+	<h2>Checklist de déploiement</h2>
+	<ul>
+		<li>Servir le frontend en HTTPS. Les permissions navigateur et les service workers exigent un contexte sécurisé.</li>
+		<li>Configurer <code>PushNotifications:Enabled=true</code> sur l'API.</li>
+		<li>Configurer <code>Subject</code>, <code>PublicKey</code> et <code>PrivateKey</code>.</li>
+		<li>Vérifier que l'utilisateur est authentifié avant d'appeler les endpoints <code>/api/notifications/*</code>.</li>
+		<li>Vérifier que le service worker <code>/push-worker.js</code> est servi par le frontend.</li>
+		<li>Tester avec un message mentionnant l'utilisateur dans un topic non muet.</li>
+		<li>Tester avec une nouvelle réservation créée par un autre utilisateur.</li>
+	</ul>
+
+	<p class="note">
+		Si la configuration VAPID est absente ou désactivée, l'API ne fournit pas de clé publique et
+		le frontend ne peut pas créer d'abonnement Web Push. Les notifications en arrière-plan sont
+		alors indisponibles.
+	</p>
+</main>
+</body>
+</html>

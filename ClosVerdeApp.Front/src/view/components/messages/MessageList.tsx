@@ -3,7 +3,7 @@ import { Bolt, MoreHoriz } from "@mui/icons-material";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale/fr";
 import { memo, useCallback, useState } from "react";
-import type { Message } from "@/types/models";
+import type { Message } from "@apis/rest/api/generated";
 
 type Props = {
 	messages: readonly Message[];

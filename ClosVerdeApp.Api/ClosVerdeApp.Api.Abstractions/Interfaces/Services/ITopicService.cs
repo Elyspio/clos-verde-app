@@ -14,4 +14,10 @@ public interface ITopicService
 	Task<Topic> Rename(Guid topicId, string newName, Guid currentUserId);
 	Task Delete(Guid topicId, Guid currentUserId);
 	Task EnsureGlobalSeeded();
+
+	/// <summary>Topic ids the user is "subscribed by activity" — author of a message or @mentioned in one.</summary>
+	Task<List<Guid>> ListEngagedTopicIds(Guid currentUserId);
+
+	Task Mute(Guid topicId, Guid currentUserId);
+	Task Unmute(Guid topicId, Guid currentUserId);
 }

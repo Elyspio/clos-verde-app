@@ -1,12 +1,12 @@
 using ClosVerdeApp.Api.Abstractions.Common.Extensions;
 using ClosVerdeApp.Api.Abstractions.Common.Helpers;
-using ClosVerdeApp.Api.Abstractions.Common.Technical.Tracing;
 using ClosVerdeApp.Api.Abstractions.Exceptions;
 using ClosVerdeApp.Api.Abstractions.Interfaces.Repositories;
 using ClosVerdeApp.Api.Abstractions.Interfaces.Services;
 using ClosVerdeApp.Api.Abstractions.Models.Entities;
 using ClosVerdeApp.Api.Abstractions.Models.Transports;
 using ClosVerdeApp.Api.Core.Helpers;
+using Elyspio.Utils.Telemetry.Tracing.Elements;
 using Microsoft.Extensions.Logging;
 
 namespace ClosVerdeApp.Api.Core.Services;
@@ -18,14 +18,14 @@ namespace ClosVerdeApp.Api.Core.Services;
 public class MessageService(
 	IMessageRepository messageRepository,
 	ITopicRepository topicRepository,
-	IReadReceiptRepository readReceiptRepository,
 	IMessageRealtimePublisher messageRealtimePublisher,
+	IPushNotificationService pushNotificationService,
 	ILogger<MessageService> logger
 ) : TracingService(logger), IMessageService
 {
 	public async Task<List<Message>> List(Guid topicId, DateTime? before, int limit)
 	{
-		using var _ = LogService($"{Log.F(topicId)} {Log.F(before)} {Log.F(limit)}");
+		using var logger = LogService($"{Log.F(topicId)} {Log.F(before)} {Log.F(limit)}");
 
 		var topic = await topicRepository.GetById(topicId)
 			?? throw new HttpException.NotFound<TopicEntity>(topicId);
@@ -37,7 +37,7 @@ public class MessageService(
 
 	public async Task<Message> Post(Guid topicId, Guid authorUserId, string authorDisplayName, string contentHtml)
 	{
-		using var _ = LogService($"{Log.F(topicId)} {Log.F(authorUserId)}");
+		using var logger = LogService($"{Log.F(topicId)} {Log.F(authorUserId)}");
 
 		if (string.IsNullOrWhiteSpace(contentHtml))
 			throw new HttpException.BadRequest("Le message est vide.");
@@ -54,10 +54,11 @@ public class MessageService(
 		var entity = await messageRepository.Create(topic.Id.AsGuid(), authorUserId, authorDisplayName, sanitized, mentions, isSystem: false);
 
 		await topicRepository.BumpStatistics(topic.Id.AsGuid(), entity.CreatedAt, +1);
-		await readReceiptRepository.Upsert(authorUserId, topic.Id.AsGuid(), entity.CreatedAt);
+		await topicRepository.MarkRead(topic.Id.AsGuid(), authorUserId, entity.CreatedAt);
 
 		var message = ToTransport(entity);
 		await messageRealtimePublisher.PublishMessageCreated(message);
+		await pushNotificationService.NotifyMessageMention(message, topic);
 
 		// Push the updated topic so consumers can refresh LastMessageAt/MessageCount.
 		var refreshedTopic = await topicRepository.GetById(topic.Id.AsGuid());
@@ -69,13 +70,13 @@ public class MessageService(
 
 	public async Task<Message> PostSystem(Guid topicId, Guid actorUserId, string actorDisplayName, string contentHtml)
 	{
-		using var _ = LogService($"{Log.F(topicId)} {Log.F(actorUserId)}");
+		using var logger = LogService($"{Log.F(topicId)} {Log.F(actorUserId)}");
 
 		var topic = await topicRepository.GetById(topicId)
 			?? throw new HttpException.NotFound<TopicEntity>(topicId);
 
 		var sanitized = HtmlContentHelper.Sanitize(contentHtml);
-		var entity = await messageRepository.Create(topic.Id.AsGuid(), actorUserId, actorDisplayName, sanitized, new List<Guid>(), isSystem: true);
+		var entity = await messageRepository.Create(topic.Id.AsGuid(), actorUserId, actorDisplayName, sanitized, [], isSystem: true);
 
 		await topicRepository.BumpStatistics(topic.Id.AsGuid(), entity.CreatedAt, +1);
 
@@ -91,7 +92,7 @@ public class MessageService(
 
 	public async Task<Message> Edit(Guid messageId, Guid currentUserId, string contentHtml)
 	{
-		using var _ = LogService($"{Log.F(messageId)} {Log.F(currentUserId)}");
+		using var logger = LogService($"{Log.F(messageId)} {Log.F(currentUserId)}");
 
 		var existing = await messageRepository.GetById(messageId)
 			?? throw new HttpException.NotFound<MessageEntity>(messageId);
@@ -117,7 +118,7 @@ public class MessageService(
 
 	public async Task<Message> SoftDelete(Guid messageId, Guid currentUserId)
 	{
-		using var _ = LogService($"{Log.F(messageId)} {Log.F(currentUserId)}");
+		using var logger = LogService($"{Log.F(messageId)} {Log.F(currentUserId)}");
 
 		var existing = await messageRepository.GetById(messageId)
 			?? throw new HttpException.NotFound<MessageEntity>(messageId);
@@ -142,13 +143,13 @@ public class MessageService(
 
 	public async Task<DateTime> MarkRead(Guid topicId, Guid currentUserId, DateTime? at)
 	{
-		using var _ = LogService($"{Log.F(topicId)} {Log.F(currentUserId)} {Log.F(at)}");
+		using var logger = LogService($"{Log.F(topicId)} {Log.F(currentUserId)} {Log.F(at)}");
 
 		var topic = await topicRepository.GetById(topicId)
 			?? throw new HttpException.NotFound<TopicEntity>(topicId);
 
 		var stamp = at ?? DateTime.UtcNow;
-		await readReceiptRepository.Upsert(currentUserId, topic.Id.AsGuid(), stamp);
+		await topicRepository.MarkRead(topic.Id.AsGuid(), currentUserId, stamp);
 		await messageRealtimePublisher.PublishReadReceiptUpdated(currentUserId, topic.Id.AsGuid(), stamp);
 		return stamp;
 	}

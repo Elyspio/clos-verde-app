@@ -1,5 +1,5 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import type { Message } from "@/types/models";
+import type { Message } from "@apis/rest/api/generated";
 import { deleteMessage, editMessage, fetchMessages, postMessage } from "./messages.async.actions";
 import type { MessagesState, TopicMessages } from "./messages.types";
 

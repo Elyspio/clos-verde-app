@@ -12,8 +12,7 @@ public interface IReservationRepository
 	Task<ReservationEntity?> GetById(Guid id);
 
 	Task<ReservationEntity> Create(
-		Guid userId,
-		string userDisplayName,
+		ReservationUserRef user,
 		DateTime start,
 		DateTime end,
 		string? note,
@@ -35,17 +34,14 @@ public interface IReservationRepository
 	/// <summary>Auto-cancel a Pending reservation whose start date has passed (creator never decided). Returns true if applied.</summary>
 	Task<bool> TryAutoCancel(Guid id, DateTime atUtc);
 
-	/// <summary>Increment objection count, only if status is still Pending.</summary>
-	Task<bool> TryIncrementObjectionCount(Guid id);
+	/// <summary>Set the single embedded objection, only if status is still Pending and no objection exists.</summary>
+	Task<bool> TrySetObjection(Guid id, ReservationObjectionEntity objection);
 
-	/// <summary>Reset objection count to zero. Used when the creator edits the reservation to clear stale objections.</summary>
-	Task ResetObjectionCount(Guid id);
+	/// <summary>Clear the embedded objection. Used when the creator edits the reservation to clear stale objections.</summary>
+	Task ClearObjection(Guid id);
 
 	/// <summary>Set TopicId only if currently null. Returns true on success.</summary>
 	Task<bool> TrySetTopicId(Guid id, Guid topicId);
-
-	/// <summary>Mass-migrate reservations created before the status field existed. Idempotent.</summary>
-	Task<long> BackfillLegacyAsValidated();
 
 	Task<bool> ExistsConflictingValidatedOrPending(DateTime start, DateTime end, Guid? excludeId);
 }

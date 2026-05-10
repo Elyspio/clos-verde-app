@@ -1,11 +1,11 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import { extractApiError } from "@/core/api/client";
-import { topicsApi } from "@/core/api/topics.api";
-import type { Topic, TopicListItem } from "@/types/models";
+import { extractApiError } from "@apis/rest/api/clients/api.client";
+import { topicsService } from "@/core/services/topics.service";
+import type { Topic, TopicListItem } from "@apis/rest/api/generated";
 
 export const fetchTopics = createAsyncThunk<TopicListItem[]>("topics/fetch", async (_, { rejectWithValue }) => {
 	try {
-		return await topicsApi.list();
+		return await topicsService.list();
 	} catch (e) {
 		return rejectWithValue(extractApiError(e));
 	}
@@ -13,7 +13,7 @@ export const fetchTopics = createAsyncThunk<TopicListItem[]>("topics/fetch", asy
 
 export const createTopic = createAsyncThunk<Topic, string>("topics/create", async (name, { rejectWithValue }) => {
 	try {
-		return await topicsApi.create(name);
+		return await topicsService.create(name);
 	} catch (e) {
 		return rejectWithValue(extractApiError(e, "Création impossible."));
 	}
@@ -21,7 +21,7 @@ export const createTopic = createAsyncThunk<Topic, string>("topics/create", asyn
 
 export const renameTopic = createAsyncThunk<Topic, { id: string; name: string }>("topics/rename", async ({ id, name }, { rejectWithValue }) => {
 	try {
-		return await topicsApi.rename(id, name);
+		return await topicsService.rename(id, name);
 	} catch (e) {
 		return rejectWithValue(extractApiError(e, "Renommage impossible."));
 	}
@@ -29,21 +29,17 @@ export const renameTopic = createAsyncThunk<Topic, { id: string; name: string }>
 
 export const deleteTopic = createAsyncThunk<string, string>("topics/delete", async (id, { rejectWithValue }) => {
 	try {
-		await topicsApi.remove(id);
+		await topicsService.remove(id);
 		return id;
 	} catch (e) {
 		return rejectWithValue(extractApiError(e, "Suppression impossible."));
 	}
 });
 
-export const markTopicRead = createAsyncThunk<{ topicId: string; lastReadAt: string }, { topicId: string; at?: string }>(
-	"topics/markRead",
-	async ({ topicId, at }, { rejectWithValue }) => {
-		try {
-			const res = await topicsApi.markRead(topicId, at);
-			return { topicId, lastReadAt: res.lastReadAt };
-		} catch (e) {
-			return rejectWithValue(extractApiError(e));
-		}
-	},
-);
+export const markTopicRead = createAsyncThunk<void, { topicId: string; at?: string }>("topics/markRead", async ({ topicId, at }, { rejectWithValue }) => {
+	try {
+		await topicsService.markRead(topicId, at);
+	} catch (e) {
+		return rejectWithValue(extractApiError(e));
+	}
+});

@@ -1,4 +1,4 @@
-import type { Message } from "@/types/models";
+import type { Message } from "@apis/rest/api/generated";
 
 export type TopicMessages = {
 	messages: Message[];

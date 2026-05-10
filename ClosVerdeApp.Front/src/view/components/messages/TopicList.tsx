@@ -5,7 +5,7 @@ import { NavLink } from "react-router-dom";
 import { useAppSelector } from "@/store";
 import { selectTopics } from "@/store/modules/topics/topics.actions";
 import { selectUnreadByTopic } from "@/store/modules/unread/unread.actions";
-import type { Topic } from "@/types/models";
+import type { Topic } from "@apis/rest/api/generated";
 import { NewTopicDialog } from "./NewTopicDialog";
 
 function Section({ title, topics }: { title: string; topics: Topic[] }) {

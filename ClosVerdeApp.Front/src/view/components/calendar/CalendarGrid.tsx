@@ -1,7 +1,8 @@
 import { Box, Typography } from "@mui/material";
 import { eachDayOfInterval, endOfMonth, endOfWeek, format, startOfMonth, startOfWeek } from "date-fns";
 import { fr } from "date-fns/locale/fr";
-import type { AuthUser, Reservation } from "@/types/models";
+import type { Reservation } from "@apis/rest/api/generated";
+import type { AuthUser } from "@/core/auth/auth.types";
 import { DayCell } from "./DayCell";
 
 type CalendarGridProps = {

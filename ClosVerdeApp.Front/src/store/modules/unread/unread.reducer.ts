@@ -1,6 +1,6 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import type { Message } from "@/types/models";
-import { fetchTopics, markTopicRead } from "@/store/modules/topics/topics.actions";
+import type { Message } from "@apis/rest/api/generated";
+import { fetchTopics } from "@/store/modules/topics/topics.actions";
 import type { UnreadState } from "./unread.types";
 
 const initialState: UnreadState = {
@@ -38,19 +38,14 @@ const slice = createSlice({
 		},
 	},
 	extraReducers: (builder) => {
-		builder
-			.addCase(fetchTopics.fulfilled, (state, action) => {
-				state.perTopic = {};
-				state.lastReadAt = {};
-				for (const item of action.payload) {
-					state.perTopic[item.topic.id] = item.unreadCount;
-					if (item.lastReadAt) state.lastReadAt[item.topic.id] = item.lastReadAt;
-				}
-			})
-			.addCase(markTopicRead.fulfilled, (state, action) => {
-				state.lastReadAt[action.payload.topicId] = action.payload.lastReadAt;
-				state.perTopic[action.payload.topicId] = 0;
-			});
+		builder.addCase(fetchTopics.fulfilled, (state, action) => {
+			state.perTopic = {};
+			state.lastReadAt = {};
+			for (const item of action.payload) {
+				state.perTopic[item.topic.id] = item.unreadCount;
+				if (item.lastReadAt) state.lastReadAt[item.topic.id] = item.lastReadAt;
+			}
+		});
 	},
 });
 

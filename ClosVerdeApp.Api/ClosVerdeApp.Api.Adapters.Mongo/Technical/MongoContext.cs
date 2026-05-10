@@ -2,7 +2,9 @@ using Microsoft.Extensions.Configuration;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Conventions;
+using MongoDB.Bson.Serialization.Serializers;
 using MongoDB.Driver;
+using Serilog;
 
 namespace ClosVerdeApp.Api.Adapters.Mongo.Technical;
 
@@ -21,6 +23,7 @@ public sealed class MongoContext
 		};
 		ConventionRegistry.Register("EnumStringConvention", pack, _ => true);
 		BsonSerializer.RegisterSerializationProvider(new EnumAsStringSerializationProvider());
+		BsonSerializer.RegisterSerializer(typeof(DateTime), new DateTimeSerializer(DateTimeKind.Utc, BsonType.DateTime));
 	}
 
 	/// <summary>
@@ -35,7 +38,9 @@ public sealed class MongoContext
 
 		var (client, url) = MongoClientFactory.Create(connectionString);
 
-		Console.WriteLine($"Connecting to Database '{url.Server.Host}:{url.Server.Port}/{url.DatabaseName}'");
+		var hosts = string.Join(",", url.Servers.Select(s => $"{s.Host}:{s.Port}"));
+		
+		Log.Logger.Information($"Connecting to Database '{hosts}/{url.DatabaseName}'");
 
 		MongoDatabase = client.GetDatabase(url.DatabaseName);
 	}

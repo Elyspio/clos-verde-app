@@ -1,12 +1,12 @@
 using ClosVerdeApp.Api.Abstractions.Common.Extensions;
 using ClosVerdeApp.Api.Abstractions.Common.Helpers;
-using ClosVerdeApp.Api.Abstractions.Common.Technical.Tracing;
 using ClosVerdeApp.Api.Abstractions.Exceptions;
 using ClosVerdeApp.Api.Abstractions.Interfaces.Repositories;
 using ClosVerdeApp.Api.Abstractions.Interfaces.Services;
 using ClosVerdeApp.Api.Abstractions.Models.Entities;
 using ClosVerdeApp.Api.Abstractions.Models.Entities.Enums;
 using ClosVerdeApp.Api.Abstractions.Models.Transports;
+using Elyspio.Utils.Telemetry.Tracing.Elements;
 using Microsoft.Extensions.Logging;
 
 namespace ClosVerdeApp.Api.Core.Services;
@@ -18,7 +18,6 @@ namespace ClosVerdeApp.Api.Core.Services;
 public class TopicService(
 	ITopicRepository topicRepository,
 	IMessageRepository messageRepository,
-	IReadReceiptRepository readReceiptRepository,
 	IMessageRealtimePublisher messageRealtimePublisher,
 	ILogger<TopicService> logger
 ) : TracingService(logger), ITopicService
@@ -27,19 +26,18 @@ public class TopicService(
 
 	public async Task<List<TopicListItem>> ListForUser(Guid currentUserId)
 	{
-		using var _ = LogService($"{Log.F(currentUserId)}");
+		using var logger = LogService($"{Log.F(currentUserId)}");
 
 		await EnsureGlobalSeeded();
 
 		var topics = await topicRepository.GetAll();
-		var receipts = (await readReceiptRepository.GetByUser(currentUserId))
-			.ToDictionary(r => r.TopicId, r => r.LastReadAt);
+		var userKey = UserKey(currentUserId);
 
 		var result = new List<TopicListItem>(topics.Count);
 		foreach (var t in topics)
 		{
 			var topicId = t.Id.AsGuid();
-			DateTime? lastReadAt = receipts.TryGetValue(topicId, out var at) ? at : null;
+			DateTime? lastReadAt = t.ReadReceipts.TryGetValue(userKey, out var at) ? at : null;
 
 			// Count visible messages from other users — use the same query whether or not a receipt
 			// exists; this excludes the current user's own messages and soft-deleted messages in both
@@ -50,6 +48,7 @@ public class TopicService(
 			{
 				Topic = ToTransport(t),
 				UnreadCount = unread,
+				IsMuted = t.Muted.TryGetValue(userKey, out var muted) && muted,
 				LastReadAt = lastReadAt
 			});
 		}
@@ -57,16 +56,35 @@ public class TopicService(
 		return result;
 	}
 
+	public async Task<List<Guid>> ListEngagedTopicIds(Guid currentUserId)
+	{
+		using var logger = LogService($"{Log.F(currentUserId)}");
+		return await messageRepository.GetEngagedTopicIds(currentUserId);
+	}
+
+	public async Task Mute(Guid topicId, Guid currentUserId)
+	{
+		using var logger = LogService($"{Log.F(topicId)} {Log.F(currentUserId)}");
+		_ = await topicRepository.GetById(topicId) ?? throw new HttpException.NotFound<TopicEntity>(topicId);
+		await topicRepository.Mute(topicId, currentUserId);
+	}
+
+	public async Task Unmute(Guid topicId, Guid currentUserId)
+	{
+		using var logger = LogService($"{Log.F(topicId)} {Log.F(currentUserId)}");
+		await topicRepository.Unmute(topicId, currentUserId);
+	}
+
 	public async Task<Topic> GetById(Guid id)
 	{
-		using var _ = LogService($"{Log.F(id)}");
+		using var logger = LogService($"{Log.F(id)}");
 		var t = await topicRepository.GetById(id) ?? throw new HttpException.NotFound<TopicEntity>(id);
 		return ToTransport(t);
 	}
 
 	public async Task<Topic> CreateCustom(string name, Guid currentUserId, string currentDisplayName)
 	{
-		using var _ = LogService($"{Log.F(currentUserId)} {Log.F(name)}");
+		using var logger = LogService($"{Log.F(currentUserId)} {Log.F(name)}");
 
 		if (string.IsNullOrWhiteSpace(name))
 			throw new HttpException.BadRequest("Le nom du salon est requis.");
@@ -79,7 +97,7 @@ public class TopicService(
 
 	public async Task<Topic> Rename(Guid topicId, string newName, Guid currentUserId)
 	{
-		using var _ = LogService($"{Log.F(topicId)} {Log.F(currentUserId)}");
+		using var logger = LogService($"{Log.F(topicId)} {Log.F(currentUserId)}");
 
 		if (string.IsNullOrWhiteSpace(newName))
 			throw new HttpException.BadRequest("Le nom du salon est requis.");
@@ -98,7 +116,7 @@ public class TopicService(
 
 	public async Task Delete(Guid topicId, Guid currentUserId)
 	{
-		using var _ = LogService($"{Log.F(topicId)} {Log.F(currentUserId)}");
+		using var logger = LogService($"{Log.F(topicId)} {Log.F(currentUserId)}");
 
 		var t = await topicRepository.GetById(topicId) ?? throw new HttpException.NotFound<TopicEntity>(topicId);
 		if (t.Kind != TopicKind.Custom)
@@ -107,7 +125,6 @@ public class TopicService(
 			throw new HttpException.Forbidden("Seul le créateur peut supprimer ce salon.");
 
 		await messageRepository.DeleteByTopic(topicId);
-		await readReceiptRepository.DeleteByTopic(topicId);
 		await topicRepository.Delete(topicId);
 		await messageRealtimePublisher.PublishTopicDeleted(topicId);
 	}
@@ -121,9 +138,9 @@ public class TopicService(
 		{
 			await topicRepository.Create(TopicKind.Global, GlobalTopicName, null, null, null);
 		}
-		catch
+		catch (Exception ex)
 		{
-			// concurrent seed; ignore
+			logger.LogDebug(ex, "Global topic seed skipped after concurrent create");
 		}
 	}
 
@@ -140,4 +157,6 @@ public class TopicService(
 		LastMessageAt = e.LastMessageAt,
 		MessageCount = e.MessageCount
 	};
+
+	private static string UserKey(Guid userId) => userId.ToString("D");
 }

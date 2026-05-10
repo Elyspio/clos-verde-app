@@ -1,6 +1,6 @@
 import type { Page } from "@playwright/test";
 import { parseISO } from "date-fns";
-import type { Reservation } from "../../../../src/core/api/generated";
+import type { Reservation } from "../../../../src/core/apis/rest/api/generated";
 import { expect, test } from "../../helpers/authenticated-test";
 import { calendarDayTestId, createRunId, monthsFromCurrentCalendar } from "../../helpers/date.helpers";
 import { cleanupReservations, findFreeFutureDay } from "../../helpers/reservation-data.helpers";
