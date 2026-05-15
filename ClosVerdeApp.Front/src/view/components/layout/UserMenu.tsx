@@ -2,13 +2,12 @@ import { Logout, Notifications } from "@mui/icons-material";
 import { Avatar, Box, IconButton, ListItemIcon, Menu, MenuItem, Tooltip, Typography } from "@mui/material";
 import { useState } from "react";
 import { useAuth } from "react-oidc-context";
-import { requestNotificationPermission } from "@/core/notifications/notifications";
-import { useAppSelector } from "@/store";
-import { selectPushNotificationStatus } from "@/store/modules/notifications/notifications.actions";
+import { useClientStore } from "@data/client/clientStore";
+import { notificationsSideEffects } from "@data/notifications/notifications.sideEffects";
 
 export function UserMenu() {
 	const auth = useAuth();
-	const pushStatus = useAppSelector(selectPushNotificationStatus);
+	const pushStatus = useClientStore((s) => s.pushStatus);
 	const [anchor, setAnchor] = useState<HTMLElement | null>(null);
 	const open = Boolean(anchor);
 	const profile = auth.user?.profile;
@@ -21,7 +20,7 @@ export function UserMenu() {
 	};
 
 	const handleEnableNotifications = () => {
-		void requestNotificationPermission();
+		void notificationsSideEffects.requestPermission();
 	};
 
 	return (

@@ -1,12 +1,11 @@
 import { Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, Stack, Typography } from "@mui/material";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAppDispatch } from "@/store";
 import { routes } from "@/config/routes";
-import { deleteReservation } from "@/store/modules/reservations/reservations.actions";
+import { useReservationsMutations } from "@data/reservations/reservations.mutations";
 import type { Reservation } from "@apis/rest/api/generated";
 import type { AuthUser } from "@/core/auth/auth.types";
-import { reservationDurationLabel, reservationPeriodLabel } from "./date-utils";
+import { reservationDurationLabel, reservationPeriodLabel } from "../../../utils/date.utils";
 import { PendingBadge } from "@/view/components/reservation/PendingBadge";
 import { CreatorDecisionPanel } from "@/view/components/reservation/CreatorDecisionPanel";
 import { ObjectionDialog } from "@/view/components/reservation/ObjectionDialog";
@@ -15,13 +14,12 @@ type DeleteReservationDialogProps = {
 	reservation: Reservation | null;
 	currentUser: AuthUser | null;
 	onClose: () => void;
-	onDeleted: () => void;
 };
 
-export function DeleteReservationDialog({ reservation, currentUser, onClose, onDeleted }: DeleteReservationDialogProps) {
-	const dispatch = useAppDispatch();
+export function DeleteReservationDialog({ reservation, currentUser, onClose }: DeleteReservationDialogProps) {
 	const navigate = useNavigate();
 	const [objecting, setObjecting] = useState<Reservation | null>(null);
+	const deleteMutation = useReservationsMutations.delete();
 
 	const isOwnReservation = Boolean(reservation && reservation.user.id === currentUser?.id);
 	const isPending = reservation?.validation.status === "Pending";
@@ -31,8 +29,7 @@ export function DeleteReservationDialog({ reservation, currentUser, onClose, onD
 
 	const handleConfirm = async () => {
 		if (!reservation) return;
-		await dispatch(deleteReservation(reservation.id));
-		onDeleted();
+		await deleteMutation.mutateAsync(reservation.id);
 		onClose();
 	};
 
@@ -50,7 +47,13 @@ export function DeleteReservationDialog({ reservation, currentUser, onClose, onD
 
 	return (
 		<>
-			<Dialog open={Boolean(reservation)} onClose={onClose} fullWidth maxWidth="sm">
+			<Dialog
+				open={Boolean(reservation)}
+				onClose={onClose}
+				fullWidth
+				maxWidth="sm"
+				PaperProps={{ ["data-testid" as string]: "reservation-dialog", ["data-reservation-id" as string]: reservation?.id }}
+			>
 				<DialogTitle sx={{ fontWeight: 800, fontSize: 26 }}>{isOwnReservation ? "Gérer la réservation" : "Détail de la réservation"}</DialogTitle>
 				{reservation && (
 					<DialogContent>
@@ -90,7 +93,7 @@ export function DeleteReservationDialog({ reservation, currentUser, onClose, onD
 							<Button onClick={onClose} variant="text">
 								Fermer
 							</Button>
-							<Button onClick={handleConfirm} variant="contained" color="primary">
+							<Button onClick={handleConfirm} variant="contained" color="primary" disabled={deleteMutation.isPending}>
 								{isPending ? "Annuler la réservation" : "Supprimer"}
 							</Button>
 						</>

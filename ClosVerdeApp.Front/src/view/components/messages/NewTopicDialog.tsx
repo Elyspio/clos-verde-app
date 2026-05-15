@@ -1,16 +1,15 @@
 import { Alert, Button, Dialog, DialogActions, DialogContent, DialogTitle, TextField } from "@mui/material";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAppDispatch } from "@/store";
-import { createTopic } from "@/store/modules/topics/topics.actions";
+import { useTopicsMutations } from "@data/topics/topics.mutations";
 
 /** Dialog to create a new Custom topic. The current user becomes its sole owner. */
 export function NewTopicDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
-	const dispatch = useAppDispatch();
 	const navigate = useNavigate();
+	const createMutation = useTopicsMutations.create();
 	const [name, setName] = useState("");
-	const [submitting, setSubmitting] = useState(false);
 	const [error, setError] = useState<string | null>(null);
+	const submitting = createMutation.isPending;
 
 	const handleClose = () => {
 		if (submitting) return;
@@ -21,16 +20,13 @@ export function NewTopicDialog({ open, onClose }: { open: boolean; onClose: () =
 
 	const handleSubmit = async () => {
 		if (!name.trim()) return;
-		setSubmitting(true);
 		setError(null);
 		try {
-			const topic = await dispatch(createTopic(name.trim())).unwrap();
+			const topic = await createMutation.mutateAsync(name.trim());
 			handleClose();
 			void navigate(`/messages/${topic.id}`);
 		} catch (e) {
-			setError(typeof e === "string" ? e : "Création impossible.");
-		} finally {
-			setSubmitting(false);
+			setError(e instanceof Error ? e.message : "Création impossible.");
 		}
 	};
 

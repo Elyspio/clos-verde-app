@@ -7,8 +7,7 @@ import Placeholder from "@tiptap/extension-placeholder";
 import Mention from "@tiptap/extension-mention";
 import type { Instance } from "tippy.js";
 import { useCallback, useEffect, useMemo, useRef } from "react";
-import { useAppSelector } from "@/store";
-import { selectUsers } from "@/store/modules/users/users.actions";
+import { useUsersQueries } from "@data/users/users.queries";
 import type { DirectoryUser } from "@apis/rest/api/generated";
 import { MentionList, type MentionListRef } from "./MentionList";
 
@@ -29,6 +28,8 @@ type Props = {
 	clearOnSubmit?: boolean;
 };
 
+const EMPTY_USERS: DirectoryUser[] = [];
+
 function deriveMentionables(users: DirectoryUser[]): Mentionable[] {
 	return users.map((u) => ({ id: u.id, label: u.displayName }));
 }
@@ -36,12 +37,12 @@ function deriveMentionables(users: DirectoryUser[]): Mentionable[] {
 /**
  * Tiptap-based WYSIWYG editor that emits sanitised HTML on submit. Includes basic
  * formatting, autolinks, and `@mention` of users sourced from the Keycloak realm
- * directory (Redux `users` slice, populated at session start).
+ * directory (cached via TanStack Query, populated lazily on first mount).
  * Used for both new messages (post mode) and message edits (edit mode with cancel).
  * <kbd>Cmd/Ctrl+Enter</kbd> sends.
  */
 export function MessageComposer({ onSubmit, disabled, initialHtml = "", submitLabel = "Envoyer", placeholder = "Écrivez un message…", onCancel, clearOnSubmit = true }: Props) {
-	const users = useAppSelector(selectUsers);
+	const { data: users = EMPTY_USERS } = useUsersQueries.list();
 	const mentionables = useMemo(() => deriveMentionables(users), [users]);
 
 	// Tiptap configures extensions once; ref keeps mentionables fresh without re-creating the editor.
@@ -140,7 +141,7 @@ export function MessageComposer({ onSubmit, disabled, initialHtml = "", submitLa
 					border: "1px solid var(--line)",
 					borderRadius: "12px",
 					bgcolor: "var(--surface)",
-					p: 1.25,
+					px: 1.25,
 					minHeight: 80,
 					"& .ProseMirror": { outline: "none", minHeight: 60, fontSize: 14 },
 					"& .ProseMirror p.is-editor-empty:first-child::before": {

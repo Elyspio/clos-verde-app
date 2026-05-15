@@ -1,3 +1,8 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using ClosVerdeApp.Api.Abstractions.Exceptions;
 using ClosVerdeApp.Api.Abstractions.Interfaces.Repositories;
 using ClosVerdeApp.Api.Abstractions.Interfaces.Services;
@@ -30,10 +35,12 @@ public class PushNotificationServiceTests
 		var transport = new RecordingPushTransport();
 		var sut = CreateService(repository, transport: transport);
 
+		var messageId = Guid.NewGuid();
+
 		await sut.NotifyMessageMention(
 			new Message
 			{
-				Id = Guid.NewGuid(),
+				Id = messageId,
 				TopicId = topicId,
 				AuthorUserId = authorId,
 				AuthorDisplayName = "Alice",
@@ -59,7 +66,7 @@ public class PushNotificationServiceTests
 		transport.Sent.Count.ShouldBe(1);
 		transport.Sent[0].Subscription.UserId.ShouldBe(recipientId);
 		transport.Sent[0].Payload.Type.ShouldBe("message-mention");
-		transport.Sent[0].Payload.Url.ShouldBe($"/messages/{topicId}");
+		transport.Sent[0].Payload.Url.ShouldBe($"/messages/{topicId}#message-{messageId}");
 	}
 
 	[Fact]
@@ -111,13 +118,16 @@ public class PushNotificationServiceTests
 			]),
 			transport);
 
+		var reservationId = Guid.NewGuid();
+		var startDate = new DateTime(2026, 7, 1, 10, 0, 0, DateTimeKind.Utc);
+
 		await sut.NotifyReservationCreated(
 			new Reservation
 			{
-				Id = Guid.NewGuid(),
+				Id = reservationId,
 				User = new UserRef { Id = creatorId, DisplayName = "Alice" },
-				StartDate = DateTime.UtcNow.AddDays(1),
-				EndDate = DateTime.UtcNow.AddDays(2),
+				StartDate = startDate,
+				EndDate = startDate.AddDays(1),
 				Note = null,
 				CreatedAt = DateTime.UtcNow,
 				Validation = new ReservationValidationDto { Status = ReservationStatus.Pending, Deadline = DateTime.UtcNow.AddHours(1) },
@@ -128,6 +138,7 @@ public class PushNotificationServiceTests
 
 		transport.Sent.Select(s => s.Subscription.UserId).ShouldBe([recipientId, otherRecipientId], ignoreOrder: true);
 		transport.Sent.ShouldAllBe(s => s.Payload.Type == "reservation-created");
+		transport.Sent.ShouldAllBe(s => s.Payload.Url == $"/calendrier?reservation={reservationId}&date=2026-07-01");
 	}
 
 	[Fact]

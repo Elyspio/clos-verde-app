@@ -36,7 +36,7 @@ public class PushNotificationService(
 			Type = "message-mention",
 			Title = $"{message.AuthorDisplayName} vous a mentionné",
 			Body = Truncate(StripHtml(message.ContentHtml), 140),
-			Url = $"/messages/{message.TopicId}",
+			Url = $"/messages/{message.TopicId}#message-{message.Id}",
 			Tag = $"message:{message.Id}"
 		};
 
@@ -61,7 +61,9 @@ public class PushNotificationService(
 			Type = "reservation-created",
 			Title = "Nouvelle réservation",
 			Body = $"{reservation.User.DisplayName} a créé une réservation.",
-			Url = "/calendrier",
+			// Embedding the start date lets the calendar jump to the right month even
+			// when the reservation isn't yet in the locally cached month query.
+			Url = $"/calendrier?reservation={reservation.Id}&date={reservation.StartDate:yyyy-MM-dd}",
 			Tag = $"reservation:{reservation.Id}"
 		};
 

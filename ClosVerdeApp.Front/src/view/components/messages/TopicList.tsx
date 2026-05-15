@@ -2,9 +2,8 @@ import { Add } from "@mui/icons-material";
 import { Badge, Box, Button, Stack, Typography } from "@mui/material";
 import { useState } from "react";
 import { NavLink } from "react-router-dom";
-import { useAppSelector } from "@/store";
-import { selectTopics } from "@/store/modules/topics/topics.actions";
-import { selectUnreadByTopic } from "@/store/modules/unread/unread.actions";
+import { useTopicsQueries } from "@data/topics/topics.queries";
+import { useUnreadQueries } from "@data/unread/unread.queries";
 import type { Topic } from "@apis/rest/api/generated";
 import { NewTopicDialog } from "./NewTopicDialog";
 
@@ -23,7 +22,7 @@ function Section({ title, topics }: { title: string; topics: Topic[] }) {
 }
 
 function TopicRow({ topic }: { topic: Topic }) {
-	const unread = useAppSelector((s) => selectUnreadByTopic(s, topic.id));
+	const unread = useUnreadQueries.byTopic(topic.id);
 	return (
 		<Box
 			component={NavLink}
@@ -61,7 +60,7 @@ function TopicRow({ topic }: { topic: Topic }) {
  * unread badges. The "+" button opens the new-topic dialog.
  */
 export function TopicList() {
-	const topics = useAppSelector(selectTopics);
+	const topics = useTopicsQueries.all();
 	const [creating, setCreating] = useState(false);
 
 	const global = topics.filter((t) => t.kind === "Global");

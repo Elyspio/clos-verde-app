@@ -2,12 +2,14 @@ import * as signalR from "@microsoft/signalr";
 import { baseURL } from "@apis/rest/api/clients/api.client";
 import type { ReservationChangedEvent } from "@apis/rest/api/generated";
 import { getAccessToken } from "@/core/auth/token";
-import { reservationCreated, reservationDeleted, reservationUpdated } from "@/store/modules/reservations/reservations.actions";
-import type { AppDispatch } from "@/store";
+
+export type ReservationsHubHandlers = {
+	onReservationChanged: (event: ReservationChangedEvent) => void;
+};
 
 let connection: signalR.HubConnection | null = null;
 
-function ensureConnection(dispatch: AppDispatch) {
+function ensureConnection(handlers: ReservationsHubHandlers) {
 	if (connection) return connection;
 
 	connection = new signalR.HubConnectionBuilder()
@@ -18,30 +20,18 @@ function ensureConnection(dispatch: AppDispatch) {
 		.configureLogging(signalR.LogLevel.Information)
 		.build();
 
-	connection.on("ReservationChanged", (change: ReservationChangedEvent) => {
-		switch (change.action) {
-			case "Created":
-				dispatch(reservationCreated(change.reservation));
-				break;
-			case "Updated":
-				dispatch(reservationUpdated(change.reservation));
-				break;
-			case "Deleted":
-				dispatch(reservationDeleted(change.reservation.id));
-				break;
-		}
-	});
+	connection.on("ReservationChanged", (change: ReservationChangedEvent) => handlers.onReservationChanged(change));
 
 	return connection;
 }
 
-export async function startReservationRealtime(dispatch: AppDispatch) {
-	const hub = ensureConnection(dispatch);
+export async function startReservationsHub(handlers: ReservationsHubHandlers) {
+	const hub = ensureConnection(handlers);
 	if (hub.state === signalR.HubConnectionState.Connected || hub.state === signalR.HubConnectionState.Connecting) return;
 	await hub.start();
 }
 
-export async function stopReservationRealtime() {
+export async function stopReservationsHub() {
 	if (!connection) return;
 	await connection.stop();
 	connection = null;

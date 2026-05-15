@@ -5,6 +5,14 @@ import { seedAuthenticatedSession } from "../../helpers/auth-session.helpers";
 import { e2eRootDir } from "../../config/load-private-env";
 
 test.describe("Auth guard", () => {
+	// These two tests must NOT inherit the global authenticated storageState from
+	// `playwright.config.ts` (which seeds Alice Martin). Otherwise:
+	// - `affiche la page de connexion` is bounced to `/calendrier` because the user is
+	//   already logged in.
+	// - `redirige / vers /calendrier avec une session simulée` ends up with two OIDC
+	//   users in localStorage, leading to flaky session resolution.
+	test.use({ storageState: { cookies: [], origins: [] } });
+
 	test("affiche la page de connexion", async ({ page }) => {
 		await page.goto("/login");
 

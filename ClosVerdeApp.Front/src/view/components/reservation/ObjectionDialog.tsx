@@ -1,7 +1,6 @@
 import { Alert, Button, Dialog, DialogActions, DialogContent, DialogTitle, Stack, TextField, Typography } from "@mui/material";
 import { useState } from "react";
-import { extractApiError } from "@apis/rest/api/clients/api.client";
-import { reservationsService } from "@/core/services/reservations.service";
+import { useReservationsMutations } from "@data/reservations/reservations.mutations";
 import type { Reservation } from "@apis/rest/api/generated";
 
 type Props = {
@@ -15,8 +14,9 @@ type Props = {
  */
 export function ObjectionDialog({ reservation, onClose }: Props) {
 	const [reason, setReason] = useState("");
-	const [submitting, setSubmitting] = useState(false);
 	const [error, setError] = useState<string | null>(null);
+	const objectionMutation = useReservationsMutations.createObjection();
+	const submitting = objectionMutation.isPending;
 
 	const open = !!reservation;
 
@@ -29,15 +29,12 @@ export function ObjectionDialog({ reservation, onClose }: Props) {
 
 	const handleSubmit = async () => {
 		if (!reservation) return;
-		setSubmitting(true);
 		setError(null);
 		try {
-			await reservationsService.createObjection(reservation.id, reason.trim() || undefined);
+			await objectionMutation.mutateAsync({ id: reservation.id, reason: reason.trim() || undefined });
 			handleClose();
 		} catch (e) {
-			setError(extractApiError(e, "Objection impossible."));
-		} finally {
-			setSubmitting(false);
+			setError(e instanceof Error ? e.message : "Objection impossible.");
 		}
 	};
 

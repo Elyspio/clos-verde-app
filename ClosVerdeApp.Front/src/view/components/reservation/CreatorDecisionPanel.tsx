@@ -2,8 +2,7 @@ import { Alert, Box, Button, Stack, Typography } from "@mui/material";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
-import { extractApiError } from "@apis/rest/api/clients/api.client";
-import { reservationsService } from "@/core/services/reservations.service";
+import { useReservationsMutations } from "@data/reservations/reservations.mutations";
 import type { Reservation } from "@apis/rest/api/generated";
 
 type Props = {
@@ -17,33 +16,29 @@ type Props = {
  */
 export function CreatorDecisionPanel({ reservation, onChanged }: Props) {
 	const navigate = useNavigate();
-	const [submitting, setSubmitting] = useState(false);
+	const validateMutation = useReservationsMutations.forceValidate();
+	const deleteMutation = useReservationsMutations.delete();
 	const [error, setError] = useState<string | null>(null);
+	const submitting = validateMutation.isPending || deleteMutation.isPending;
 	const objection = reservation.objection;
 
 	const validate = async () => {
-		setSubmitting(true);
 		setError(null);
 		try {
-			await reservationsService.forceValidate(reservation.id);
+			await validateMutation.mutateAsync(reservation.id);
 			onChanged?.();
 		} catch (e) {
-			setError(extractApiError(e, "Validation impossible."));
-		} finally {
-			setSubmitting(false);
+			setError(e instanceof Error ? e.message : "Validation impossible.");
 		}
 	};
 
 	const cancel = async () => {
-		setSubmitting(true);
 		setError(null);
 		try {
-			await reservationsService.remove(reservation.id);
+			await deleteMutation.mutateAsync(reservation.id);
 			onChanged?.();
 		} catch (e) {
-			setError(extractApiError(e, "Annulation impossible."));
-		} finally {
-			setSubmitting(false);
+			setError(e instanceof Error ? e.message : "Annulation impossible.");
 		}
 	};
 

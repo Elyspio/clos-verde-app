@@ -2,7 +2,7 @@ import { Avatar, Box, IconButton, Menu, MenuItem, Stack, Typography } from "@mui
 import { Bolt, MoreHoriz } from "@mui/icons-material";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale/fr";
-import { memo, useCallback, useState } from "react";
+import { memo, useCallback, useEffect, useRef, useState } from "react";
 import type { Message } from "@apis/rest/api/generated";
 
 type Props = {
@@ -12,7 +12,13 @@ type Props = {
 	onDelete: (message: Message) => void;
 	/** Highlight the message currently being edited (if any). */
 	editingMessageId?: string | null;
+	/** Message id to scroll to AND flash with an orange highlight (e.g. push notification click). */
+	highlightedMessageId?: string | null;
+	/** Message id to scroll to silently on first render (e.g. first unread on topic open). */
+	initialScrollMessageId?: string | null;
 };
+
+const HIGHLIGHT_DURATION_MS = 2500;
 
 function initialOf(name: string) {
 	return name.trim().slice(0, 1).toUpperCase() || "?";
@@ -40,22 +46,73 @@ const messageContentSx = {
  * HTML content. System messages get a distinct, muted styling. Edit/delete actions are
  * exposed to the author via an overflow menu.
  */
-function MessageListImpl({ messages, currentUserId, onEdit, onDelete, editingMessageId }: Props) {
+function MessageListImpl({ messages, currentUserId, onEdit, onDelete, editingMessageId, highlightedMessageId, initialScrollMessageId }: Props) {
 	const [anchorEl, setAnchorEl] = useState<null | { el: HTMLElement; message: Message }>(null);
 	const closeMenu = useCallback(() => setAnchorEl(null), []);
+
+	// Per-message DOM refs, keyed by message id. Using a Map (rather than a single ref) makes
+	// scroll/highlight robust across re-renders and across switches between targets.
+	const itemRefs = useRef(new Map<string, HTMLDivElement>());
+	const setItemRef = useCallback(
+		(id: string) => (el: HTMLDivElement | null) => {
+			if (el) itemRefs.current.set(id, el);
+			else itemRefs.current.delete(id);
+		},
+		[],
+	);
+
+	const [flashingId, setFlashingId] = useState<string | null>(null);
+	const initialScrollDoneRef = useRef<string | null>(null);
+
+	// Notification highlight: scroll + orange flash that fades out.
+	useEffect(() => {
+		if (!highlightedMessageId) return;
+		if (!messages.some((m) => m.id === highlightedMessageId)) return;
+		const node = itemRefs.current.get(highlightedMessageId);
+		if (!node) return;
+		// Defer one frame so layout is settled before scrolling (avoids jumping to a
+		// wrong position when this fires during the initial mount).
+		const raf = requestAnimationFrame(() => {
+			node.scrollIntoView({ block: "center", behavior: "smooth" });
+		});
+		setFlashingId(highlightedMessageId);
+		const t = window.setTimeout(() => setFlashingId(null), HIGHLIGHT_DURATION_MS);
+		return () => {
+			cancelAnimationFrame(raf);
+			window.clearTimeout(t);
+		};
+	}, [highlightedMessageId, messages]);
+
+	// Silent initial scroll to the first unread message (or last) when the topic opens.
+	// Runs once per `initialScrollMessageId` value; the notification highlight takes priority.
+	useEffect(() => {
+		if (highlightedMessageId) return;
+		if (!initialScrollMessageId) return;
+		if (initialScrollDoneRef.current === initialScrollMessageId) return;
+		const node = itemRefs.current.get(initialScrollMessageId);
+		if (!node) return;
+		initialScrollDoneRef.current = initialScrollMessageId;
+		const raf = requestAnimationFrame(() => {
+			node.scrollIntoView({ block: "center", behavior: "auto" });
+		});
+		return () => cancelAnimationFrame(raf);
+	}, [initialScrollMessageId, highlightedMessageId, messages]);
 
 	return (
 		<Stack data-testid="message-list" spacing={1.25} sx={{ p: { xs: 1, sm: 2 } }}>
 			{messages.map((m) => {
 				const isMe = !!currentUserId && m.authorUserId === currentUserId;
 				const isEditing = m.id === editingMessageId;
+				const isFlashing = m.id === flashingId;
 
 				if (m.isSystem) {
 					return (
 						<Stack
 							key={m.id}
+							ref={setItemRef(m.id)}
 							data-testid={`message-${m.id}`}
 							data-message-system="true"
+							data-message-highlighted={isFlashing ? "true" : undefined}
 							direction="row"
 							spacing={1}
 							alignItems="center"
@@ -65,9 +122,10 @@ function MessageListImpl({ messages, currentUserId, onEdit, onDelete, editingMes
 								px: 1.5,
 								py: 0.75,
 								borderRadius: 999,
-								bgcolor: "rgba(245, 158, 11, 0.10)",
+								bgcolor: isFlashing ? "rgba(245, 158, 11, 0.35)" : "rgba(245, 158, 11, 0.10)",
 								border: "1px solid rgba(245, 158, 11, 0.25)",
 								color: "#92400e",
+								transition: "background-color 400ms ease",
 							}}
 						>
 							<Bolt sx={{ fontSize: 14, opacity: 0.75 }} />
@@ -92,24 +150,30 @@ function MessageListImpl({ messages, currentUserId, onEdit, onDelete, editingMes
 				return (
 					<Stack
 						key={m.id}
+						ref={setItemRef(m.id)}
 						data-testid={`message-${m.id}`}
 						data-message-deleted={m.isDeleted ? "true" : undefined}
 						data-message-edited={m.editedAt && !m.isDeleted ? "true" : undefined}
-						direction="row"
+						data-message-mine={isMe ? "true" : undefined}
+						data-message-highlighted={isFlashing ? "true" : undefined}
+						direction={isMe ? "row-reverse" : "row"}
 						spacing={1.25}
 						alignItems="flex-start"
 						sx={{
-							p: isEditing ? 1 : 0,
-							ml: isEditing ? -1 : 0,
-							mr: isEditing ? -1 : 0,
+							alignSelf: isMe ? "flex-end" : "flex-start",
+							maxWidth: { xs: "92%", sm: "85%" },
+							p: isFlashing || isEditing ? 1 : 0,
+							ml: isFlashing || isEditing ? -1 : 0,
+							mr: isFlashing || isEditing ? -1 : 0,
 							borderRadius: 1.5,
-							bgcolor: isEditing ? "var(--surface-blue)" : "transparent",
-							transition: "background-color 160ms ease",
+							bgcolor: isFlashing ? "rgba(245, 158, 11, 0.30)" : isEditing ? "var(--surface-blue)" : "transparent",
+							boxShadow: isFlashing ? "0 0 0 2px rgba(245, 158, 11, 0.55)" : "none",
+							transition: "background-color 400ms ease, box-shadow 400ms ease",
 						}}
 					>
 						<Avatar sx={{ width: 32, height: 32, fontSize: 13, bgcolor: isMe ? "var(--primary-blue)" : "var(--mint)" }}>{initialOf(m.authorDisplayName)}</Avatar>
 						<Box sx={{ flex: 1, minWidth: 0 }}>
-							<Stack direction="row" spacing={1} alignItems="baseline" sx={{ mb: 0.25 }}>
+							<Stack direction={isMe ? "row-reverse" : "row"} spacing={1} alignItems="baseline" sx={{ mb: 0.25 }}>
 								<Typography sx={{ fontWeight: 700, fontSize: 13 }}>{m.authorDisplayName}</Typography>
 								<Typography sx={{ fontSize: 11, color: "var(--ink-mute)" }}>
 									{format(new Date(m.createdAt), "dd/MM HH:mm", { locale: fr })}
@@ -120,7 +184,7 @@ function MessageListImpl({ messages, currentUserId, onEdit, onDelete, editingMes
 										data-testid={`message-actions-${m.id}`}
 										size="small"
 										onClick={(e) => setAnchorEl({ el: e.currentTarget, message: m })}
-										sx={{ ml: "auto" }}
+										sx={{ mr: "auto" }}
 										aria-label="Actions sur ce message"
 									>
 										<MoreHoriz fontSize="inherit" />
@@ -128,9 +192,13 @@ function MessageListImpl({ messages, currentUserId, onEdit, onDelete, editingMes
 								)}
 							</Stack>
 							{m.isDeleted ? (
-								<Typography sx={{ fontStyle: "italic", color: "var(--ink-mute)", fontSize: 13 }}>Message supprimé</Typography>
+								<Typography sx={{ fontStyle: "italic", color: "var(--ink-mute)", fontSize: 13, textAlign: isMe ? "right" : "left" }}>Message supprimé</Typography>
 							) : (
-								<Box className="message-content" sx={messageContentSx} dangerouslySetInnerHTML={{ __html: m.contentHtml }} />
+								<Box
+									className="message-content"
+									sx={{ ...messageContentSx, textAlign: isMe ? "right" : "left" }}
+									dangerouslySetInnerHTML={{ __html: m.contentHtml }}
+								/>
 							)}
 						</Box>
 					</Stack>

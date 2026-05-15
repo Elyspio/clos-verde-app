@@ -1,13 +1,13 @@
 import { Alert, Box, Button, CircularProgress, Stack, Typography } from "@mui/material";
 import { DeleteOutline, Edit, NotificationsActive, NotificationsOff } from "@mui/icons-material";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "react-oidc-context";
 import { useNavigate, useParams } from "react-router-dom";
-import { useAppDispatch, useAppSelector } from "@/store";
-import { fetchMessages, postMessage, editMessage, deleteMessage, selectMessages, selectMessagesStatus } from "@/store/modules/messages/messages.actions";
-import { selectTopicById, deleteTopic, renameTopic, markTopicRead } from "@/store/modules/topics/topics.actions";
-import { muteTopic, selectIsTopicMuted, unmuteTopic } from "@/store/modules/notifications/notifications.actions";
-import { setFocusedTopic } from "@/store/modules/unread/unread.actions";
+import { useClientStore } from "@data/client/clientStore";
+import { useMessagesQueries } from "@data/messages/messages.queries";
+import { useMessagesMutations } from "@data/messages/messages.mutations";
+import { useTopicsQueries } from "@data/topics/topics.queries";
+import { useTopicsMutations } from "@data/topics/topics.mutations";
 import type { Message } from "@apis/rest/api/generated";
 import { MessageComposer } from "./MessageComposer";
 import { MessageList } from "./MessageList";
@@ -20,50 +20,85 @@ import { ConfirmDeleteTopicDialog } from "./ConfirmDeleteTopicDialog";
  */
 export function TopicView() {
 	const { topicId } = useParams<{ topicId: string }>();
-	const dispatch = useAppDispatch();
 	const auth = useAuth();
 	const navigate = useNavigate();
-	const topic = useAppSelector((s) => selectTopicById(s, topicId));
-	const messages = useAppSelector((s) => selectMessages(s, topicId));
-	const status = useAppSelector((s) => selectMessagesStatus(s, topicId));
-	const isMuted = useAppSelector((s) => selectIsTopicMuted(s, topicId));
+	const hash = useUrlHash();
+	const highlightedMessageId = useMemo(() => {
+		const match = /^#message-(.+)$/.exec(hash);
+		return match ? match[1] : null;
+	}, [hash]);
+	const topic = useTopicsQueries.byId(topicId);
+	const topicDetails = useTopicsQueries.details(topicId);
+	const { messages, isLoading } = useMessagesQueries.list(topicId);
+	const isMuted = useTopicsQueries.isMuted(topicId);
 	const userId = auth.user?.profile?.sub;
 	const lastMarkedReadRef = useRef<{ topicId: string | null; at: string | null }>({ topicId: null, at: null });
+	// Captured *before* auto-markRead runs so the initial scroll target reflects the user's
+	// real last-read position. Stored as state (not a ref) so React re-renders downstream
+	// memos when capture lands on a render where messages had not yet loaded.
+	const [capturedLastReadAt, setCapturedLastReadAt] = useState<{ topicId: string; at: string | null } | null>(null);
 	const [editingMessage, setEditingMessage] = useState<Message | null>(null);
 	const [renameOpen, setRenameOpen] = useState(false);
 	const [deleteOpen, setDeleteOpen] = useState(false);
 
+	const initialScrollMessageId = useMemo(() => {
+		if (highlightedMessageId) return null; // notification takes precedence
+		if (!topicId || messages.length === 0) return null;
+		if (capturedLastReadAt?.topicId !== topicId) return null;
+		const lastReadAt = capturedLastReadAt.at;
+		if (!lastReadAt) return messages[messages.length - 1].id; // never visited → bottom
+		const firstUnread = messages.find((m) => new Date(m.createdAt).getTime() > new Date(lastReadAt).getTime());
+		return firstUnread ? firstUnread.id : messages[messages.length - 1].id;
+	}, [highlightedMessageId, messages, topicId, capturedLastReadAt]);
+
+	const postMutation = useMessagesMutations.post(topicId ?? "");
+	const editMutation = useMessagesMutations.edit();
+	const deleteMessageMutation = useMessagesMutations.delete();
+	const renameMutation = useTopicsMutations.rename();
+	const deleteTopicMutation = useTopicsMutations.delete();
+	const muteMutation = useTopicsMutations.mute();
+	const unmuteMutation = useTopicsMutations.unmute();
+	const markReadMutation = useTopicsMutations.markRead();
+
 	useEffect(() => {
 		if (!topicId) return;
-		// Reset the per-topic mark-read tracker when switching topics.
 		if (lastMarkedReadRef.current.topicId !== topicId) {
 			lastMarkedReadRef.current = { topicId, at: null };
 		}
 		setEditingMessage(null);
-		dispatch(setFocusedTopic(topicId));
-		void dispatch(fetchMessages({ topicId }));
+		useClientStore.getState().setFocusedTopic(topicId);
 		return () => {
-			dispatch(setFocusedTopic(null));
+			useClientStore.getState().clearFocusedTopicIf(topicId);
 		};
-	}, [dispatch, topicId]);
+	}, [topicId]);
+
+	// Capture the user's last-read timestamp the first time `topicDetails` is available
+	// for this topic. Declared BEFORE the markRead effect so it lands first on the same
+	// render — and even if it didn't, `markRead` is async so the optimistic patch can't
+	// race past us within a single tick.
+	useEffect(() => {
+		if (!topicId || !topicDetails) return;
+		setCapturedLastReadAt((prev) => (prev?.topicId === topicId ? prev : { topicId, at: topicDetails.lastReadAt ?? null }));
+	}, [topicId, topicDetails]);
 
 	useEffect(() => {
 		if (!topicId || messages.length === 0) return;
+		// Hold off marking the topic as read until we have snapshotted the original
+		// `lastReadAt`; otherwise the optimistic cache patch overwrites it before we
+		// can compute the initial scroll target.
+		if (capturedLastReadAt?.topicId !== topicId) return;
 		const lastAt = messages[messages.length - 1].createdAt;
 		if (lastMarkedReadRef.current.topicId === topicId && lastMarkedReadRef.current.at === lastAt) return;
 		lastMarkedReadRef.current = { topicId, at: lastAt };
-		void dispatch(markTopicRead({ topicId, at: lastAt }));
-	}, [dispatch, messages, topicId]);
+		markReadMutation.mutate({ topicId, at: lastAt });
+	}, [markReadMutation, messages, topicId, capturedLastReadAt]);
 
 	const isOwnerOfCustom = topic?.kind === "Custom" && !!userId && topic.createdByUserId === userId;
 
-	const handleSend = useCallback(
-		async (html: string) => {
-			if (!topicId) return;
-			await dispatch(postMessage({ topicId, contentHtml: html })).unwrap();
-		},
-		[dispatch, topicId],
-	);
+	const handleSend = async (html: string) => {
+		if (!topicId) return;
+		await postMutation.mutateAsync(html);
+	};
 
 	const handleEditMessage = useCallback((m: Message) => {
 		setEditingMessage(m);
@@ -71,40 +106,38 @@ export function TopicView() {
 
 	const handleDeleteMessage = useCallback(
 		async (m: Message) => {
-			await dispatch(deleteMessage(m.id));
+			await deleteMessageMutation.mutateAsync(m.id);
 		},
-		[dispatch],
+		[deleteMessageMutation],
 	);
 
-	const handleSubmitEdit = useCallback(
-		async (html: string) => {
-			if (!editingMessage) return;
-			await dispatch(editMessage({ id: editingMessage.id, contentHtml: html })).unwrap();
-			setEditingMessage(null);
-		},
-		[dispatch, editingMessage],
-	);
+	const handleSubmitEdit = async (html: string) => {
+		if (!editingMessage) return;
+		await editMutation.mutateAsync({ id: editingMessage.id, contentHtml: html });
+		setEditingMessage(null);
+	};
 
 	const handleCancelEdit = useCallback(() => setEditingMessage(null), []);
 
 	const handleRename = useCallback(
 		async (name: string) => {
 			if (!topic) return;
-			await dispatch(renameTopic({ id: topic.id, name })).unwrap();
+			await renameMutation.mutateAsync({ id: topic.id, name });
 		},
-		[dispatch, topic],
+		[renameMutation, topic],
 	);
 
 	const handleConfirmDelete = useCallback(async () => {
 		if (!topic) return;
-		await dispatch(deleteTopic(topic.id)).unwrap();
+		await deleteTopicMutation.mutateAsync(topic.id);
 		void navigate("/messages");
-	}, [dispatch, navigate, topic]);
+	}, [deleteTopicMutation, navigate, topic]);
 
 	const handleToggleMute = useCallback(async () => {
 		if (!topic) return;
-		await dispatch(isMuted ? unmuteTopic(topic.id) : muteTopic(topic.id)).unwrap();
-	}, [dispatch, isMuted, topic]);
+		if (isMuted) await unmuteMutation.mutateAsync(topic.id);
+		else await muteMutation.mutateAsync(topic.id);
+	}, [isMuted, muteMutation, topic, unmuteMutation]);
 
 	if (!topic) {
 		return (
@@ -153,7 +186,7 @@ export function TopicView() {
 				</Stack>
 			</Stack>
 			<Box sx={{ flex: 1, overflowY: "auto", bgcolor: "var(--app-bg)" }}>
-				{status === "loading" && messages.length === 0 ? (
+				{isLoading && messages.length === 0 ? (
 					<Box sx={{ display: "flex", justifyContent: "center", p: 4 }}>
 						<CircularProgress size={24} />
 					</Box>
@@ -164,9 +197,11 @@ export function TopicView() {
 						onEdit={handleEditMessage}
 						onDelete={handleDeleteMessage}
 						editingMessageId={editingMessage?.id ?? null}
+						highlightedMessageId={highlightedMessageId}
+						initialScrollMessageId={initialScrollMessageId}
 					/>
 				)}
-				{messages.length === 0 && status === "ready" && (
+				{messages.length === 0 && !isLoading && (
 					<Typography sx={{ textAlign: "center", color: "var(--ink-mute)", py: 4, fontSize: 13 }}>Aucun message pour l'instant.</Typography>
 				)}
 			</Box>
@@ -190,4 +225,20 @@ export function TopicView() {
 			<ConfirmDeleteTopicDialog open={deleteOpen} topicName={topic.name} onClose={() => setDeleteOpen(false)} onConfirm={handleConfirmDelete} />
 		</Box>
 	);
+}
+
+/**
+ * Tracks `window.location.hash` reactively. We can't rely on `useLocation().hash` from
+ * react-router-dom's `BrowserRouter` because it only listens to `popstate`, not `hashchange`.
+ * The push notification service worker calls `client.navigate(url)` which, for a same-path
+ * URL with a different hash, fires only `hashchange`.
+ */
+function useUrlHash(): string {
+	const [hash, setHash] = useState(() => (typeof window !== "undefined" ? window.location.hash : ""));
+	useEffect(() => {
+		const onChange = () => setHash(window.location.hash);
+		window.addEventListener("hashchange", onChange);
+		return () => window.removeEventListener("hashchange", onChange);
+	}, []);
+	return hash;
 }

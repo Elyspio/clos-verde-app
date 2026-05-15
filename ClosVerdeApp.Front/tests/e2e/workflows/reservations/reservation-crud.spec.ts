@@ -3,7 +3,7 @@ import { parseISO } from "date-fns";
 import type { Reservation } from "../../../../src/core/apis/rest/api/generated";
 import { expect, test } from "../../helpers/authenticated-test";
 import { calendarDayTestId, createRunId, monthsFromCurrentCalendar } from "../../helpers/date.helpers";
-import { cleanupReservations, findFreeFutureDay } from "../../helpers/reservation-data.helpers";
+import { cleanupOrphanE2eReservations, cleanupReservations, findFreeFutureDay } from "../../helpers/reservation-data.helpers";
 
 async function navigateToReservationMonth(page: Page, reservationDate: Date) {
 	const monthsAhead = monthsFromCurrentCalendar(reservationDate);
@@ -15,6 +15,12 @@ async function navigateToReservationMonth(page: Page, reservationDate: Date) {
 
 test.describe("Reservation CRUD", () => {
 	const createdReservationIds: string[] = [];
+
+	// Reservations from previous failed runs leave Alice booked on every day, which makes
+	// `findFreeFutureDay` return a busy day and the form refuses to confirm.
+	test.beforeEach(async ({ apiClient }) => {
+		await cleanupOrphanE2eReservations(apiClient);
+	});
 
 	test.afterEach(async ({ apiClient }) => {
 		await cleanupReservations(apiClient, createdReservationIds);

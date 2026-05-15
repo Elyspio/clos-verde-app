@@ -2,8 +2,7 @@ import { Badge, Box, Container, Stack, Typography } from "@mui/material";
 import { NavLink, Outlet } from "react-router-dom";
 import { UserMenu } from "./UserMenu";
 import { Home } from "@mui/icons-material";
-import { useAppSelector } from "@/store";
-import { selectUnreadTotal } from "@/store/modules/unread/unread.actions";
+import { useUnreadQueries } from "@data/unread/unread.queries";
 
 const navItems = [
 	{ to: "/calendrier", label: "Calendrier" },
@@ -13,7 +12,7 @@ const navItems = [
 ];
 
 export function AppShell() {
-	const unreadTotal = useAppSelector(selectUnreadTotal);
+	const unreadTotal = useUnreadQueries.total();
 	return (
 		<Box minHeight="100vh" display="flex" flexDirection="column" bgcolor="var(--app-bg)">
 			<Box

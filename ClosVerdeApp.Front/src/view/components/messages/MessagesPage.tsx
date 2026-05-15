@@ -1,10 +1,15 @@
 import { Box, Container } from "@mui/material";
+import { Suspense } from "react";
 import { Outlet, useParams } from "react-router-dom";
+import { RouteFallback } from "@/view/components/layout/RouteFallback";
 import { TopicList } from "./TopicList";
 
 /**
  * Two-pane messaging shell. Left: topic list. Right: the active topic via <Outlet />.
  * Mobile collapses to a single pane that swaps based on the URL.
+ *
+ * The right pane wraps <Outlet /> in its own <Suspense> so the lazy `TopicView` chunk
+ * can load without making the sidebar disappear behind the global route fallback.
  */
 export function MessagesPage() {
 	const { topicId } = useParams<{ topicId?: string }>();
@@ -25,7 +30,13 @@ export function MessagesPage() {
 					<TopicList />
 				</Box>
 				<Box sx={{ display: { xs: topicId ? "block" : "none", md: "block" }, height: "100%", minHeight: 0, position: "relative" }}>
-					{topicId ? <Outlet /> : <EmptyState />}
+					{topicId ? (
+						<Suspense fallback={<RouteFallback />}>
+							<Outlet />
+						</Suspense>
+					) : (
+						<EmptyState />
+					)}
 				</Box>
 			</Box>
 		</Container>

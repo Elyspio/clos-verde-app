@@ -1,12 +1,11 @@
-import { differenceInCalendarDays, differenceInMinutes, format, isSameDay, parseISO } from "date-fns";
+import { differenceInMinutes, endOfDay, format, isAfter, isBefore, isSameDay, parseISO, startOfDay } from "date-fns";
 import { fr } from "date-fns/locale/fr";
+import type { Reservation } from "@apis/rest/api/generated";
+
+const NB_MINUTES_PER_DAY = 24 * 60 - 1;
 
 export function parseReservationDate(value: string) {
 	return parseISO(value);
-}
-
-export function reservationDayCount(startDate: string, endDate: string) {
-	return differenceInCalendarDays(parseReservationDate(endDate), parseReservationDate(startDate)) + 1;
 }
 
 export function reservationDurationLabel(startDate: string, endDate: string) {
@@ -61,4 +60,24 @@ export function reservationPeriodLabel(startDate: string, endDate: string) {
 
 export function capitalize(value: string) {
 	return value.charAt(0).toUpperCase() + value.slice(1);
+}
+export function coversDay(reservation: Reservation, day: Date) {
+	const start = parseISO(reservation.startDate);
+	const end = parseISO(reservation.endDate);
+	return isBefore(start, endOfDay(day)) && isAfter(end, startOfDay(day));
+}
+
+export const isFullDay = (reservation: Reservation) => differenceInMinutes(reservation.endDate, reservation.startDate) === NB_MINUTES_PER_DAY;
+
+export function hasEmptySpaceInReservation(day: Date, data: Reservation[]) {
+	const sumMinutes = data.reduce((sum, r) => {
+		const endDate = isAfter(r.endDate, day) ? endOfDay(day) : r.endDate;
+		const startDate = isBefore(r.startDate, day) ? startOfDay(day) : r.startDate;
+
+		sum += differenceInMinutes(endDate, startDate);
+
+		return sum;
+	}, 0);
+
+	return sumMinutes < NB_MINUTES_PER_DAY; // Nombre de minutes par jours
 }

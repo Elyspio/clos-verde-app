@@ -1,9 +1,10 @@
 import { Add } from "@mui/icons-material";
 import { Box, Button, Stack, Typography } from "@mui/material";
-import { differenceInMinutes, endOfDay, format, isAfter, isBefore, isSameMonth, isToday, parseISO, startOfDay, startOfToday } from "date-fns";
+import { format, isBefore, isSameMonth, isToday, parseISO, startOfToday } from "date-fns";
 import { useNavigate } from "react-router-dom";
 import type { Reservation } from "@apis/rest/api/generated";
 import type { AuthUser } from "@/core/auth/auth.types";
+import { coversDay, hasEmptySpaceInReservation, isFullDay } from "@/utils/date.utils";
 
 type DayCellProps = {
 	day: Date;
@@ -12,25 +13,6 @@ type DayCellProps = {
 	currentUser: AuthUser | null;
 	onSelectReservation: (reservation: Reservation) => void;
 };
-
-function coversDay(reservation: Reservation, day: Date) {
-	const start = parseISO(reservation.startDate);
-	const end = parseISO(reservation.endDate);
-	return isBefore(start, endOfDay(day)) && isAfter(end, startOfDay(day));
-}
-
-function hasEmptySpaceInReservation(day: Date, data: Reservation[]) {
-	const sumMinutes = data.reduce((sum, r) => {
-		const endDate = isAfter(r.endDate, day) ? endOfDay(day) : r.endDate;
-		const startDate = isBefore(r.startDate, day) ? startOfDay(day) : r.startDate;
-
-		sum += differenceInMinutes(endDate, startDate);
-
-		return sum;
-	}, 0);
-
-	return sumMinutes < 24 * 60 - 1; // Nombre de minutes par jours
-}
 
 export function DayCell({ day, currentMonth, reservations, currentUser, onSelectReservation }: DayCellProps) {
 	const navigate = useNavigate();
@@ -131,7 +113,7 @@ export function DayCell({ day, currentMonth, reservations, currentUser, onSelect
 								}}
 							>
 								{pending ? "⏳ " : ""}
-								{format(parseISO(reservation.startDate), "HH:mm")} {reservation.user.displayName}
+								{!isFullDay(reservation) ? format(parseISO(reservation.startDate), "HH:mm") : ""} {reservation.user.displayName}
 							</Box>
 						);
 					})}
