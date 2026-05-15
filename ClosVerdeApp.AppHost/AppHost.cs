@@ -27,8 +27,9 @@ const string keycloakAdminClientId = "cv_dev-api";
 const string keycloakAdminClientSecret = "dev-cv-aspire-secret-FAKE-DO-NOT-DEPLOY";
 
 var keycloak = builder.AddKeycloak("keycloak", port: keycloakPort)
-    .WithDataVolume()
+    .WithDataVolume("clos-verde-keycloak-data")
     .WithRealmImport(Path.Combine(appHostDirectory, "Realms"))
+    .WithContainerName("clos-verde-keycloak")
     .WithLifetime(ContainerLifetime.Persistent);
 
 // One canonical authority URL: built once and reused everywhere. Both the API (issuer validation)

@@ -3,10 +3,13 @@
 ## Build, run, and lint
 
 ### .NET
+
 - aspire run
 
 ### Frontend
+
 Run these from `ClosVerdeApp.Front`:
+
 - `pnpm install`
 - `pnpm dev`
 - `pnpm build`
@@ -16,7 +19,9 @@ Run these from `ClosVerdeApp.Front`:
 - `pnpm refresh-api`
 
 ### Tests
-- No dedicated automated test project or test script is present in the repo.
+
+- Front E2E tests:`pnpm e2e:auth` then `pnpm e2e`
+- Backend unit/integration tests: `aspire test`
 
 ## Architecture
 
@@ -44,3 +49,4 @@ Run these from `ClosVerdeApp.Front`:
 - For MongoDB persistence, prefer NoSQL aggregate modeling with embedded subdocuments or dictionaries inside the owning document instead of relational-style join collections, unless an explicit independent query/use case requires a separate collection.
 - Never update frontend's api client or DTOs manually; always update the backend models and run `pnpm refresh-api` to regenerate them.
 - Always add unit / integration tests or E2E tests for new features and bug fixes, and update existing tests if the behavior changes. If you are unsure about how to write tests for a particular change, ask for guidance.
+- Always run the full test suite and linting before pushing changes, and ensure that your code is formatted according to the existing style. Use `pnpm format` and `pnpm check:lint` to help with this.
