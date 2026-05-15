@@ -72,8 +72,8 @@ function appendOptimistic(data: MessagesPages | undefined, message: Message): Me
  */
 function replaceOptimistic(data: MessagesPages | undefined, tempId: string, real: Message): MessagesPages | undefined {
 	if (!data) return data;
-	const pages = data.pages.map((page) => page.map((m) => (m.id === tempId ? real : m)));
-	return { ...data, pages };
+	const withoutTemp = removeFromPages(data, tempId);
+	return upsertInPages(withoutTemp, real);
 }
 
 /**
