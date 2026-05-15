@@ -29,7 +29,7 @@ export function TokenErrorPage() {
 		<AuthSplitLayout title="Session expirée." subtitle="Votre authentification n'a pas pu être renouvelée automatiquement.">
 			<Stack spacing={3.5}>
 				<Alert icon={<ErrorOutlineIcon fontSize="inherit" />} severity="warning">
-					La session locale a été fermée pour éviter les tentatives de reconnexion en boucle.
+					La session locale a été fermée
 				</Alert>
 				<Box
 					sx={{
