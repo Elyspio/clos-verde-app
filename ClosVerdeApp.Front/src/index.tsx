@@ -5,11 +5,10 @@ import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { fr } from "date-fns/locale/fr";
 import { createRoot } from "react-dom/client";
 import { AuthProvider } from "react-oidc-context";
-import { Provider } from "react-redux";
 import { BrowserRouter } from "react-router-dom";
 import { TokenSync } from "./core/auth/TokenSync";
 import { oidcConfig } from "./core/auth/oidc";
-import store from "./store";
+import { QueryProvider } from "@data/QueryProvider";
 import { theme } from "./view/theme";
 import { AppRouter } from "./view/router/AppRouter";
 
@@ -18,7 +17,7 @@ const browserBaseName = import.meta.env.BASE_URL === "/" ? "/" : import.meta.env
 createRoot(document.getElementById("root")!).render(
 	<AuthProvider {...oidcConfig}>
 		<TokenSync />
-		<Provider store={store}>
+		<QueryProvider>
 			<ThemeProvider theme={theme}>
 				<CssBaseline />
 				<LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={fr}>
@@ -27,6 +26,6 @@ createRoot(document.getElementById("root")!).render(
 					</BrowserRouter>
 				</LocalizationProvider>
 			</ThemeProvider>
-		</Provider>
+		</QueryProvider>
 	</AuthProvider>,
 );
