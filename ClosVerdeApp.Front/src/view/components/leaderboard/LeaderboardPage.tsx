@@ -1,16 +1,9 @@
 import { Box, Container, Stack, Typography } from "@mui/material";
 import { motion } from "motion/react";
-import { useEffect } from "react";
-import { useAppDispatch, useAppSelector } from "@/store";
-import { fetchLeaderboard } from "@/store/modules/reservations/reservations.actions";
+import { useReservationsQueries } from "@data/reservations/reservations.queries";
 
 export function LeaderboardPage() {
-	const dispatch = useAppDispatch();
-	const { leaderboard, leaderboardStatus, leaderboardRevision } = useAppSelector((state) => state.reservations);
-
-	useEffect(() => {
-		void dispatch(fetchLeaderboard());
-	}, [dispatch, leaderboardRevision]);
+	const { data: leaderboard = [], isPending } = useReservationsQueries.leaderboard();
 
 	return (
 		<Container maxWidth="lg" sx={{ py: { xs: 4, md: 6 }, px: { xs: 2.5, md: 5 } }}>
@@ -70,7 +63,7 @@ export function LeaderboardPage() {
 				))}
 				{leaderboard.length === 0 && (
 					<Typography variant="body2" sx={{ py: 4, borderBottom: "1px solid var(--line)" }}>
-						{leaderboardStatus === "loading" ? "Chargement du classement..." : "Aucune réservation pour le moment."}
+						{isPending ? "Chargement du classement..." : "Aucune réservation pour le moment."}
 					</Typography>
 				)}
 			</Box>

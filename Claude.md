@@ -1,0 +1,1 @@
+Use AGENTS.md to find out how to use this agent.

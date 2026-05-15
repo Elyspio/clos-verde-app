@@ -1,8 +1,7 @@
 import { Alert, Button, Dialog, DialogActions, DialogContent, DialogTitle, Stack, TextField, Typography } from "@mui/material";
 import { useState } from "react";
-import { extractApiError } from "@/core/api/client";
-import { reservationApi } from "@/core/api/reservation.api";
-import type { Reservation } from "@/types/models";
+import { useReservationsMutations } from "@data/reservations/reservations.mutations";
+import type { Reservation } from "@apis/rest/api/generated";
 
 type Props = {
 	reservation: Reservation | null;
@@ -15,8 +14,9 @@ type Props = {
  */
 export function ObjectionDialog({ reservation, onClose }: Props) {
 	const [reason, setReason] = useState("");
-	const [submitting, setSubmitting] = useState(false);
 	const [error, setError] = useState<string | null>(null);
+	const objectionMutation = useReservationsMutations.createObjection();
+	const submitting = objectionMutation.isPending;
 
 	const open = !!reservation;
 
@@ -29,15 +29,12 @@ export function ObjectionDialog({ reservation, onClose }: Props) {
 
 	const handleSubmit = async () => {
 		if (!reservation) return;
-		setSubmitting(true);
 		setError(null);
 		try {
-			await reservationApi.createObjection(reservation.id, reason.trim() || undefined);
+			await objectionMutation.mutateAsync({ id: reservation.id, reason: reason.trim() || undefined });
 			handleClose();
 		} catch (e) {
-			setError(extractApiError(e, "Objection impossible."));
-		} finally {
-			setSubmitting(false);
+			setError(e instanceof Error ? e.message : "Objection impossible.");
 		}
 	};
 
@@ -48,7 +45,7 @@ export function ObjectionDialog({ reservation, onClose }: Props) {
 				<Stack spacing={2} sx={{ mt: 1 }}>
 					{reservation && (
 						<Typography variant="body2" color="text.secondary">
-							Réservation de {reservation.userDisplayName}. Une objection bloque la validation automatique et ouvre un fil de discussion.
+							Réservation de {reservation.user.displayName}. Une objection bloque la validation automatique et ouvre un fil de discussion.
 						</Typography>
 					)}
 					{error && <Alert severity="warning">{error}</Alert>}

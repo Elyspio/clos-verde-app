@@ -1,7 +1,7 @@
 import { Box, Button, Stack, Typography } from "@mui/material";
 import { addMonths, format, subMonths } from "date-fns";
 import { fr } from "date-fns/locale/fr";
-import { capitalize } from "./date-utils";
+import { capitalize } from "../../../utils/date.utils";
 import { Legend } from "./Legend";
 
 type MonthHeaderProps = {

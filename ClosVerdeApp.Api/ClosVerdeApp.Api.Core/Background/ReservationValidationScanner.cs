@@ -46,7 +46,10 @@ public sealed class ReservationValidationScanner(
 			{
 				await Task.Delay(interval, stoppingToken);
 			}
-			catch (TaskCanceledException) { }
+			catch (TaskCanceledException) when (stoppingToken.IsCancellationRequested)
+			{
+				break;
+			}
 		}
 	}
 
@@ -83,8 +86,8 @@ public sealed class ReservationValidationScanner(
 				{
 					await messageService.PostSystem(
 						refreshed.TopicId.Value,
-						refreshed.UserId,
-						refreshed.UserDisplayName,
+						refreshed.User.Id,
+						refreshed.User.DisplayName,
 						"<p><em>Réservation annulée automatiquement&nbsp;: la date de début est dépassée.</em></p>");
 				}
 				catch (Exception ex)
@@ -98,17 +101,31 @@ public sealed class ReservationValidationScanner(
 	private static Reservation ToTransport(ReservationEntity e) => new()
 	{
 		Id = e.Id.AsGuid(),
-		UserId = e.UserId,
-		UserDisplayName = e.UserDisplayName,
+		User = new UserRef { Id = e.User.Id, DisplayName = e.User.DisplayName },
 		StartDate = e.StartDate,
 		EndDate = e.EndDate,
 		Note = e.Note,
 		CreatedAt = e.CreatedAt,
-		Status = e.Status,
-		ValidationDeadline = e.ValidationDeadline,
+		Validation = new ReservationValidationDto
+		{
+			Status = e.Validation.Status,
+			Deadline = e.Validation.Deadline,
+			ValidatedAt = e.Validation.ValidatedAt,
+			CancelledAt = e.Validation.CancelledAt,
+		},
 		TopicId = e.TopicId,
-		ObjectionCount = e.ObjectionCount,
-		ValidatedAt = e.ValidatedAt,
-		CancelledAt = e.CancelledAt
+		Objection = ToObjectionTransport(e),
 	};
+
+	private static Objection? ToObjectionTransport(ReservationEntity e) =>
+		e.Objection is null
+			? null
+			: new Objection
+			{
+				Id = e.Objection.Id.AsGuid(),
+				ReservationId = e.Id.AsGuid(),
+				User = new UserRef { Id = e.Objection.User.Id, DisplayName = e.Objection.User.DisplayName },
+				Reason = e.Objection.Reason,
+				CreatedAt = e.Objection.CreatedAt
+			};
 }

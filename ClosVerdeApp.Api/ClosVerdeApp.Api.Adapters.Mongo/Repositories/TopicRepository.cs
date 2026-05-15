@@ -15,35 +15,36 @@ internal class TopicRepository : BaseRepository<TopicEntity>, ITopicRepository
 {
 	public TopicRepository(IConfiguration configuration, ILogger<BaseRepository<TopicEntity>> logger) : base(configuration, logger)
 	{
-		CreateIndexIfMissing(new[] { nameof(TopicEntity.Kind) });
-		CreateIndexIfMissing(new[] { nameof(TopicEntity.ReservationId) });
-		CreateIndexIfMissing(new[] { nameof(TopicEntity.LastMessageAt) });
+		CreateIndexIfMissing([nameof(TopicEntity.Kind)]);
+		CreateIndexIfMissing([nameof(TopicEntity.ReservationId)]);
+		CreateIndexIfMissing([nameof(TopicEntity.LastMessageAt)]);
 	}
 
 	public async Task<List<TopicEntity>> GetAll()
 	{
-		using var _ = LogAdapter();
-		return await EntityCollection.AsQueryable()
+		using var logger = LogAdapter();
+		var topics = await EntityCollection.AsQueryable().ToListAsync();
+		return topics
 			.OrderByDescending(t => t.LastMessageAt ?? t.CreatedAt)
-			.ToListAsync();
+			.ToList();
 	}
 
 	public async Task<TopicEntity?> GetById(Guid id)
 	{
-		using var _ = LogAdapter($"{Log.F(id)}");
+		using var logger = LogAdapter($"{Log.F(id)}");
 		var oid = id.AsObjectId();
 		return await EntityCollection.AsQueryable().FirstOrDefaultAsync(t => t.Id == oid);
 	}
 
 	public async Task<TopicEntity?> GetGlobal()
 	{
-		using var _ = LogAdapter();
+		using var logger = LogAdapter();
 		return await EntityCollection.AsQueryable().FirstOrDefaultAsync(t => t.Kind == TopicKind.Global);
 	}
 
 	public async Task<TopicEntity?> GetByReservation(Guid reservationId)
 	{
-		using var _ = LogAdapter($"{Log.F(reservationId)}");
+		using var logger = LogAdapter($"{Log.F(reservationId)}");
 		return await EntityCollection.AsQueryable()
 			.FirstOrDefaultAsync(t => t.Kind == TopicKind.Reservation && t.ReservationId == reservationId);
 	}
@@ -55,9 +56,8 @@ internal class TopicRepository : BaseRepository<TopicEntity>, ITopicRepository
 		string? createdByDisplayName,
 		Guid? reservationId)
 	{
-		using var _ = LogAdapter($"{Log.F(kind)} {Log.F(name)}");
+		using var logger = LogAdapter($"{Log.F(kind)} {Log.F(name)}");
 
-		var now = DateTime.UtcNow;
 		var entity = new TopicEntity
 		{
 			Kind = kind,
@@ -65,10 +65,11 @@ internal class TopicRepository : BaseRepository<TopicEntity>, ITopicRepository
 			CreatedByUserId = createdByUserId,
 			CreatedByDisplayName = createdByDisplayName,
 			ReservationId = reservationId,
-			CreatedAt = now,
-			UpdatedAt = now,
+			UpdatedAt = DateTime.UtcNow,
 			LastMessageAt = null,
-			MessageCount = 0
+			MessageCount = 0,
+			Muted = [],
+			ReadReceipts = []
 		};
 
 		await EntityCollection.InsertOneAsync(entity);
@@ -77,7 +78,7 @@ internal class TopicRepository : BaseRepository<TopicEntity>, ITopicRepository
 
 	public async Task<TopicEntity?> Rename(Guid id, string newName)
 	{
-		using var _ = LogAdapter($"{Log.F(id)} {Log.F(newName)}");
+		using var logger = LogAdapter($"{Log.F(id)} {Log.F(newName)}");
 		var oid = id.AsObjectId();
 		var update = Builders<TopicEntity>.Update
 			.Set(t => t.Name, newName.Trim())
@@ -93,14 +94,14 @@ internal class TopicRepository : BaseRepository<TopicEntity>, ITopicRepository
 
 	public async Task Delete(Guid id)
 	{
-		using var _ = LogAdapter($"{Log.F(id)}");
+		using var logger = LogAdapter($"{Log.F(id)}");
 		var oid = id.AsObjectId();
 		await EntityCollection.DeleteOneAsync(t => t.Id == oid);
 	}
 
 	public async Task BumpStatistics(Guid id, DateTime lastMessageAt, int delta)
 	{
-		using var _ = LogAdapter($"{Log.F(id)} {Log.F(delta)}");
+		using var logger = LogAdapter($"{Log.F(id)} {Log.F(delta)}");
 		var oid = id.AsObjectId();
 		var update = Builders<TopicEntity>.Update
 			.Set(t => t.LastMessageAt, lastMessageAt)
@@ -111,7 +112,7 @@ internal class TopicRepository : BaseRepository<TopicEntity>, ITopicRepository
 
 	public async Task DecrementMessageCount(Guid id)
 	{
-		using var _ = LogAdapter($"{Log.F(id)}");
+		using var logger = LogAdapter($"{Log.F(id)}");
 		var oid = id.AsObjectId();
 		// Conditional decrement so we never go negative if a delete race fires twice for the same row.
 		var filter = Builders<TopicEntity>.Filter.And(
@@ -122,4 +123,39 @@ internal class TopicRepository : BaseRepository<TopicEntity>, ITopicRepository
 			.Inc(t => t.MessageCount, -1);
 		await EntityCollection.UpdateOneAsync(filter, update);
 	}
+
+	public async Task MarkRead(Guid id, Guid userId, DateTime at)
+	{
+		using var logger = LogAdapter($"{Log.F(id)} {Log.F(userId)} {Log.F(at)}");
+		var oid = id.AsObjectId();
+		var update = Builders<TopicEntity>.Update
+			.Set($"{nameof(TopicEntity.ReadReceipts)}.{UserKey(userId)}", at)
+			.Set(t => t.UpdatedAt, DateTime.UtcNow);
+
+		await EntityCollection.UpdateOneAsync(t => t.Id == oid, update);
+	}
+
+	public async Task Mute(Guid id, Guid userId)
+	{
+		using var logger = LogAdapter($"{Log.F(id)} {Log.F(userId)}");
+		var oid = id.AsObjectId();
+		var update = Builders<TopicEntity>.Update
+			.Set($"{nameof(TopicEntity.Muted)}.{UserKey(userId)}", true)
+			.Set(t => t.UpdatedAt, DateTime.UtcNow);
+
+		await EntityCollection.UpdateOneAsync(t => t.Id == oid, update);
+	}
+
+	public async Task Unmute(Guid id, Guid userId)
+	{
+		using var logger = LogAdapter($"{Log.F(id)} {Log.F(userId)}");
+		var oid = id.AsObjectId();
+		var update = Builders<TopicEntity>.Update
+			.Unset($"{nameof(TopicEntity.Muted)}.{UserKey(userId)}")
+			.Set(t => t.UpdatedAt, DateTime.UtcNow);
+
+		await EntityCollection.UpdateOneAsync(t => t.Id == oid, update);
+	}
+
+	private static string UserKey(Guid userId) => userId.ToString("D");
 }

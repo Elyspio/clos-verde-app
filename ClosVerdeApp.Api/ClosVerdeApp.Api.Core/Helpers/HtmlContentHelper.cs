@@ -42,7 +42,7 @@ public static class HtmlContentHelper
 
 	public static List<Guid> ExtractMentions(string sanitizedHtml)
 	{
-		if (string.IsNullOrEmpty(sanitizedHtml)) return new List<Guid>();
+		if (string.IsNullOrEmpty(sanitizedHtml)) return [];
 		var ids = new HashSet<Guid>();
 		foreach (Match m in MentionRegex.Matches(sanitizedHtml))
 		{

@@ -22,7 +22,7 @@ public static class SwaggerExtentions
 
 			options.UseAllOfToExtendReferenceSchemas();
 			options.UseAllOfForInheritance();
-			options.CustomOperationIds(e => e.ActionDescriptor.RouteValues["action"]);
+			options.CustomOperationIds(e => e.ActionDescriptor.RouteValues["controller"] + "_" + e.ActionDescriptor.RouteValues["action"]);
 
 			foreach (var xmlPath in xmlPaths) options.IncludeXmlComments(xmlPath);
 		}).AddSwaggerGenNewtonsoftSupport();

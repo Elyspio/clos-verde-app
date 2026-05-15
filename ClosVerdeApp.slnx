@@ -11,5 +11,8 @@
     <Project Path="ClosVerdeApp.Api/ClosVerdeApp.Api.Adapters.Mongo/ClosVerdeApp.Api.Adapters.Mongo.csproj" />
     <Project Path="ClosVerdeApp.Api/ClosVerdeApp.Api.Adapters.Rest/ClosVerdeApp.Api.Adapters.Rest.csproj" />
   </Folder>
+  <Folder Name="/Tests/">
+    <Project Path="ClosVerdeApp.Api/ClosVerdeApp.Api.Tests/ClosVerdeApp.Api.Tests.csproj" />
+  </Folder>
   <Project Path="ClosVerdeApp.AppHost/ClosVerdeApp.AppHost.csproj" />
 </Solution>

@@ -21,4 +21,10 @@ public interface IMessageRepository
 	Task DeleteByTopic(Guid topicId);
 
 	Task<int> CountAfter(Guid topicId, DateTime after, Guid excludeAuthorId);
+
+	/// <summary>
+	/// Topics where the user has either authored a non-deleted message or been @mentioned.
+	/// Drives the "subscribed by activity" set for desktop notifications.
+	/// </summary>
+	Task<List<Guid>> GetEngagedTopicIds(Guid userId);
 }

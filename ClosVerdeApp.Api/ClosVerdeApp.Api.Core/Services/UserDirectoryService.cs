@@ -1,8 +1,9 @@
-using ClosVerdeApp.Api.Abstractions.Common.Technical.Tracing;
+
 using ClosVerdeApp.Api.Abstractions.Interfaces.Adapters;
 using ClosVerdeApp.Api.Abstractions.Interfaces.Services;
 using ClosVerdeApp.Api.Abstractions.Models.Configuration;
 using ClosVerdeApp.Api.Abstractions.Models.Transports;
+using Elyspio.Utils.Telemetry.Tracing.Elements;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -25,7 +26,7 @@ public class UserDirectoryService(
 
 	public async Task<List<DirectoryUser>> ListAsync(CancellationToken cancellationToken = default)
 	{
-		using var _ = LogService();
+		using var logger = LogService();
 
 		if (memoryCache.TryGetValue<List<DirectoryUser>>(CacheKey, out var cached) && cached is not null)
 			return cached;

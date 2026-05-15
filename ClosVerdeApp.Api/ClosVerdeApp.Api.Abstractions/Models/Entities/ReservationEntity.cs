@@ -1,4 +1,5 @@
 using ClosVerdeApp.Api.Abstractions.Interfaces.Business;
+using ClosVerdeApp.Api.Abstractions.Common.Extensions;
 using ClosVerdeApp.Api.Abstractions.Models.Entities.Enums;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
@@ -16,10 +17,7 @@ public class ReservationEntity : IEntity
 	[BsonRepresentation(BsonType.ObjectId)]
 	public ObjectId Id { get; set; }
 
-	[BsonGuidRepresentation(GuidRepresentation.Standard)]
-	public required Guid UserId { get; set; }
-
-	public required string UserDisplayName { get; set; }
+	public required ReservationUserRef User { get; set; }
 
 	public required DateTime StartDate { get; set; }
 
@@ -27,18 +25,45 @@ public class ReservationEntity : IEntity
 
 	public string? Note { get; set; }
 
-	public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+	[BsonIgnore]
+	public DateTime CreatedAt => Id.GetCreatedAt();
 
-	public ReservationStatus Status { get; set; } = ReservationStatus.Pending;
-
-	public DateTime ValidationDeadline { get; set; }
+	public required ReservationValidation Validation { get; set; }
 
 	[BsonGuidRepresentation(GuidRepresentation.Standard)]
 	public Guid? TopicId { get; set; }
 
-	public int ObjectionCount { get; set; }
+	public ReservationObjectionEntity? Objection { get; set; }
+}
+
+public class ReservationUserRef
+{
+	[BsonGuidRepresentation(GuidRepresentation.Standard)]
+	public required Guid Id { get; set; }
+
+	public required string DisplayName { get; set; }
+}
+
+public class ReservationValidation
+{
+	public ReservationStatus Status { get; set; } = ReservationStatus.Pending;
+
+	public DateTime Deadline { get; set; }
 
 	public DateTime? ValidatedAt { get; set; }
 
 	public DateTime? CancelledAt { get; set; }
+}
+
+public class ReservationObjectionEntity
+{
+	[BsonRepresentation(BsonType.ObjectId)]
+	public ObjectId Id { get; set; } = ObjectId.GenerateNewId();
+
+	public required ReservationUserRef User { get; set; }
+
+	public string? Reason { get; set; }
+
+	[BsonIgnore]
+	public DateTime CreatedAt => Id.GetCreatedAt();
 }

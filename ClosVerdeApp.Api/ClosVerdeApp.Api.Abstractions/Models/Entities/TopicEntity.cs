@@ -1,4 +1,5 @@
 using ClosVerdeApp.Api.Abstractions.Interfaces.Business;
+using ClosVerdeApp.Api.Abstractions.Common.Extensions;
 using ClosVerdeApp.Api.Abstractions.Models.Entities.Enums;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
@@ -27,11 +28,16 @@ public class TopicEntity : IEntity
 	[BsonGuidRepresentation(GuidRepresentation.Standard)]
 	public Guid? ReservationId { get; set; }
 
-	public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+	[BsonIgnore]
+	public DateTime CreatedAt => Id.GetCreatedAt();
 
 	public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
 	public DateTime? LastMessageAt { get; set; }
 
 	public int MessageCount { get; set; }
+
+	public Dictionary<string, bool> Muted { get; set; } = [];
+
+	public Dictionary<string, DateTime> ReadReceipts { get; set; } = [];
 }

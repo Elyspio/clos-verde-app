@@ -1,6 +1,5 @@
 using ClosVerdeApp.Api.Abstractions.Common.Extensions;
 using ClosVerdeApp.Api.Abstractions.Common.Helpers;
-using ClosVerdeApp.Api.Abstractions.Common.Technical.Tracing;
 using ClosVerdeApp.Api.Abstractions.Exceptions;
 using ClosVerdeApp.Api.Abstractions.Interfaces.Repositories;
 using ClosVerdeApp.Api.Abstractions.Interfaces.Services;
@@ -8,6 +7,7 @@ using ClosVerdeApp.Api.Abstractions.Models.Configuration;
 using ClosVerdeApp.Api.Abstractions.Models.Entities;
 using ClosVerdeApp.Api.Abstractions.Models.Entities.Enums;
 using ClosVerdeApp.Api.Abstractions.Models.Transports;
+using Elyspio.Utils.Telemetry.Tracing.Elements;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -17,53 +17,75 @@ namespace ClosVerdeApp.Api.Core.Services;
 /// Implements <see cref="IReservationService"/>. Reservations are created in <see cref="ReservationStatus.Pending"/>
 /// with a deadline = <c>min(ValidationDelay, StartDate − Now)</c>; deletes cascade-clean the linked discussion topic.
 /// </summary>
-public class ReservationService(
-	IReservationRepository reservationRepository,
-	IObjectionRepository objectionRepository,
-	ITopicRepository topicRepository,
-	IMessageRepository messageRepository,
-	IReadReceiptRepository readReceiptRepository,
-	IMessageService messageService,
-	IReservationRealtimePublisher reservationRealtimePublisher,
-	IMessageRealtimePublisher messageRealtimePublisher,
-	IOptionsMonitor<ReservationOptions> options,
-	ILogger<ReservationService> logger
-) : TracingService(logger), IReservationService
+public class ReservationService : TracingService, IReservationService
 {
-	public async Task<List<Reservation>> GetMonth(int year, int month)
+	private readonly IReservationRepository _reservationRepository;
+	private readonly ITopicRepository _topicRepository;
+	private readonly IMessageRepository _messageRepository;
+	private readonly IMessageService _messageService;
+	private readonly IReservationRealtimePublisher _reservationRealtimePublisher;
+	private readonly IMessageRealtimePublisher _messageRealtimePublisher;
+	private readonly IPushNotificationService _pushNotificationService;
+	private readonly IOptionsMonitor<ReservationOptions> _options;
+
+	/// <summary>
+	/// Implements <see cref="IReservationService"/>. Reservations are created in <see cref="ReservationStatus.Pending"/>
+	/// with a deadline = <c>min(ValidationDelay, StartDate − Now)</c>; deletes cascade-clean the linked discussion topic.
+	/// </summary>
+	public ReservationService(IReservationRepository reservationRepository,
+		ITopicRepository topicRepository,
+		IMessageRepository messageRepository,
+		IMessageService messageService,
+		IReservationRealtimePublisher reservationRealtimePublisher,
+		IMessageRealtimePublisher messageRealtimePublisher,
+		IPushNotificationService pushNotificationService,
+		IOptionsMonitor<ReservationOptions> options,
+		ILogger<ReservationService> logger) : base(logger)
 	{
-		using var _ = LogService($"{Log.F(year)} {Log.F(month)}");
+		_reservationRepository = reservationRepository;
+		_topicRepository = topicRepository;
+		_messageRepository = messageRepository;
+		_messageService = messageService;
+		_reservationRealtimePublisher = reservationRealtimePublisher;
+		_messageRealtimePublisher = messageRealtimePublisher;
+		_pushNotificationService = pushNotificationService;
+		_options = options;
+	}
 
-		if (month is < 1 or > 12) throw new HttpException.BadRequest("Mois invalide.");
+	public async Task<List<Reservation>> GetRange(DateTime from, DateTime to)
+	{
+		using var logger = LogService($"{Log.F(from)} {Log.F(to)}");
 
-		var first = new DateTime(year, month, 1, 0, 0, 0);
-		var last = first.AddMonths(1);
+		var fromUtc = from.AsUtc();
+		var toUtc = to.AsUtc();
 
-		var entities = await reservationRepository.GetInRange(first, last);
+		if (fromUtc >= toUtc) throw new HttpException.BadRequest("L'intervalle est invalide.");
+
+		var entities = await _reservationRepository.GetInRange(fromUtc, toUtc);
 		return entities.Select(ToTransport).OrderBy(r => r.StartDate).ToList();
 	}
 
 	public async Task<List<Reservation>> GetAll()
 	{
-		using var _ = LogService();
-		var entities = await reservationRepository.GetAll();
+		using var logger = LogService();
+		var entities = await _reservationRepository.GetAll();
 		return entities.Select(ToTransport).ToList();
 	}
 
 	public async Task<List<LeaderboardEntry>> GetLeaderboard()
 	{
-		using var _ = LogService();
+		using var logger = LogService();
 
-		var entities = await reservationRepository.GetAll();
+		var entities = await _reservationRepository.GetAll();
 
 		// Only Validated count toward the leaderboard.
 		var grouped = entities
-			.Where(r => r.Status == ReservationStatus.Validated)
-			.GroupBy(r => r.UserId)
+			.Where(r => r.Validation.Status == ReservationStatus.Validated)
+			.GroupBy(r => r.User.Id)
 			.Select(g => new
 			{
 				UserId = g.Key,
-				DisplayName = g.OrderByDescending(r => r.CreatedAt).First().UserDisplayName,
+				DisplayName = g.OrderByDescending(r => r.CreatedAt).First().User.DisplayName,
 				TotalDays = g.Sum(r => (int)Math.Ceiling(Math.Max(0, (r.EndDate - r.StartDate).TotalDays))),
 				ReservationCount = g.Count()
 			})
@@ -83,17 +105,19 @@ public class ReservationService(
 
 	public async Task<Reservation> Create(CreateReservationRequest request, Guid userId, string displayName)
 	{
-		using var _ = LogService($"{Log.F(userId)} {Log.F(request.StartDate)} {Log.F(request.EndDate)}");
+		using var logger = LogService($"{Log.F(userId)} {Log.F(request.StartDate)} {Log.F(request.EndDate)}");
 
-		ValidatePeriod(request);
+		var startUtc = request.StartDate.AsUtc();
+		var endUtc = request.EndDate.AsUtc();
 
-		var overlapping = await reservationRepository.GetOverlapping(request.StartDate, request.EndDate);
+		ValidatePeriod(startUtc, endUtc);
+
+		var overlapping = await _reservationRepository.GetOverlapping(startUtc, endUtc);
 		if (overlapping.Count > 0)
 			ThrowConflict(overlapping[0]);
 
-		var opts = options.CurrentValue;
+		var opts = _options.CurrentValue;
 		var now = DateTime.UtcNow;
-		var startUtc = request.StartDate.ToUniversalTime();
 
 		// Already-started periods (e.g. an all-day booking created mid-day) skip collaborative validation.
 		var status = startUtc <= now ? ReservationStatus.Validated : ReservationStatus.Pending;
@@ -101,151 +125,142 @@ public class ReservationService(
 			? now
 			: now + TimeSpan.FromTicks(Math.Min(opts.ValidationDelay.Ticks, (startUtc - now).Ticks));
 
-		var entity = await reservationRepository.Create(
-			userId,
-			displayName,
-			request.StartDate,
-			request.EndDate,
+		var entity = await _reservationRepository.Create(
+			new ReservationUserRef { Id = userId, DisplayName = displayName },
+			startUtc,
+			endUtc,
 			request.Note,
 			status,
 			deadline);
 
 		var reservation = ToTransport(entity);
-		await reservationRealtimePublisher.PublishCreated(reservation);
+		await _reservationRealtimePublisher.PublishCreated(reservation);
+		await _pushNotificationService.NotifyReservationCreated(reservation);
 		return reservation;
 	}
 
 	public async Task<Reservation> Update(Guid id, CreateReservationRequest request, Guid currentUserId)
 	{
-		using var _ = LogService($"{Log.F(id)} {Log.F(currentUserId)} {Log.F(request.StartDate)} {Log.F(request.EndDate)}");
+		using var logger = LogService($"{Log.F(id)} {Log.F(currentUserId)} {Log.F(request.StartDate)} {Log.F(request.EndDate)}");
 
-		var entity = await reservationRepository.GetById(id);
+		var entity = await _reservationRepository.GetById(id);
 		if (entity is null) throw new HttpException.NotFound<ReservationEntity>(id);
-		if (entity.UserId != currentUserId)
+		if (entity.User.Id != currentUserId)
 			throw new HttpException.Forbidden("Vous ne pouvez modifier que vos propres réservations.");
-		if (entity.Status != ReservationStatus.Pending)
+		if (entity.Validation.Status != ReservationStatus.Pending)
 			throw new HttpException.Conflict("Seules les réservations en attente peuvent être modifiées.");
 
-		ValidatePeriod(request);
+		var startUtc = request.StartDate.AsUtc();
+		var endUtc = request.EndDate.AsUtc();
 
-		var overlapping = await reservationRepository.GetOverlapping(request.StartDate, request.EndDate, id);
+		ValidatePeriod(startUtc, endUtc);
+
+		var overlapping = await _reservationRepository.GetOverlapping(startUtc, endUtc, id);
 		if (overlapping.Count > 0)
 			ThrowConflict(overlapping[0]);
 
-		var opts = options.CurrentValue;
+		var opts = _options.CurrentValue;
 		var now = DateTime.UtcNow;
-		var startUtc = request.StartDate.ToUniversalTime();
 		var newDeadline = startUtc <= now
 			? now
 			: now + TimeSpan.FromTicks(Math.Min(opts.ValidationDelay.Ticks, (startUtc - now).Ticks));
 
-		var updated = await reservationRepository.Update(id, request.StartDate, request.EndDate, request.Note, newDeadline);
+		var updated = await _reservationRepository.Update(id, startUtc, endUtc, request.Note, newDeadline);
 
 		// Editing a reservation invalidates objections that referred to the old period.
 		// Drop them, reset the counter, and post a system message in the linked topic if any.
-		if (entity.ObjectionCount > 0)
+		if (entity.Objection is not null)
 		{
-			await objectionRepository.RemoveByReservation(id);
-			await reservationRepository.ResetObjectionCount(id);
+			await _reservationRepository.ClearObjection(id);
 
 			if (updated.TopicId.HasValue)
 			{
 				try
 				{
-					var safeAuthor = System.Net.WebUtility.HtmlEncode(entity.UserDisplayName);
-					await messageService.PostSystem(
+					var safeAuthor = System.Net.WebUtility.HtmlEncode(entity.User.DisplayName);
+					await _messageService.PostSystem(
 						updated.TopicId.Value,
 						currentUserId,
-						entity.UserDisplayName,
+						entity.User.DisplayName,
 						$"<p><em>{safeAuthor} a modifié la réservation. Les objections précédentes ont été retirées&nbsp;: la nouvelle période doit être réévaluée.</em></p>");
 				}
 				catch (Exception ex)
 				{
-					logger.LogWarning(ex, "Could not post objection-cleared system message");
+					logger.Error(ex, "Could not post objection-cleared system message");
 				}
 			}
 
-			updated = await reservationRepository.GetById(id) ?? updated;
+			updated = await _reservationRepository.GetById(id) ?? updated;
 		}
 
 		// If the new period has already started, force-validate so the calendar reflects it immediately.
-		if (startUtc <= now && updated.Status == ReservationStatus.Pending)
+		if (startUtc <= now && updated.Validation.Status == ReservationStatus.Pending)
 		{
-			await reservationRepository.TryForceValidate(id, now);
-			updated = await reservationRepository.GetById(id) ?? updated;
+			await _reservationRepository.TryForceValidate(id, now);
+			updated = await _reservationRepository.GetById(id) ?? updated;
 		}
 
 		var reservation = ToTransport(updated);
-		await reservationRealtimePublisher.PublishUpdated(reservation);
+		await _reservationRealtimePublisher.PublishUpdated(reservation);
 		return reservation;
 	}
 
 	public async Task Delete(Guid id, Guid currentUserId)
 	{
-		using var _ = LogService($"{Log.F(id)} {Log.F(currentUserId)}");
+		using var logger = LogService($"{Log.F(id)} {Log.F(currentUserId)}");
 
-		var entity = await reservationRepository.GetById(id);
+		var entity = await _reservationRepository.GetById(id);
 		if (entity is null) throw new HttpException.NotFound<ReservationEntity>(id);
-		if (entity.UserId != currentUserId)
+		if (entity.User.Id != currentUserId)
 			throw new HttpException.Forbidden("Vous ne pouvez supprimer que vos propres réservations.");
 
 		// Cascade: remove the discussion topic, its messages and read receipts (if any) before the reservation row.
 		if (entity.TopicId.HasValue)
 		{
 			var topicId = entity.TopicId.Value;
-			await messageRepository.DeleteByTopic(topicId);
-			await readReceiptRepository.DeleteByTopic(topicId);
-			await topicRepository.Delete(topicId);
-			await messageRealtimePublisher.PublishTopicDeleted(topicId);
+			await _messageRepository.DeleteByTopic(topicId);
+			await _topicRepository.Delete(topicId);
+			await _messageRealtimePublisher.PublishTopicDeleted(topicId);
 		}
 
-		await objectionRepository.RemoveByReservation(id);
-
 		var reservation = ToTransport(entity);
-		await reservationRepository.Delete(id);
-		await reservationRealtimePublisher.PublishDeleted(reservation);
+		await _reservationRepository.Delete(id);
+		await _reservationRealtimePublisher.PublishDeleted(reservation);
 	}
 
 	public async Task<Reservation> ForceValidate(Guid id, Guid currentUserId)
 	{
-		using var _ = LogService($"{Log.F(id)} {Log.F(currentUserId)}");
+		using var logger = LogService($"{Log.F(id)} {Log.F(currentUserId)}");
 
-		var entity = await reservationRepository.GetById(id);
+		var entity = await _reservationRepository.GetById(id);
 		if (entity is null) throw new HttpException.NotFound<ReservationEntity>(id);
-		if (entity.UserId != currentUserId)
+		if (entity.User.Id != currentUserId)
 			throw new HttpException.Forbidden("Seul le créateur peut valider sa réservation.");
-		if (entity.Status != ReservationStatus.Pending)
+		if (entity.Validation.Status != ReservationStatus.Pending)
 			throw new HttpException.Conflict("Cette réservation n'est plus en attente.");
 
-		var ok = await reservationRepository.TryForceValidate(id, DateTime.UtcNow);
+		var ok = await _reservationRepository.TryForceValidate(id, DateTime.UtcNow);
 		if (!ok)
 			throw new HttpException.Conflict("La réservation a changé d'état entre-temps.");
 
-		var refreshed = await reservationRepository.GetById(id);
+		var refreshed = await _reservationRepository.GetById(id);
 		var reservation = ToTransport(refreshed!);
-		await reservationRealtimePublisher.PublishUpdated(reservation);
+		await _reservationRealtimePublisher.PublishUpdated(reservation);
 		return reservation;
 	}
 
-	public async Task<List<Objection>> GetObjections(Guid reservationId)
+	private static void ValidatePeriod(DateTime startUtc, DateTime endUtc)
 	{
-		using var _ = LogService($"{Log.F(reservationId)}");
-		var entities = await objectionRepository.GetByReservation(reservationId);
-		return entities.Select(ToObjectionTransport).ToList();
-	}
-
-	private static void ValidatePeriod(CreateReservationRequest request)
-	{
-		if (request.StartDate >= request.EndDate)
+		if (startUtc >= endUtc)
 			throw new HttpException.BadRequest("La date de fin doit être postérieure à la date de début.");
 
-		if (request.EndDate < DateTime.Now)
+		if (endUtc < DateTime.UtcNow)
 			throw new HttpException.BadRequest("La période doit être dans le présent ou le futur.");
 	}
 
 	private static void ThrowConflict(ReservationEntity conflict) =>
 		throw new HttpException.Conflict(
-			$"La place est déjà réservée {FormatPeriod(conflict.StartDate, conflict.EndDate).ToLowerInvariant()} par {conflict.UserDisplayName}.");
+			$"La place est déjà réservée {FormatPeriod(conflict.StartDate, conflict.EndDate).ToLowerInvariant()} par {conflict.User.DisplayName}.");
 
 	private static string FormatPeriod(DateTime start, DateTime end)
 	{
@@ -272,27 +287,31 @@ public class ReservationService(
 	private static Reservation ToTransport(ReservationEntity e) => new()
 	{
 		Id = e.Id.AsGuid(),
-		UserId = e.UserId,
-		UserDisplayName = e.UserDisplayName,
+		User = new UserRef { Id = e.User.Id, DisplayName = e.User.DisplayName },
 		StartDate = e.StartDate,
 		EndDate = e.EndDate,
 		Note = e.Note,
 		CreatedAt = e.CreatedAt,
-		Status = e.Status,
-		ValidationDeadline = e.ValidationDeadline,
+		Validation = new ReservationValidationDto
+		{
+			Status = e.Validation.Status,
+			Deadline = e.Validation.Deadline,
+			ValidatedAt = e.Validation.ValidatedAt,
+			CancelledAt = e.Validation.CancelledAt,
+		},
 		TopicId = e.TopicId,
-		ObjectionCount = e.ObjectionCount,
-		ValidatedAt = e.ValidatedAt,
-		CancelledAt = e.CancelledAt
+		Objection = ToObjectionTransport(e),
 	};
 
-	private static Objection ToObjectionTransport(ObjectionEntity e) => new()
-	{
-		Id = e.Id.AsGuid(),
-		ReservationId = e.ReservationId,
-		UserId = e.UserId,
-		UserDisplayName = e.UserDisplayName,
-		Reason = e.Reason,
-		CreatedAt = e.CreatedAt
-	};
+	private static Objection? ToObjectionTransport(ReservationEntity e) =>
+		e.Objection is null
+			? null
+			: new Objection
+			{
+				Id = e.Objection.Id.AsGuid(),
+				ReservationId = e.Id.AsGuid(),
+				User = new UserRef { Id = e.Objection.User.Id, DisplayName = e.Objection.User.DisplayName },
+				Reason = e.Objection.Reason,
+				CreatedAt = e.Objection.CreatedAt,
+			};
 }

@@ -8,6 +8,7 @@
 		"build": "tsc && vp build",
 		"refresh-api": "tsx scripts/refresh-api.ts",
 		"check:types": "tsc --noEmit",
+		"check:types:watch": "tsc --noEmit --watch",
 		"check:lint": "vp check --fix",
 		"format": "vp fmt",
 		"e2e": "pnpm --dir tests/e2e e2e",
@@ -21,7 +22,7 @@
 		"@mui/icons-material": "^7.3.10",
 		"@mui/material": "^7.3.10",
 		"@mui/x-date-pickers": "^9.0.4",
-		"@reduxjs/toolkit": "^2.11.2",
+		"@tanstack/react-query": "^5.100.10",
 		"@tiptap/extension-link": "^3.7.2",
 		"@tiptap/extension-mention": "^3.7.2",
 		"@tiptap/extension-placeholder": "^3.7.2",
@@ -36,9 +37,9 @@
 		"react": "^19.2.5",
 		"react-dom": "^19.2.5",
 		"react-oidc-context": "^3.3.1",
-		"react-redux": "^9.2.0",
 		"react-router-dom": "^7.14.2",
-		"tippy.js": "^6.3.7"
+		"tippy.js": "^6.3.7",
+		"zustand": "^5.0.13"
 	},
 	"devDependencies": {
 		"@elyspio/vite-eslint-config": "^5.0.3",

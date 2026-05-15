@@ -2,6 +2,7 @@ export const routes = {
 	auth: {
 		login: { path: "/login" },
 		callback: { path: "/login/callback" },
+		tokenError: { path: "/session-expiree" },
 	},
 	app: {
 		root: { path: "/" },

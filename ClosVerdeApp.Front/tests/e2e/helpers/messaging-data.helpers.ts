@@ -67,6 +67,13 @@ export async function listMessages(request: APIRequestContext, topicId: string):
 	return parseJson<Message[]>(response, `Le chargement des messages du topic ${topicId}`);
 }
 
+export async function markTopicReadViaApi(request: APIRequestContext, topicId: string, at?: string): Promise<void> {
+	const response = await request.post(`/api/topics/${topicId}/read`, { data: { at } });
+	if (!response.ok()) {
+		throw new Error(`Le marquage comme lu du topic ${topicId} a échoué (${response.status()}) : ${await response.text()}`);
+	}
+}
+
 export async function cleanupTopics(request: APIRequestContext, ids: string[]): Promise<void> {
 	const unique = [...new Set(ids.filter(Boolean))];
 	const failures: string[] = [];

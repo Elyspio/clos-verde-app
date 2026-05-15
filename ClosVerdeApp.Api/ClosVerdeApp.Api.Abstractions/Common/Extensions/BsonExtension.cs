@@ -33,4 +33,6 @@ public static class BsonExtension
 		var oid = new ObjectId(bytes);
 		return oid;
 	}
+
+	public static DateTime GetCreatedAt(this ObjectId oid) => oid.CreationTime.AsUtc();
 }

@@ -1,6 +1,7 @@
-using ClosVerdeApp.Api.Abstractions.Common.Technical.Tracing;
+
 using ClosVerdeApp.Api.Abstractions.Interfaces.Services;
 using ClosVerdeApp.Api.Abstractions.Models.Transports;
+using Elyspio.Utils.Telemetry.Tracing.Elements;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -16,7 +17,7 @@ public class UsersController(IUserDirectoryService userDirectoryService, ILogger
 	[ProducesResponseType(typeof(List<DirectoryUser>), StatusCodes.Status200OK)]
 	public async Task<IActionResult> List(CancellationToken cancellationToken)
 	{
-		using var _ = LogController();
+		using var logger = LogController();
 		return Ok(await userDirectoryService.ListAsync(cancellationToken));
 	}
 }

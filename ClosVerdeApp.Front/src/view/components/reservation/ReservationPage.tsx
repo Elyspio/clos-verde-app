@@ -21,13 +21,13 @@ import {
 	startOfDay,
 } from "date-fns";
 import { fr } from "date-fns/locale/fr";
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { useAppDispatch, useAppSelector } from "@/store";
 import { routes } from "@/config/routes";
-import { clearCreateState, createReservation, fetchMonthReservations, selectMonth, updateReservation } from "@/store/modules/reservations/reservations.actions";
-import type { Reservation } from "@/types/models";
-import { reservationPeriodLabel } from "@/view/components/calendar/date-utils";
+import { useReservationsQueries } from "@data/reservations/reservations.queries";
+import { useReservationsMutations } from "@data/reservations/reservations.mutations";
+import type { Reservation } from "@apis/rest/api/generated";
+import { reservationPeriodLabel } from "@/utils/date.utils";
 
 type ReservationLocationState = {
 	date?: string;
@@ -42,9 +42,7 @@ type AvailabilitySlot = {
 	reservation?: Reservation;
 };
 
-function serializeDateTime(date: Date) {
-	return format(date, "yyyy-MM-dd'T'HH:mm:ss");
-}
+const serializeDateTime = (date: Date) => date.toISOString();
 
 function durationLabel(minutes: number) {
 	const days = Math.floor(minutes / 1440);
@@ -148,7 +146,6 @@ function buildAvailability(day: Date | null, reservations: Reservation[], editin
 }
 
 export function ReservationPage() {
-	const dispatch = useAppDispatch();
 	const navigate = useNavigate();
 	const location = useLocation();
 	const routeState = location.state as ReservationLocationState | null;
@@ -161,13 +158,16 @@ export function ReservationPage() {
 	const availabilityDay = useMemo(() => (startDate && isValid(startDate) ? startDate : initial.start), [initial.start, startDate]);
 	const availabilityYear = getYear(availabilityDay);
 	const availabilityMonth = getMonth(availabilityDay) + 1;
-	const monthReservations = useAppSelector((state) => selectMonth(state, availabilityYear, availabilityMonth));
-	const { createStatus, createError } = useAppSelector((state) => state.reservations);
 	const showAvailability = preciseTimes && !editingReservation && Boolean(availabilityDay);
+	const { data: monthReservations = [] } = useReservationsQueries.byMonth(availabilityYear, availabilityMonth);
 	const availabilitySlots = useMemo(
 		() => (showAvailability ? buildAvailability(availabilityDay, monthReservations, editingReservation) : []),
 		[availabilityDay, editingReservation, monthReservations, showAvailability],
 	);
+
+	const createMutation = useReservationsMutations.create();
+	const updateMutation = useReservationsMutations.update();
+	const activeMutation = editingReservation ? updateMutation : createMutation;
 
 	const effectiveStart = useMemo(() => {
 		if (!startDate || !isValid(startDate)) return null;
@@ -183,19 +183,6 @@ export function ReservationPage() {
 		if (!effectiveStart || !effectiveEnd || !isAfter(effectiveEnd, effectiveStart)) return 0;
 		return differenceInMinutes(effectiveEnd, effectiveStart);
 	}, [effectiveEnd, effectiveStart]);
-
-	useEffect(() => {
-		if (createStatus === "success") {
-			dispatch(clearCreateState());
-			void navigate(routes.app.calendar.path, { replace: true });
-		}
-	}, [createStatus, dispatch, navigate]);
-
-	useEffect(() => () => void dispatch(clearCreateState()), [dispatch]);
-
-	useEffect(() => {
-		if (showAvailability) void dispatch(fetchMonthReservations({ year: availabilityYear, month: availabilityMonth }));
-	}, [availabilityMonth, availabilityYear, dispatch, showAvailability]);
 
 	const handleStartDateChange = (value: Date | null) => {
 		setStartDate(value);
@@ -227,7 +214,7 @@ export function ReservationPage() {
 		setEndDate(slot.end);
 	};
 
-	const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+	const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
 		if (!effectiveStart || !effectiveEnd || durationMinutes <= 0) return;
 
@@ -237,12 +224,16 @@ export function ReservationPage() {
 			note: note.trim() || undefined,
 		};
 
-		if (editingReservation) {
-			void dispatch(updateReservation({ id: editingReservation.id, payload }));
-			return;
+		try {
+			if (editingReservation) {
+				await updateMutation.mutateAsync({ id: editingReservation.id, payload });
+			} else {
+				await createMutation.mutateAsync(payload);
+			}
+			void navigate(routes.app.calendar.path, { replace: true });
+		} catch {
+			// error surfaces via activeMutation.error below; nothing else to do here.
 		}
-
-		void dispatch(createReservation(payload));
 	};
 
 	return (
@@ -257,7 +248,7 @@ export function ReservationPage() {
 				</Typography>
 			</Box>
 			<Stack component="form" data-testid="reservation-form" spacing={3.5} onSubmit={handleSubmit} maxWidth={720}>
-				{createError && <Alert severity="warning">{createError}</Alert>}
+				{activeMutation.isError && <Alert severity="warning">{activeMutation.error?.message}</Alert>}
 				<FormControlLabel
 					control={<Checkbox checked={preciseTimes} onChange={(event) => handlePreciseChange(event.target.checked)} color="primary" />}
 					label="Préciser les heures de début et de fin"
@@ -369,7 +360,7 @@ export function ReservationPage() {
 												{format(slot.start, "HH'h'mm")} - {format(slot.end, "HH'h'mm")}
 											</Typography>
 											<Typography sx={{ fontWeight: 800, color: free ? "#047857" : "var(--ink-soft)" }}>
-												{free ? "Libre" : `Occupé par ${slot.reservation?.userDisplayName ?? "un utilisateur"}`}
+												{free ? "Libre" : `Occupé par ${slot.reservation?.user.displayName ?? "un utilisateur"}`}
 											</Typography>
 											<Typography sx={{ color: "var(--ink-mute)", fontSize: 12 }}>
 												{free
@@ -396,7 +387,7 @@ export function ReservationPage() {
 					onChange={(event) => setNote(event.target.value)}
 					placeholder="Optionnel - ex : famille en visite ce week-end"
 				/>
-				<Button type="submit" variant="contained" fullWidth disabled={createStatus === "loading" || durationMinutes <= 0}>
+				<Button type="submit" variant="contained" fullWidth disabled={activeMutation.isPending || durationMinutes <= 0}>
 					{editingReservation ? "Enregistrer les modifications" : "Confirmer la réservation"}
 				</Button>
 			</Stack>
