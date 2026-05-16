@@ -205,7 +205,17 @@ export function TopicView() {
 					<Typography sx={{ textAlign: "center", color: "var(--ink-mute)", py: 4, fontSize: 13 }}>Aucun message pour l'instant.</Typography>
 				)}
 			</Box>
-			<Box sx={{ p: 2, borderTop: "1px solid var(--line)", bgcolor: "var(--surface)" }}>
+			<Box
+				sx={{
+					// Composer stays a natural-height flex child — its own internal trays
+					// (attachments, editor) are bounded so it cannot squeeze the messages
+					// scroll area above out of existence.
+					flex: "0 0 auto",
+					p: 2,
+					borderTop: "1px solid var(--line)",
+					bgcolor: "var(--surface)",
+				}}
+			>
 				{editingMessage && (
 					<Alert data-testid="message-edit-banner" severity="info" sx={{ mb: 1.25 }}>
 						Vous modifiez votre message.

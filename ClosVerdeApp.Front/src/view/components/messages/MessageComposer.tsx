@@ -262,11 +262,31 @@ export function MessageComposer({
 			</Box>
 
 			{pending.length > 0 && (
-				<Stack data-testid="message-composer-attachments" spacing={0.75}>
+				<Box
+					data-testid="message-composer-attachments"
+					sx={{
+						// Cap the tray so 20+ attachments can't push the editor / submit row off-screen.
+						// ~3 cards visible (each ≈54px tall incl. gap) — beyond that, the tray scrolls
+						// internally and the surrounding composer chrome stays put.
+						maxHeight: 180,
+						overflowY: "auto",
+						pr: 0.5,
+						display: "flex",
+						flexDirection: "column",
+						gap: 0.75,
+						// Thin, theme-coherent scrollbar so the tray feels like a contained surface
+						// rather than a runaway list.
+						scrollbarWidth: "thin",
+						scrollbarColor: "var(--line-strong) transparent",
+						"&::-webkit-scrollbar": { width: 6 },
+						"&::-webkit-scrollbar-thumb": { background: "var(--line-strong)", borderRadius: 3 },
+						"&::-webkit-scrollbar-track": { background: "transparent" },
+					}}
+				>
 					{pending.map((p) => (
 						<PendingAttachmentCard key={p.tempId} pending={p} onRemove={() => removePending(p.tempId)} />
 					))}
-				</Stack>
+				</Box>
 			)}
 
 			<Stack direction="row" justifyContent="space-between" alignItems="center" spacing={1}>
@@ -338,6 +358,7 @@ function PendingAttachmentCard({ pending, onRemove }: { pending: PendingAttachme
 				border: "1px solid var(--line)",
 				bgcolor: "var(--surface)",
 				overflow: "hidden",
+				minHeight: 40
 			}}
 		>
 			<Box

@@ -14,13 +14,21 @@ const navItems = [
 export function AppShell() {
 	const unreadTotal = useUnreadQueries.total();
 	return (
-		<Box minHeight="100vh" display="flex" flexDirection="column" bgcolor="var(--app-bg)">
+		<Box
+			sx={{
+				height: "100dvh",
+				display: "flex",
+				flexDirection: "column",
+				bgcolor: "var(--app-bg)",
+				// Shell never scrolls itself; only the main child (and only what it allows).
+				overflow: "hidden",
+			}}
+		>
 			<Box
 				component="header"
 				data-testid="app-shell"
 				sx={{
-					position: "sticky",
-					top: 0,
+					flex: "0 0 auto",
 					zIndex: 10,
 					bgcolor: "rgba(255,255,255,0.92)",
 					backdropFilter: "blur(14px)",
@@ -133,12 +141,41 @@ export function AppShell() {
 					))}
 				</Stack>
 			</Box>
-			<Box component="main" flex={1}>
+			<Box
+				component="main"
+				sx={{
+					// flex: 1 + minHeight: 0 is the canonical combo that lets a flex child
+					// (a) take all remaining vertical space and (b) actually constrain its
+					// own children so they can declare their own overflow.
+					// `overflow: auto` keeps document-flow pages (calendar, reservation, etc.)
+					// scrollable while the body stays locked — only the main area scrolls.
+					// Pages that want to own their scrolling (Messages) set themselves to
+					// `height: 100%` + internal overflow so this wrapper never scrolls.
+					flex: "1 1 0",
+					minHeight: 0,
+					overflow: "auto",
+					display: "flex",
+					flexDirection: "column",
+				}}
+			>
 				<Outlet />
 			</Box>
-			<Box component="footer" sx={{ borderTop: "1px solid var(--line)", py: 2.5, bgcolor: "var(--surface)" }}>
+			<Box
+				component="footer"
+				sx={{
+					flex: "0 0 auto",
+					borderTop: "1px solid var(--line)",
+					// Visual "rail": minimal vertical weight so the messages thread keeps the room.
+					// Flat border-top (no shadow) — a drop-shadow would compete with the message
+					// composer that already sits right above on /messages.
+					py: 0.75,
+					bgcolor: "var(--surface)",
+				}}
+			>
 				<Container maxWidth="xl" sx={{ maxWidth: "1280px", px: { xs: 2.5, md: 5 } }}>
-					<Typography variant="caption">© 2026 - Jonathan GUICHARD - Clos Verde</Typography>
+					<Typography variant="caption" sx={{ color: "var(--ink-mute)", fontSize: 11, letterSpacing: 0.1 }}>
+						© 2026 — Jonathan GUICHARD · Clos Verde
+					</Typography>
 				</Container>
 			</Box>
 		</Box>
