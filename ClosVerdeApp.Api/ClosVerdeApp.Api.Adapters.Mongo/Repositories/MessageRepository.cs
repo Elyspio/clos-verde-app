@@ -48,6 +48,7 @@ internal class MessageRepository : BaseRepository<MessageEntity>, IMessageReposi
 		string authorDisplayName,
 		string contentHtml,
 		List<Guid> mentions,
+		List<MessageAttachmentEntity> attachments,
 		bool isSystem)
 	{
 		using var logger = LogAdapter($"{Log.F(topicId)} {Log.F(authorUserId)}");
@@ -59,6 +60,7 @@ internal class MessageRepository : BaseRepository<MessageEntity>, IMessageReposi
 			AuthorDisplayName = authorDisplayName,
 			ContentHtml = contentHtml,
 			Mentions = mentions ?? [],
+			Attachments = attachments ?? [],
 			IsSystem = isSystem
 		};
 

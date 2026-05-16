@@ -9,7 +9,7 @@ namespace ClosVerdeApp.Api.Abstractions.Interfaces.Services;
 public interface IMessageService
 {
 	Task<List<Message>> List(Guid topicId, DateTime? before, int limit);
-	Task<Message> Post(Guid topicId, Guid authorUserId, string authorDisplayName, string contentHtml);
+	Task<Message> Post(Guid topicId, Guid authorUserId, string authorDisplayName, string contentHtml, IReadOnlyList<Guid> attachmentIds);
 	Task<Message> PostSystem(Guid topicId, Guid actorUserId, string actorDisplayName, string contentHtml);
 	Task<Message> Edit(Guid messageId, Guid currentUserId, string contentHtml);
 	Task<Message> SoftDelete(Guid messageId, Guid currentUserId);

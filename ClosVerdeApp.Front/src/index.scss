@@ -41,7 +41,11 @@ html,
 body,
 #root {
 	width: 100%;
-	min-height: 100%;
+	// Lock the doc to the visible viewport (dvh handles iOS Safari address-bar collapse).
+	// Using fixed height (not min-height) is what keeps the AppShell from growing past the
+	// viewport — inner scroll regions (topic list, message thread) own all the scrolling.
+	height: 100dvh;
+	overflow: hidden;
 }
 
 html {
@@ -60,7 +64,6 @@ body {
 }
 
 #root {
-	min-height: 100vh;
 	display: flex;
 	flex-direction: column;
 }

@@ -14,6 +14,7 @@ public interface IMessageRepository
 		string authorDisplayName,
 		string contentHtml,
 		List<Guid> mentions,
+		List<MessageAttachmentEntity> attachments,
 		bool isSystem);
 
 	Task<MessageEntity?> Update(Guid id, string contentHtml, List<Guid> mentions);

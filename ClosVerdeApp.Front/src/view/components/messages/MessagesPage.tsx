@@ -14,12 +14,28 @@ import { TopicList } from "./TopicList";
 export function MessagesPage() {
 	const { topicId } = useParams<{ topicId?: string }>();
 	return (
-		<Container data-testid="messages-page" maxWidth="xl" sx={{ maxWidth: "1280px", px: { xs: 0, md: 3 }, py: { xs: 0, md: 3 } }}>
+		<Container
+			data-testid="messages-page"
+			maxWidth="xl"
+			sx={{
+				maxWidth: "1280px",
+				px: { xs: 0, md: 3 },
+				py: { xs: 0, md: 3 },
+				// Take exactly the space AppShell's <main> hands us — no `calc(100vh - …)`
+				// hack. The grid below owns the inner scrolling, so this container itself
+				// never produces a scrollbar.
+				height: "100%",
+				display: "flex",
+				flexDirection: "column",
+				minHeight: 0,
+			}}
+		>
 			<Box
 				sx={{
 					display: "grid",
 					gridTemplateColumns: { xs: "1fr", md: "300px 1fr" },
-					height: { xs: "calc(100vh - 100px)", md: "calc(100vh - 140px)" },
+					flex: "1 1 0",
+					minHeight: 0,
 					border: { md: "1px solid var(--line)" },
 					borderRadius: { md: 2 },
 					overflow: "hidden",

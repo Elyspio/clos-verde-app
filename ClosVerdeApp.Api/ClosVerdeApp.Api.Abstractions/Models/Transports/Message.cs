@@ -12,6 +12,7 @@ public class Message : ITransport
 	[Required] public required string AuthorDisplayName { get; init; }
 	[Required] public required string ContentHtml { get; init; }
 	[Required] public required List<Guid> Mentions { get; init; }
+	[Required] public required List<Attachment> Attachments { get; init; }
 	[Required] public required DateTime CreatedAt { get; init; }
 	public DateTime? EditedAt { get; init; }
 	[Required] public required bool IsDeleted { get; init; }

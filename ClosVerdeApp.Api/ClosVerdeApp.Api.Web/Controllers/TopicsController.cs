@@ -100,7 +100,7 @@ public class TopicsController(
 	public async Task<IActionResult> PostMessage(Guid id, [FromBody] PostMessageRequest request)
 	{
 		using var logger = LogController(Log.F(id));
-		var msg = await messageService.Post(id, CurrentUserId, CurrentDisplayName, request.ContentHtml);
+		var msg = await messageService.Post(id, CurrentUserId, CurrentDisplayName, request.ContentHtml, request.AttachmentIds);
 		return Created($"/api/messages/{msg.Id}", msg);
 	}
 

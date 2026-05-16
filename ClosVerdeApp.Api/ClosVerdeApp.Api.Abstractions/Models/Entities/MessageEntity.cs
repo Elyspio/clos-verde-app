@@ -28,6 +28,12 @@ public class MessageEntity : IEntity
 	[BsonGuidRepresentation(GuidRepresentation.Standard)]
 	public List<Guid> Mentions { get; set; } = [];
 
+	/// <summary>
+	/// Files attached to this message. Each entry references a GridFS file stored
+	/// in the <c>attachments</c> bucket (id == GridFS file _id).
+	/// </summary>
+	public List<MessageAttachmentEntity> Attachments { get; set; } = [];
+
 	[BsonIgnore]
 	public DateTime CreatedAt => Id.GetCreatedAt();
 
