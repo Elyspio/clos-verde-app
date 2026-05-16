@@ -20,6 +20,7 @@ public class MessageService(
 	ITopicRepository topicRepository,
 	IMessageRealtimePublisher messageRealtimePublisher,
 	IPushNotificationService pushNotificationService,
+	IAttachmentService attachmentService,
 	ILogger<MessageService> logger
 ) : TracingService(logger), IMessageService
 {
@@ -35,23 +36,40 @@ public class MessageService(
 		return messages.Select(ToTransport).ToList();
 	}
 
-	public async Task<Message> Post(Guid topicId, Guid authorUserId, string authorDisplayName, string contentHtml)
+	public async Task<Message> Post(Guid topicId, Guid authorUserId, string authorDisplayName, string contentHtml, IReadOnlyList<Guid> attachmentIds)
 	{
-		using var logger = LogService($"{Log.F(topicId)} {Log.F(authorUserId)}");
-
-		if (string.IsNullOrWhiteSpace(contentHtml))
-			throw new HttpException.BadRequest("Le message est vide.");
+		using var logger = LogService($"{Log.F(topicId)} {Log.F(authorUserId)} attachments={attachmentIds.Count}");
 
 		var topic = await topicRepository.GetById(topicId)
 			?? throw new HttpException.NotFound<TopicEntity>(topicId);
 
-		var sanitized = HtmlContentHelper.Sanitize(contentHtml);
-		if (string.IsNullOrWhiteSpace(sanitized) || string.IsNullOrWhiteSpace(StripTags(sanitized)))
+		var sanitized = HtmlContentHelper.Sanitize(contentHtml ?? string.Empty);
+		var hasText = !string.IsNullOrWhiteSpace(sanitized) && !string.IsNullOrWhiteSpace(StripTags(sanitized));
+		var hasAttachments = attachmentIds.Count > 0;
+
+		if (!hasText && !hasAttachments)
 			throw new HttpException.BadRequest("Le message est vide.");
 
-		var mentions = HtmlContentHelper.ExtractMentions(sanitized);
+		var distinctAttachmentIds = attachmentIds.Distinct().ToList();
+		if (distinctAttachmentIds.Count != attachmentIds.Count)
+			throw new HttpException.BadRequest("Une pièce jointe est référencée plusieurs fois.");
 
-		var entity = await messageRepository.Create(topic.Id.AsGuid(), authorUserId, authorDisplayName, sanitized, mentions, isSystem: false);
+		var attachments = new List<MessageAttachmentEntity>(distinctAttachmentIds.Count);
+		foreach (var attachmentId in distinctAttachmentIds)
+		{
+			var metadata = await attachmentService.RequireOwnedByUploader(attachmentId, authorUserId);
+			attachments.Add(new MessageAttachmentEntity
+			{
+				Id = attachmentId.AsObjectId(),
+				FileName = metadata.FileName,
+				ContentType = metadata.ContentType,
+				SizeBytes = metadata.SizeBytes,
+			});
+		}
+
+		var mentions = hasText ? HtmlContentHelper.ExtractMentions(sanitized) : [];
+
+		var entity = await messageRepository.Create(topic.Id.AsGuid(), authorUserId, authorDisplayName, sanitized, mentions, attachments, isSystem: false);
 
 		await topicRepository.BumpStatistics(topic.Id.AsGuid(), entity.CreatedAt, +1);
 		await topicRepository.MarkRead(topic.Id.AsGuid(), authorUserId, entity.CreatedAt);
@@ -76,7 +94,7 @@ public class MessageService(
 			?? throw new HttpException.NotFound<TopicEntity>(topicId);
 
 		var sanitized = HtmlContentHelper.Sanitize(contentHtml);
-		var entity = await messageRepository.Create(topic.Id.AsGuid(), actorUserId, actorDisplayName, sanitized, [], isSystem: true);
+		var entity = await messageRepository.Create(topic.Id.AsGuid(), actorUserId, actorDisplayName, sanitized, [], [], isSystem: true);
 
 		await topicRepository.BumpStatistics(topic.Id.AsGuid(), entity.CreatedAt, +1);
 
@@ -127,6 +145,13 @@ public class MessageService(
 		if (existing.IsSystem)
 			throw new HttpException.Forbidden("Les messages système ne sont pas supprimables.");
 
+		// Free GridFS storage before flipping the soft-delete flag. The metadata embedded
+		// in the message stays so historical lists can still show "Fichier supprimé" if needed.
+		foreach (var attachment in existing.Attachments)
+		{
+			await attachmentService.Delete(attachment.Id.AsGuid());
+		}
+
 		var updated = await messageRepository.SoftDelete(messageId)
 			?? throw new HttpException.NotFound<MessageEntity>(messageId);
 
@@ -160,7 +185,7 @@ public class MessageService(
 		return System.Text.RegularExpressions.Regex.Replace(html, "<[^>]+>", string.Empty).Trim();
 	}
 
-	internal static Message ToTransport(MessageEntity e) => new()
+	internal Message ToTransport(MessageEntity e) => new()
 	{
 		Id = e.Id.AsGuid(),
 		TopicId = e.TopicId,
@@ -168,9 +193,23 @@ public class MessageService(
 		AuthorDisplayName = e.AuthorDisplayName,
 		ContentHtml = e.ContentHtml,
 		Mentions = e.Mentions,
+		Attachments = e.Attachments.Select(MapAttachment).ToList(),
 		CreatedAt = e.CreatedAt,
 		EditedAt = e.EditedAt,
 		IsDeleted = e.IsDeleted,
 		IsSystem = e.IsSystem
 	};
+
+	private Attachment MapAttachment(MessageAttachmentEntity a) => attachmentService.ToTransport(new AttachmentMetadata
+	{
+		Id = a.Id.AsGuid(),
+		FileName = a.FileName,
+		ContentType = a.ContentType,
+		SizeBytes = a.SizeBytes,
+		// Uploader/UploadedAt are not stored in the embedded reference; only the
+		// transport-facing fields (download url + isImage) actually need them and they
+		// derive from ContentType, so we pass through with placeholders.
+		UploaderUserId = Guid.Empty,
+		UploadedAt = a.Id.CreationTime.AsUtc(),
+	});
 }

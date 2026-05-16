@@ -4,6 +4,7 @@ import { format } from "date-fns";
 import { fr } from "date-fns/locale/fr";
 import { memo, useCallback, useEffect, useRef, useState } from "react";
 import type { Message } from "@apis/rest/api/generated";
+import { MessageAttachments } from "./MessageAttachments";
 
 type Props = {
 	messages: readonly Message[];
@@ -233,11 +234,16 @@ function MessageListImpl({ messages, currentUserId, onEdit, onDelete, editingMes
 							{m.isDeleted ? (
 								<Typography sx={{ fontStyle: "italic", color: "var(--ink-mute)", fontSize: 13, textAlign: isMe ? "right" : "left" }}>Message supprimé</Typography>
 							) : (
-								<Box
-									className="message-content"
-									sx={{ ...messageContentSx, textAlign: isMe ? "right" : "left" }}
-									dangerouslySetInnerHTML={{ __html: m.contentHtml }}
-								/>
+								<>
+									{m.contentHtml && (
+										<Box
+											className="message-content"
+											sx={{ ...messageContentSx, textAlign: isMe ? "right" : "left" }}
+											dangerouslySetInnerHTML={{ __html: m.contentHtml }}
+										/>
+									)}
+									{m.attachments.length > 0 && <MessageAttachments attachments={m.attachments} alignEnd={isMe} />}
+								</>
 							)}
 						</Box>
 					</Stack>

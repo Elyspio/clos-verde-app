@@ -13,6 +13,15 @@ export type Topic = {
 	messageCount: number;
 };
 
+export type Attachment = {
+	id: string;
+	fileName: string;
+	contentType: string;
+	sizeBytes: number;
+	downloadUrl: string;
+	isImage: boolean;
+};
+
 export type Message = {
 	id: string;
 	topicId: string;
@@ -20,6 +29,7 @@ export type Message = {
 	authorDisplayName: string;
 	contentHtml: string;
 	mentions: string[];
+	attachments?: Attachment[];
 	createdAt: string;
 	editedAt?: string | null;
 	isDeleted: boolean;
@@ -57,9 +67,26 @@ export async function deleteTopicViaApi(request: APIRequestContext, id: string):
 	}
 }
 
-export async function postMessageViaApi(request: APIRequestContext, topicId: string, contentHtml: string): Promise<Message> {
-	const response = await request.post(`/api/topics/${topicId}/messages`, { data: { contentHtml } });
+export async function postMessageViaApi(request: APIRequestContext, topicId: string, contentHtml: string, attachmentIds: string[] = []): Promise<Message> {
+	const response = await request.post(`/api/topics/${topicId}/messages`, { data: { contentHtml, attachmentIds } });
 	return parseJson<Message>(response, "L'envoi du message");
+}
+
+export async function uploadAttachmentViaApi(request: APIRequestContext, file: { name: string; mimeType: string; buffer: Buffer }): Promise<Attachment> {
+	const response = await request.post("/api/attachments", {
+		multipart: {
+			file: { name: file.name, mimeType: file.mimeType, buffer: file.buffer },
+		},
+	});
+	return parseJson<Attachment>(response, `Le téléversement de la pièce jointe « ${file.name} »`);
+}
+
+export async function downloadAttachmentViaApi(request: APIRequestContext, downloadUrl: string): Promise<Buffer> {
+	const response = await request.get(downloadUrl);
+	if (!response.ok()) {
+		throw new Error(`Le téléchargement ${downloadUrl} a échoué (${response.status()}) : ${await response.text()}`);
+	}
+	return Buffer.from(await response.body());
 }
 
 export async function listMessages(request: APIRequestContext, topicId: string): Promise<Message[]> {

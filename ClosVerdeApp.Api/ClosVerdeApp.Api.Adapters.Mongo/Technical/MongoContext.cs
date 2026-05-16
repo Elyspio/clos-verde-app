@@ -4,6 +4,7 @@ using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Conventions;
 using MongoDB.Bson.Serialization.Serializers;
 using MongoDB.Driver;
+using MongoDB.Driver.GridFS;
 using Serilog;
 
 namespace ClosVerdeApp.Api.Adapters.Mongo.Technical;
@@ -43,6 +44,11 @@ public sealed class MongoContext
 		Log.Logger.Information($"Connecting to Database '{hosts}/{url.DatabaseName}'");
 
 		MongoDatabase = client.GetDatabase(url.DatabaseName);
+		AttachmentsBucket = new GridFSBucket(MongoDatabase, new GridFSBucketOptions
+		{
+			BucketName = "attachments",
+			ChunkSizeBytes = 1024 * 256,
+		});
 	}
 
 	/// <summary>
@@ -50,4 +56,10 @@ public sealed class MongoContext
 	/// </summary>
 	/// <returns></returns>
 	public IMongoDatabase MongoDatabase { get; }
+
+	/// <summary>
+	///     GridFS bucket backing message attachments. Files live in
+	///     <c>attachments.files</c>/<c>attachments.chunks</c>.
+	/// </summary>
+	public IGridFSBucket AttachmentsBucket { get; }
 }

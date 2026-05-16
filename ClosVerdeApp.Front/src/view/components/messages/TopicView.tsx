@@ -8,7 +8,7 @@ import { useMessagesQueries } from "@data/messages/messages.queries";
 import { useMessagesMutations } from "@data/messages/messages.mutations";
 import { useTopicsQueries } from "@data/topics/topics.queries";
 import { useTopicsMutations } from "@data/topics/topics.mutations";
-import type { Message } from "@apis/rest/api/generated";
+import type { Attachment, Message } from "@apis/rest/api/generated";
 import { MessageComposer } from "./MessageComposer";
 import { MessageList } from "./MessageList";
 import { RenameTopicDialog } from "./RenameTopicDialog";
@@ -95,9 +95,9 @@ export function TopicView() {
 
 	const isOwnerOfCustom = topic?.kind === "Custom" && !!userId && topic.createdByUserId === userId;
 
-	const handleSend = async (html: string) => {
+	const handleSend = async ({ html, attachments }: { html: string; attachments: Attachment[] }) => {
 		if (!topicId) return;
-		await postMutation.mutateAsync(html);
+		await postMutation.mutateAsync({ contentHtml: html, attachments });
 	};
 
 	const handleEditMessage = useCallback((m: Message) => {
@@ -111,7 +111,7 @@ export function TopicView() {
 		[deleteMessageMutation],
 	);
 
-	const handleSubmitEdit = async (html: string) => {
+	const handleSubmitEdit = async ({ html }: { html: string }) => {
 		if (!editingMessage) return;
 		await editMutation.mutateAsync({ id: editingMessage.id, contentHtml: html });
 		setEditingMessage(null);
@@ -219,6 +219,7 @@ export function TopicView() {
 					submitLabel={editingMessage ? "Enregistrer" : "Envoyer"}
 					placeholder={editingMessage ? "Modifier le message…" : "Écrivez un message…"}
 					clearOnSubmit={!editingMessage}
+					allowAttachments={!editingMessage}
 				/>
 			</Box>
 			<RenameTopicDialog open={renameOpen} currentName={topic.name} onClose={() => setRenameOpen(false)} onSubmit={handleRename} />

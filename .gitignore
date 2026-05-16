@@ -30,3 +30,4 @@ ClosVerdeApp.Front/dist
 skills-lock.json
 Deployment/build/cache/.build-counter
 appsettings.secrets.json
+ClosVerdeApp.Front/openapitools.json

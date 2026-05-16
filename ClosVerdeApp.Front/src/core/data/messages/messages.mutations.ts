@@ -1,14 +1,19 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "react-oidc-context";
 import { extractApiError } from "@apis/rest/api/clients/api.client";
-import type { Message } from "@apis/rest/api/generated";
+import type { Attachment, Message } from "@apis/rest/api/generated";
 import { messagesService } from "@/core/services/messages.service";
 import { useCurrentUserId } from "@data/client/useCurrentUserId";
 import { topicsKeys } from "@data/topics/topics.keys";
 import { messagesKeys } from "./messages.keys";
 import { messagesCache, type MessagesPages } from "./messages.cache";
 
-function buildOptimisticMessage(args: { tempId: string; topicId: string; userId: string; displayName: string; contentHtml: string }): Message {
+export type PostMessagePayload = {
+	contentHtml: string;
+	attachments: Attachment[];
+};
+
+function buildOptimisticMessage(args: { tempId: string; topicId: string; userId: string; displayName: string; contentHtml: string; attachments: Attachment[] }): Message {
 	return {
 		id: args.tempId,
 		topicId: args.topicId,
@@ -16,6 +21,7 @@ function buildOptimisticMessage(args: { tempId: string; topicId: string; userId:
 		authorDisplayName: args.displayName,
 		contentHtml: args.contentHtml,
 		mentions: [],
+		attachments: args.attachments,
 		createdAt: new Date().toISOString(),
 		editedAt: null,
 		isDeleted: false,
@@ -34,20 +40,24 @@ function usePost(topicId: string) {
 	const userId = useCurrentUserId();
 	const { user } = useAuth();
 	return useMutation({
-		mutationFn: async (contentHtml: string) => {
+		mutationFn: async ({ contentHtml, attachments }: PostMessagePayload) => {
 			try {
-				return await messagesService.post(topicId, contentHtml);
+				return await messagesService.post(
+					topicId,
+					contentHtml,
+					attachments.map((a) => a.id),
+				);
 			} catch (e) {
 				throw new Error(extractApiError(e, "Envoi impossible."));
 			}
 		},
-		onMutate: async (contentHtml) => {
+		onMutate: async ({ contentHtml, attachments }) => {
 			await qc.cancelQueries({ queryKey: messagesKeys.list(topicId) });
 			const snapshot = qc.getQueryData<MessagesPages>(messagesKeys.list(topicId));
 			if (!userId) return { snapshot, tempId: null as string | null };
 			const tempId = `temp-${typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : Math.random().toString(36).slice(2)}`;
 			const displayName = user?.profile?.name ?? user?.profile?.preferred_username ?? "Vous";
-			const optimistic = buildOptimisticMessage({ tempId, topicId, userId, displayName, contentHtml });
+			const optimistic = buildOptimisticMessage({ tempId, topicId, userId, displayName, contentHtml, attachments });
 			qc.setQueryData<MessagesPages>(messagesKeys.list(topicId), (old) => messagesCache.appendOptimistic(old, optimistic));
 			return { snapshot, tempId };
 		},
