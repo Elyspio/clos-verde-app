@@ -68,13 +68,21 @@ test.describe("Messaging — scroll & highlight", () => {
 		createdTopicIds.push(topic.id);
 
 		const messages = [];
-		for (let i = 0; i < 25; i += 1) {
+		const lastReadIndex = 7;
+		const firstUnreadIndex = lastReadIndex + 1;
+		for (let i = 0; i <= lastReadIndex; i += 1) {
+			messages.push(await postMessageViaApi(apiClient, topic.id, `<p>msg-${i}-${runId}</p>`));
+		}
+
+		// Message timestamps are second-precision in the backend. Split the read and
+		// unread batches so `createdAt > lastReadAt` identifies the first unread row.
+		await page.waitForTimeout(1_100);
+
+		for (let i = firstUnreadIndex; i < 25; i += 1) {
 			messages.push(await postMessageViaApi(apiClient, topic.id, `<p>msg-${i}-${runId}</p>`));
 		}
 
 		// Mark the first 8 as read; the 9th should be the first unread and the scroll target.
-		const lastReadIndex = 7;
-		const firstUnreadIndex = lastReadIndex + 1;
 		await markTopicReadViaApi(apiClient, topic.id, messages[lastReadIndex].createdAt);
 
 		await page.goto(`/messages/${topic.id}`);

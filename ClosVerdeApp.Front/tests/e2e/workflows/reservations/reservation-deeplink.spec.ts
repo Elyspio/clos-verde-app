@@ -17,7 +17,7 @@ test.describe("Reservation deep-link (push notification)", () => {
 
 	test("ouvre automatiquement la popup de détail quand l'URL contient ?reservation=&date=", async ({ apiClient, page }) => {
 		const runId = createRunId();
-		const day = await findFreeFutureDay(apiClient);
+		const day = await findFreeFutureDay(apiClient, runId);
 		const start = startOfDay(day);
 		const end = addDays(start, 1);
 
@@ -49,7 +49,7 @@ test.describe("Reservation deep-link (push notification)", () => {
 	test("change automatiquement de mois si la réservation est dans un mois différent du courant", async ({ apiClient, page }) => {
 		const runId = createRunId();
 		// Find a free day at least one month ahead so the calendar must move forward.
-		const day = await findFreeFutureDay(apiClient);
+		const day = await findFreeFutureDay(apiClient, runId);
 		// findFreeFutureDay starts from today + safety margin; we just need a day not in the
 		// current visible month. The default `monthDate` is `startOfMonth(new Date())`, so any
 		// day beyond the current month works.

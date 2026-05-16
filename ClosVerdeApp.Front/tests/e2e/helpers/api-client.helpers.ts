@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { request, type APIRequestContext } from "@playwright/test";
 import { playwrightPrivateEnv } from "../config/load-private-env";
+import { ensureUserStorageState, resolveE2eUser, type E2eUserRef } from "./e2e-users.helpers";
 
 type StorageState = {
 	origins?: Array<{
@@ -36,14 +37,15 @@ export type AuthenticatedSessionData = {
 	oidcStorageKey: string;
 };
 
-export function ensureAuthenticatedStorageState(storageStatePath = playwrightPrivateEnv.storageStatePath) {
+export function ensureAuthenticatedStorageState(userKey: E2eUserRef) {
+	const storageStatePath = resolveE2eUser(userKey).storageStatePath;
 	if (existsSync(storageStatePath)) return storageStatePath;
 
-	throw new Error(`Storage state introuvable: ${storageStatePath}. Lancez \`pnpm e2e:auth\` depuis ClosVerdeApp.Front/tests/e2e.`);
+	return ensureUserStorageState(userKey);
 }
 
-export function readAuthenticatedSessionData(storageStatePath = playwrightPrivateEnv.storageStatePath): AuthenticatedSessionData {
-	const resolvedStorageStatePath = ensureAuthenticatedStorageState(storageStatePath);
+export function readAuthenticatedSessionData(userKey: E2eUserRef): AuthenticatedSessionData {
+	const resolvedStorageStatePath = ensureAuthenticatedStorageState(userKey);
 	const rawStorageState = readFileSync(resolvedStorageStatePath, "utf8");
 	const storageState = JSON.parse(rawStorageState) as StorageState;
 	const oidcEntry = storageState.origins?.flatMap((origin) => origin.localStorage ?? []).find((entry) => entry.name.startsWith("oidc.user:"));
@@ -74,8 +76,8 @@ export function readAuthenticatedSessionData(storageStatePath = playwrightPrivat
 	};
 }
 
-export async function createAuthenticatedApiClient(): Promise<APIRequestContext> {
-	const { accessToken } = readAuthenticatedSessionData();
+export async function createAuthenticatedApiClient(userKey: E2eUserRef): Promise<APIRequestContext> {
+	const { accessToken } = readAuthenticatedSessionData(userKey);
 
 	return request.newContext({
 		baseURL: playwrightPrivateEnv.apiBaseUrl,

@@ -27,7 +27,7 @@ test.describe("Reservation pending status", () => {
 
 	test("crée une réservation future en statut Pending avec badge En attente", async ({ apiClient, page }) => {
 		const runId = createRunId();
-		const reservationDay = await findFreeFutureDay(apiClient);
+		const reservationDay = await findFreeFutureDay(apiClient, runId);
 
 		await page.goto("/calendrier");
 		await navigateToReservationMonth(page, reservationDay);
@@ -71,7 +71,7 @@ test.describe("Reservation pending status", () => {
 
 	test("le créateur peut forcer la validation depuis la décision (CreatorDecisionPanel)", async ({ apiClient, page }) => {
 		const runId = createRunId();
-		const reservationDay = await findFreeFutureDay(apiClient);
+		const reservationDay = await findFreeFutureDay(apiClient, runId);
 
 		const start = set(reservationDay, { hours: 9, minutes: 0, seconds: 0, milliseconds: 0 });
 		const end = set(reservationDay, { hours: 11, minutes: 0, seconds: 0, milliseconds: 0 });

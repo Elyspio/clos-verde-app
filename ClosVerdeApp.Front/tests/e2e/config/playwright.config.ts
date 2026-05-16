@@ -11,7 +11,6 @@ export default defineConfig({
 	reporter: [["html", { open: "never", outputFolder: join(e2eRootDir, "playwright-report") }]],
 	use: {
 		baseURL: playwrightPrivateEnv.baseUrl,
-		storageState: playwrightPrivateEnv.storageStatePath,
 		ignoreHTTPSErrors: true,
 		trace: "retain-on-failure",
 		screenshot: "only-on-failure",

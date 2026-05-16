@@ -14,7 +14,7 @@ test.describe("Reservation conflict", () => {
 
 	test("affiche le message de conflit en français", async ({ apiClient, page }) => {
 		const runId = createRunId();
-		const reservationDay = await findFreeFutureDay(apiClient);
+		const reservationDay = await findFreeFutureDay(apiClient, runId);
 		const existingStart = set(reservationDay, { hours: 9, minutes: 0, seconds: 0, milliseconds: 0 });
 		const existingEnd = set(reservationDay, { hours: 11, minutes: 0, seconds: 0, milliseconds: 0 });
 

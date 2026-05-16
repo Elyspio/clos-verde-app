@@ -150,7 +150,7 @@ export function TopicView() {
 	const composerKey = editingMessage ? `edit:${editingMessage.id}` : `post:${topic.id}`;
 
 	return (
-		<Box data-testid="topic-view" data-topic-id={topic.id} sx={{ display: "flex", flexDirection: "column", height: "100%" }}>
+		<Box data-testid="topic-view" data-topic-id={topic.id} sx={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 0 }}>
 			<Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1} sx={{ p: 2, borderBottom: "1px solid var(--line)" }}>
 				<Box sx={{ minWidth: 0 }}>
 					<Typography data-testid="topic-title" sx={{ fontWeight: 800, fontSize: 18 }}>
@@ -185,7 +185,7 @@ export function TopicView() {
 					)}
 				</Stack>
 			</Stack>
-			<Box sx={{ flex: 1, overflowY: "auto", bgcolor: "var(--app-bg)" }}>
+			<Box data-message-scroll-root="true" sx={{ flex: 1, minHeight: 0, overflowY: "auto", bgcolor: "var(--app-bg)" }}>
 				{isLoading && messages.length === 0 ? (
 					<Box sx={{ display: "flex", justifyContent: "center", p: 4 }}>
 						<CircularProgress size={24} />

@@ -1,35 +1,60 @@
-import { expect, type Page, test } from "@playwright/test";
-import { mkdirSync } from "node:fs";
+import { expect, test, type APIRequestContext } from "@playwright/test";
+import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
-import { playwrightPrivateEnv, requirePrivateEnvValue } from "../config/load-private-env";
+import { playwrightPrivateEnv } from "../config/load-private-env";
+import { createStorageState, e2eUsers, getOidcAuthorityCandidates, type E2eUser } from "../helpers/e2e-users.helpers";
 
-async function findVisibleLocator(page: Page, selectors: string[]) {
-	for (const selector of selectors) {
+type TokenResponse = {
+	access_token: string;
+	refresh_token?: string;
+	id_token?: string;
+	token_type?: string;
+	scope?: string;
+	expires_in?: number;
+};
+
+async function requestToken(request: APIRequestContext, user: E2eUser): Promise<TokenResponse> {
+	const attempts: string[] = [];
+
+	for (const authority of getOidcAuthorityCandidates()) {
+		const tokenEndpoint = `${authority}/protocol/openid-connect/token`;
 		try {
-			return await page.waitForSelector(selector, { state: "visible", timeout: 5_000 });
-		} catch {
-			continue;
+			const response = await request.post(tokenEndpoint, {
+				form: {
+					grant_type: "password",
+					client_id: playwrightPrivateEnv.keycloakClientId,
+					username: user.username,
+					password: user.password,
+					scope: "openid profile email",
+				},
+			});
+
+			if (response.ok()) {
+				const token = (await response.json()) as Partial<TokenResponse>;
+				if (typeof token.access_token !== "string" || token.access_token.length === 0) {
+					throw new Error(`Réponse token invalide pour ${user.username} depuis ${tokenEndpoint}.`);
+				}
+
+				return token as TokenResponse;
+			}
+
+			attempts.push(`${tokenEndpoint} -> ${response.status()} ${await response.text()}`);
+		} catch (error) {
+			attempts.push(`${tokenEndpoint} -> ${error instanceof Error ? error.message : String(error)}`);
 		}
 	}
 
-	throw new Error(`Impossible de trouver un sélecteur visible parmi : ${selectors.join(", ")}`);
+	throw new Error(`Impossible de récupérer un token Keycloak pour ${user.username}: ${attempts.join(" | ")}`);
 }
 
-test("capture l'authentification Keycloak", async ({ page }) => {
-	const login = requirePrivateEnvValue("PLAYWRIGHT_KEYCLOAK_LOGIN");
-	const password = requirePrivateEnvValue("PLAYWRIGHT_KEYCLOAK_PASSWORD");
+test("capture les authentifications Keycloak locales", async ({ request }) => {
+	expect(e2eUsers.length, "Le realm local doit exposer des utilisateurs E2E.").toBeGreaterThan(0);
 
-	await page.goto("/login");
-	await expect(page.getByRole("heading", { name: "Bienvenue." })).toBeVisible();
-	await page.getByRole("button", { name: "Se connecter" }).click();
+	for (const user of e2eUsers) {
+		const token = await requestToken(request, user);
+		const storageState = createStorageState(user, token);
 
-	await (await findVisibleLocator(page, ["#username", 'input[name="username"]', 'input[name="email"]'])).fill(login);
-	await (await findVisibleLocator(page, ["#password", 'input[name="password"]'])).fill(password);
-	await (await findVisibleLocator(page, ["#kc-login", 'button[type="submit"]', 'button:has-text("Se connecter")', 'button:has-text("Sign in")'])).click();
-
-	await page.waitForURL(/\/calendrier(?:$|[?#])/, { timeout: 120_000 });
-	await page.waitForFunction(() => Object.keys(window.localStorage).some((key) => key.startsWith("oidc.user:")));
-
-	mkdirSync(dirname(playwrightPrivateEnv.storageStatePath), { recursive: true });
-	await page.context().storageState({ path: playwrightPrivateEnv.storageStatePath });
+		mkdirSync(dirname(user.storageStatePath), { recursive: true });
+		writeFileSync(user.storageStatePath, JSON.stringify(storageState, null, "\t"), "utf8");
+	}
 });

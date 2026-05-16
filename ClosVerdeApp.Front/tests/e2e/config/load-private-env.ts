@@ -24,14 +24,5 @@ export const playwrightPrivateEnv = {
 	apiBaseUrl: readOptionalEnv("PLAYWRIGHT_API_BASE_URL", "https://localhost:4000")!,
 	keycloakAuthority: readOptionalEnv("PLAYWRIGHT_KEYCLOAK_AUTHORITY", "https://auth.elyspio.fr/realms/clos-verde")!,
 	keycloakClientId: readOptionalEnv("PLAYWRIGHT_KEYCLOAK_CLIENT_ID", "cv_dev-front")!,
-	keycloakLogin: readOptionalEnv("PLAYWRIGHT_KEYCLOAK_LOGIN"),
-	keycloakPassword: readOptionalEnv("PLAYWRIGHT_KEYCLOAK_PASSWORD"),
-	storageStatePath: resolveFromRoot(readOptionalEnv("PLAYWRIGHT_STORAGE_STATE_PATH", "cache/.auth/user.json")!),
+	storageStateDir: resolveFromRoot(readOptionalEnv("PLAYWRIGHT_STORAGE_STATE_DIR", "cache/.auth/users")!),
 };
-
-export function requirePrivateEnvValue(name: "PLAYWRIGHT_KEYCLOAK_LOGIN" | "PLAYWRIGHT_KEYCLOAK_PASSWORD") {
-	const value = process.env[name]?.trim();
-	if (value && value.length > 0) return value;
-
-	throw new Error(`La variable ${name} est requise. Ajoutez-la dans ${privateEnvPath}.`);
-}
