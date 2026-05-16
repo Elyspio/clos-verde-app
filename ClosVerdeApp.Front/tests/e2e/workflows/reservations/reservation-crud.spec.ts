@@ -31,7 +31,7 @@ test.describe("Reservation CRUD", () => {
 		const runId = createRunId();
 		const initialNote = `e2e-${runId}`;
 		const updatedNote = `${initialNote}-maj`;
-		const reservationDay = await findFreeFutureDay(apiClient);
+		const reservationDay = await findFreeFutureDay(apiClient, runId);
 
 		await page.goto("/calendrier");
 		await navigateToReservationMonth(page, reservationDay);

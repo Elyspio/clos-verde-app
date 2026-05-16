@@ -13,8 +13,8 @@ test.describe("Leaderboard", () => {
 
 	test("affiche l'utilisateur connecté et ses valeurs agrégées", async ({ apiClient, page }) => {
 		const runId = createRunId();
-		const freeDay = await findFreeFutureDay(apiClient);
-		const session = readAuthenticatedSessionData();
+		const freeDay = await findFreeFutureDay(apiClient, runId);
+		const session = readAuthenticatedSessionData("alice");
 		const userId = session.profile.sub;
 		const displayName = session.profile.name ?? session.profile.preferred_username ?? session.profile.email;
 
@@ -28,6 +28,8 @@ test.describe("Leaderboard", () => {
 			note: `e2e-classement-${runId}`,
 		});
 		createdReservationIds.push(reservation.id);
+		const validateResponse = await apiClient.post(`/api/reservations/${reservation.id}/validate`);
+		expect(validateResponse.status(), `Validation classement: ${await validateResponse.text()}`).toBe(200);
 
 		await page.goto("/classement");
 

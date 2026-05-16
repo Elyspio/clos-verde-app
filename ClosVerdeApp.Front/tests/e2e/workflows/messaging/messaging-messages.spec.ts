@@ -1,6 +1,7 @@
 import { expect, test } from "../../helpers/authenticated-test";
 import { createRunId } from "../../helpers/date.helpers";
-import { cleanupTopics, createTopicViaApi, listMessages, postMessageViaApi } from "../../helpers/messaging-data.helpers";
+import { resolveE2eUser } from "../../helpers/e2e-users.helpers";
+import { cleanupTopics, createTopicViaApi, listMessages, listTopics, postMessageViaApi } from "../../helpers/messaging-data.helpers";
 import { tiptapEditable, typeInComposer, waitForComposerReady } from "../../helpers/tiptap.helpers";
 
 test.describe("Messaging — messages", () => {
@@ -38,6 +39,37 @@ test.describe("Messaging — messages", () => {
 
 		// Composer empties after a successful post (clearOnSubmit defaults to true).
 		await expect(tiptapEditable(page)).toHaveText("");
+	});
+
+	test("affiche une mention envoyée par un autre utilisateur", async ({ apiClient, apiClientFor, page }) => {
+		const runId = createRunId();
+		const alice = resolveE2eUser("alice");
+		const camille = resolveE2eUser("camille");
+		const camilleClient = await apiClientFor("camille");
+		const topic = await createTopicViaApi(apiClient, `e2e-mention-${runId}`);
+		createdTopicIds.push(topic.id);
+
+		const message = await postMessageViaApi(
+			camilleClient,
+			topic.id,
+			`<p><span class="mention" data-mention-id="${alice.id}" data-mention-name="${alice.displayName}">@${alice.displayName}</span> depuis ${runId}</p>`,
+		);
+
+		expect(message.authorUserId).toBe(camille.id);
+		expect(message.mentions).toContain(alice.id);
+
+		const topicsForAlice = await listTopics(apiClient);
+		expect(topicsForAlice.find((item) => item.topic.id === topic.id)?.unreadCount).toBeGreaterThan(0);
+
+		await page.goto(`/messages/${topic.id}`);
+
+		const messageRow = page.getByTestId(`message-${message.id}`);
+		await expect(messageRow).toBeVisible();
+		await expect(messageRow).toContainText(camille.displayName);
+		await expect(messageRow).toContainText(`@${alice.displayName}`);
+		await expect(messageRow.locator(`[data-mention-id="${alice.id}"]`)).toHaveAttribute("data-mention-name", alice.displayName);
+		await expect(messageRow).not.toHaveAttribute("data-message-mine", "true");
+		await expect(page.getByTestId(`message-actions-${message.id}`)).toHaveCount(0);
 	});
 
 	test("modifier un message ouvre l'éditeur Tiptap (pas de TextField HTML brut) et persiste l'update", async ({ apiClient, page }) => {

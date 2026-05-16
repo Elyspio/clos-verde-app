@@ -2,7 +2,7 @@ import { readAuthenticatedSessionData } from "../../helpers/api-client.helpers";
 import { expect, test } from "../../helpers/authenticated-test";
 
 test("navigue dans l'application authentifiée", async ({ page }) => {
-	const { profile } = readAuthenticatedSessionData();
+	const { profile } = readAuthenticatedSessionData("alice");
 	const accountName = profile.name ?? profile.preferred_username ?? profile.email ?? "Compte";
 
 	await page.goto("/");

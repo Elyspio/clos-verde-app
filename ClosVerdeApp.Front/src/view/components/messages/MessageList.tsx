@@ -19,6 +19,7 @@ type Props = {
 };
 
 const HIGHLIGHT_DURATION_MS = 2500;
+const SCROLL_RETRY_LIMIT = 20;
 
 function initialOf(name: string) {
 	return name.trim().slice(0, 1).toUpperCase() || "?";
@@ -40,6 +41,34 @@ const messageContentSx = {
 	"& code": { bgcolor: "var(--surface-soft)", px: 0.5, borderRadius: 0.75 },
 	"& pre": { bgcolor: "var(--surface-soft)", p: 1, borderRadius: 1.5 },
 } as const;
+
+function scrollMessageIntoContainer(node: HTMLDivElement, behavior: ScrollBehavior) {
+	const container = node.closest<HTMLElement>('[data-message-scroll-root="true"]');
+	if (!container) {
+		node.scrollIntoView({ block: "center", behavior });
+		return;
+	}
+
+	const containerRect = container.getBoundingClientRect();
+	const nodeRect = node.getBoundingClientRect();
+	const top = container.scrollTop + (nodeRect.top - containerRect.top) - container.clientHeight / 2 + nodeRect.height / 2;
+	container.scrollTo({ top: Math.max(0, top), behavior });
+}
+
+function scheduleMessageScroll(node: HTMLDivElement, behavior: ScrollBehavior, onScrolled?: () => void) {
+	let innerRaf = 0;
+	const outerRaf = requestAnimationFrame(() => {
+		innerRaf = requestAnimationFrame(() => {
+			scrollMessageIntoContainer(node, behavior);
+			onScrolled?.();
+		});
+	});
+
+	return () => {
+		cancelAnimationFrame(outerRaf);
+		cancelAnimationFrame(innerRaf);
+	};
+}
 
 /**
  * Renders messages as bubbles with author avatar, timestamp, and the (already-sanitised)
@@ -70,15 +99,11 @@ function MessageListImpl({ messages, currentUserId, onEdit, onDelete, editingMes
 		if (!messages.some((m) => m.id === highlightedMessageId)) return;
 		const node = itemRefs.current.get(highlightedMessageId);
 		if (!node) return;
-		// Defer one frame so layout is settled before scrolling (avoids jumping to a
-		// wrong position when this fires during the initial mount).
-		const raf = requestAnimationFrame(() => {
-			node.scrollIntoView({ block: "center", behavior: "smooth" });
-		});
+		const cancelScroll = scheduleMessageScroll(node, "smooth");
 		setFlashingId(highlightedMessageId);
 		const t = window.setTimeout(() => setFlashingId(null), HIGHLIGHT_DURATION_MS);
 		return () => {
-			cancelAnimationFrame(raf);
+			cancelScroll();
 			window.clearTimeout(t);
 		};
 	}, [highlightedMessageId, messages]);
@@ -89,13 +114,27 @@ function MessageListImpl({ messages, currentUserId, onEdit, onDelete, editingMes
 		if (highlightedMessageId) return;
 		if (!initialScrollMessageId) return;
 		if (initialScrollDoneRef.current === initialScrollMessageId) return;
-		const node = itemRefs.current.get(initialScrollMessageId);
-		if (!node) return;
-		initialScrollDoneRef.current = initialScrollMessageId;
-		const raf = requestAnimationFrame(() => {
-			node.scrollIntoView({ block: "center", behavior: "auto" });
-		});
-		return () => cancelAnimationFrame(raf);
+		let cancelled = false;
+		let cancelScroll: () => void = () => undefined;
+		let attempts = 0;
+		const tryScroll = () => {
+			if (cancelled) return;
+			const node = itemRefs.current.get(initialScrollMessageId);
+			if (node) {
+				cancelScroll = scheduleMessageScroll(node, "auto", () => {
+					initialScrollDoneRef.current = initialScrollMessageId;
+				});
+				return;
+			}
+			if (attempts >= SCROLL_RETRY_LIMIT) return;
+			attempts += 1;
+			window.setTimeout(tryScroll, 50);
+		};
+		tryScroll();
+		return () => {
+			cancelled = true;
+			cancelScroll();
+		};
 	}, [initialScrollMessageId, highlightedMessageId, messages]);
 
 	return (

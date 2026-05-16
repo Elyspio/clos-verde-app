@@ -1,5 +1,5 @@
 import type { Page } from "@playwright/test";
-import { playwrightPrivateEnv } from "../config/load-private-env";
+import { getOidcAuthorityCandidates, getOidcStorageKey } from "./e2e-users.helpers";
 
 export type SeededOidcUser = {
 	sub: string;
@@ -11,10 +11,6 @@ export type SeededOidcUser = {
 	scope?: string;
 	expires_at?: number;
 };
-
-export function getOidcStorageKey(authority = playwrightPrivateEnv.keycloakAuthority, clientId = playwrightPrivateEnv.keycloakClientId) {
-	return `oidc.user:${authority}:${clientId}`;
-}
 
 export function createOidcStorageValue(user: SeededOidcUser) {
 	const expiresAt = user.expires_at ?? Math.floor(Date.now() / 1_000) + 60 * 60;
@@ -38,15 +34,19 @@ export function createOidcStorageValue(user: SeededOidcUser) {
 }
 
 export async function seedAuthenticatedSession(page: Page, user: SeededOidcUser) {
-	const oidcStorageKey = getOidcStorageKey();
-	const oidcStorageValue = createOidcStorageValue(user);
+	const oidcStorageEntries = getOidcAuthorityCandidates().map((authority) => ({
+		key: getOidcStorageKey(authority),
+		value: createOidcStorageValue(user),
+	}));
 	const accessToken = user.access_token ?? "playwright-access-token";
 
 	await page.addInitScript(
-		({ key, value, token }) => {
-			window.localStorage.setItem(key, value);
+		({ entries, token }) => {
+			for (const entry of entries) {
+				window.localStorage.setItem(entry.key, entry.value);
+			}
 			window.localStorage.setItem("clos-verde-app.token", token);
 		},
-		{ key: oidcStorageKey, value: oidcStorageValue, token: accessToken },
+		{ entries: oidcStorageEntries, token: accessToken },
 	);
 }
