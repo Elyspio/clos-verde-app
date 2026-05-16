@@ -26,7 +26,11 @@ const string keycloakFrontendClientId = "cv_dev-front";
 const string keycloakAdminClientId = "cv_dev-api";
 const string keycloakAdminClientSecret = "dev-cv-aspire-secret-FAKE-DO-NOT-DEPLOY";
 
-var keycloak = builder.AddKeycloak("keycloak", port: keycloakPort)
+// Aspire.Hosting.Keycloak 13.3.3-preview switched the primary endpoint from HTTP (8080) to
+// HTTPS (8443), and the `port:` parameter stopped binding correctly. We add the HTTP endpoint
+// explicitly so that http://localhost:8088 remains reachable from both the host and the SPA.
+var keycloak = builder.AddKeycloak("keycloak")
+    .WithHttpEndpoint(port: keycloakPort, targetPort: 8080, name: "http")
     .WithDataVolume("clos-verde-keycloak-data")
     .WithRealmImport(Path.Combine(appHostDirectory, "Realms"))
     .WithContainerName("clos-verde-keycloak")
@@ -34,8 +38,8 @@ var keycloak = builder.AddKeycloak("keycloak", port: keycloakPort)
 
 // One canonical authority URL: built once and reused everywhere. Both the API (issuer validation)
 // and the SPA running in the user's browser need to reach Keycloak via the host port.
-var keycloakAuthority = $"http://localhost:{keycloakPort}/realms/{keycloakRealm}";
-var keycloakRoot = $"http://localhost:{keycloakPort}";
+var keycloakAuthority = $"https://localhost:{keycloakPort}/realms/{keycloakRealm}";
+var keycloakRoot = $"https://localhost:{keycloakPort}";
 
 var frontendPath = Path.GetFullPath(Path.Combine(appHostDirectory, "..", "ClosVerdeApp.Front"));
 
