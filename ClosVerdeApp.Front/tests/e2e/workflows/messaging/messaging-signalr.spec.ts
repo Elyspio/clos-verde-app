@@ -31,8 +31,8 @@ test.describe("Messaging — SignalR (WebSocket)", () => {
 		// If the server rejects the upgrade (e.g. JWT not read from query), SignalR closes the
 		// socket immediately with the misleading "connection ID is not present on the server"
 		// error. A healthy connection stays open well past the handshake.
-		const closed = await Promise.race([ws.waitForEvent("close", { timeout: 3_000 }).then(() => true), page.waitForTimeout(3_000).then(() => false)]);
-		expect(closed, "Le WebSocket SignalR s'est fermé juste après la négociation (auth probablement rejetée).").toBe(false);
+		await page.waitForTimeout(3_000);
+		expect(ws.isClosed(), "Le WebSocket SignalR s'est fermé juste après la négociation (auth probablement rejetée).").toBe(false);
 	});
 
 	test("reçoit en temps réel un message posté par un autre utilisateur via le hub", async ({ apiClient, apiClientFor, page }) => {
