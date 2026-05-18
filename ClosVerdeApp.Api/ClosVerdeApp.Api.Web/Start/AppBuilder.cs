@@ -79,6 +79,22 @@ public sealed class AppBuilder
 				};
 				opts.Events = new JwtBearerEvents
 				{
+					// SignalR WebSocket and Server-Sent Events transports cannot set the
+					// Authorization header, so the JS client forwards the bearer token via
+					// the `access_token` query string. Without this hook, hub upgrades reach
+					// the server unauthenticated, the 401 closes the socket, and SignalR
+					// surfaces the misleading "connection ID is not present on the server /
+					// sticky sessions" error.
+					OnMessageReceived = ctx =>
+					{
+						var accessToken = ctx.Request.Query["access_token"];
+						var path = ctx.HttpContext.Request.Path;
+						if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hubs"))
+						{
+							ctx.Token = accessToken;
+						}
+						return Task.CompletedTask;
+					},
 					OnTokenValidated = ctx =>
 					{
 						var azp = ctx.Principal?.FindFirst("azp")?.Value;

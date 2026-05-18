@@ -358,7 +358,7 @@ function PendingAttachmentCard({ pending, onRemove }: { pending: PendingAttachme
 				border: "1px solid var(--line)",
 				bgcolor: "var(--surface)",
 				overflow: "hidden",
-				minHeight: 40
+				minHeight: 40,
 			}}
 		>
 			<Box
