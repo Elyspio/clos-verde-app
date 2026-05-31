@@ -61,6 +61,7 @@ export function AdminDashboardPage() {
 							<Box
 								component="button"
 								type="button"
+								data-testid="admin-dashboard-see-all"
 								onClick={() => goToFeedback()}
 								sx={{
 									all: "unset",
@@ -135,6 +136,7 @@ function OpenRow({ feedback, onSelect }: { feedback: Feedback; onSelect: () => v
 		<Box
 			component="button"
 			type="button"
+			data-testid={`admin-dashboard-open-${feedback.id}`}
 			onClick={onSelect}
 			sx={{
 				all: "unset",

@@ -221,7 +221,7 @@ function MyFeedbackDrawer({ feedback, onClose, onUpdated }: { feedback: Feedback
 					)}
 
 					{feedback.replies.length > 0 && (
-						<Stack spacing={1}>
+						<Stack spacing={1} data-testid="my-feedback-replies">
 							<Typography variant="overline">Réponse de l'équipe</Typography>
 							{feedback.replies.map((reply) => (
 								<Box key={reply.id} sx={{ bgcolor: "var(--surface-blue)", border: "1px solid var(--primary-blue-soft)", borderRadius: "12px", p: 1.5 }}>
