@@ -1,36 +1,14 @@
-import { spawnSync } from "child_process";
-import fs from "fs";
-import { redeployHelm, updateHelmValues } from "./utils/helm.utils.js";
-import { computeConfig, dockerDir } from "./utils/config.utils.js";
+import path from "node:path";
+import { runKubernetesDeploy, type KubernetesDeployConfig } from "@elyspio/kubernetes-deploy";
 
+const rootDir = path.resolve(import.meta.dirname, "..", "..");
+const dryRun = process.argv.includes("--dry-run");
 
-const {  buildStatePath, buildDate, buildNumber, imageTag } = computeConfig();
+const config: KubernetesDeployConfig = {
+	cacheFile: path.join(import.meta.dirname, "cache", ".build-counter"),
+	chartDir: "P:\\own\\common\\keycloak\\kubernetes\\apps\\clos-verde-app",
+	composeDir: path.join(rootDir, "Deployment", "build", "docker"),
+	deployScript: "deploy.ps1",
+};
 
-console.log(`Building image with tag: ${imageTag}`);
-
-function writeBuildState(filePath: string, buildDate: string, buildNumber: number) {
-	fs.writeFileSync(filePath, `${buildDate}\n${buildNumber}\n`, "utf8");
-}
-
-writeBuildState(buildStatePath, buildDate, buildNumber);
-
-const ret = spawnSync("docker", ["compose", "build", "--push"], {
-	cwd: dockerDir,
-	stdio: "inherit",
-	env: {
-		...process.env,
-		IMAGE_TAG: imageTag,
-	},
-});
-
-if (ret.error) {
-	throw ret.error;
-}
-
-if (ret.status !== 0) {
-	process.exit(ret.status ?? 1);
-}
-
-updateHelmValues(imageTag);
-
-redeployHelm();
+runKubernetesDeploy(config, { dryRun });

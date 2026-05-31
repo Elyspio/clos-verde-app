@@ -7,6 +7,10 @@ settings:
 importers:
 
   .:
+    dependencies:
+      '@elyspio/kubernetes-deploy':
+        specifier: ^1.0.0
+        version: 1.0.0
     devDependencies:
       '@types/node':
         specifier: ^25.6.0
@@ -17,11 +21,13 @@ importers:
       typescript:
         specifier: ^6.0.3
         version: 6.0.3
-      yaml:
-        specifier: ^2.8.4
-        version: 2.8.4
 
 packages:
+
+  '@elyspio/kubernetes-deploy@1.0.0':
+    resolution: {integrity: sha512-vT6Rc+RVIHx44T8QbMaP4GjdXPfXqImSc/sZrF2c73bQHXidYLe9FMNJBLrhe8bhNJgUXLQ3UIabuqmXk70Pkw==}
+    engines: {node: '>=22.0.0'}
+    hasBin: true
 
   '@esbuild/aix-ppc64@0.27.7':
     resolution: {integrity: sha512-EKX3Qwmhz1eMdEJokhALr0YiD0lhQNwDqkPYyPhiSwKrh7/4KRjQc04sZ8db+5DVVnZ1LmbNDI1uAMPEUBnQPg==}
@@ -217,6 +223,10 @@ packages:
     hasBin: true
 
 snapshots:
+
+  '@elyspio/kubernetes-deploy@1.0.0':
+    dependencies:
+      yaml: 2.8.4
 
   '@esbuild/aix-ppc64@0.27.7':
     optional: true
