@@ -10,11 +10,13 @@ test("navigue dans l'application authentifiée", async ({ page }) => {
 	await expect(page).toHaveURL(/\/calendrier$/);
 	await expect(page.getByTestId("app-shell")).toBeVisible();
 	await expect(page.getByTestId("main-navigation")).toBeVisible();
-	await expect(page.getByRole("link", { name: "Calendrier" })).toBeVisible();
-	await expect(page.getByRole("link", { name: "Réserver" })).toBeVisible();
-	await expect(page.getByRole("link", { name: "Classement" })).toBeVisible();
+	// The sidebar groups Calendrier and Messages; Réserver is now a calendar action and Classement a tab.
+	await expect(page.getByTestId("main-navigation").getByRole("link", { name: "Calendrier" })).toBeVisible();
+	await expect(page.getByTestId("main-navigation").getByRole("link", { name: "Messages" })).toBeVisible();
+	await expect(page.getByTestId("reserve-day")).toBeVisible();
 	await expect(page.locator('button[aria-label="Menu du compte"]')).toContainText(accountName);
 
-	await page.getByRole("link", { name: "Classement" }).click();
-	await expect(page).toHaveURL(/\/classement$/);
+	// Classement is reachable through the calendar's tab switch.
+	await page.getByRole("button", { name: "Classement" }).click();
+	await expect(page.getByTestId("leaderboard-list")).toBeVisible();
 });

@@ -1,9 +1,9 @@
-import { Alert, Avatar, Box, Chip, CircularProgress, Container, Drawer, IconButton, Pagination, Stack, Tab, Tabs, Tooltip, Typography } from "@mui/material";
-import { AttachFile, CheckCircleOutline, Close, DoNotDisturbAltOutlined, ReplayOutlined } from "@mui/icons-material";
+import { Alert, Box, Button, Chip, CircularProgress, Container, IconButton, Pagination, Stack, TextField, Typography } from "@mui/material";
+import { ArrowBack, AttachFile, CheckCircleOutline, Close, DoNotDisturbAltOutlined, ReplayOutlined, Search, Send, TouchAppOutlined } from "@mui/icons-material";
 import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
-import { useMemo, useState } from "react";
-import { Navigate } from "react-router-dom";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Navigate, useSearchParams } from "react-router-dom";
 import type { Feedback, FeedbackCategory, FeedbackStatus } from "@apis/rest/api/generated";
 import { useFeedbackMutations } from "@data/feedback/feedback.mutations";
 import { useFeedbackQueries } from "@data/feedback/feedback.queries";
@@ -12,122 +12,324 @@ import { downloadWithAuth } from "@data/messages/attachments.hooks";
 import { routes } from "@/config/routes";
 import { ALL_CATEGORIES, CATEGORY_META } from "./categoryMeta";
 
-const STATUS_TABS: { label: string; value: FeedbackStatus | undefined }[] = [
-	{ label: "Tous", value: undefined },
+const STATUS_TABS: { label: string; value: FeedbackStatus | "all" }[] = [
 	{ label: "Ouverts", value: "Open" },
 	{ label: "Résolus", value: "Resolved" },
 	{ label: "Écartés", value: "Discarded" },
+	{ label: "Tous", value: "all" },
 ];
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 50;
 
 /**
- * Admin-only back-office for triaging feedback. Hard-redirects non-admins back to
- * the calendar — the route is also gated by the SignalR hub and the API endpoint,
- * but bouncing in the UI avoids a hostile blank screen.
+ * Admin-only back-office for triaging feedback, laid out as a master-detail: the list on the left,
+ * the selected ticket (with its reply thread) on the right. Mobile collapses to a single pane that
+ * swaps based on whether a ticket is selected. Hard-redirects non-admins.
  */
 export function AdminFeedbackPage() {
 	const isAdmin = useIsAdmin();
+	const [searchParams, setSearchParams] = useSearchParams();
 	const [category, setCategory] = useState<FeedbackCategory | undefined>(undefined);
-	const [status, setStatus] = useState<FeedbackStatus | undefined>("Open");
+	const [status, setStatus] = useState<FeedbackStatus | "all">("Open");
 	const [page, setPage] = useState(1);
+	const [search, setSearch] = useState("");
 	const [selected, setSelected] = useState<Feedback | null>(null);
 
-	const listQuery = useFeedbackQueries.adminList({ category, status, page, pageSize: PAGE_SIZE });
+	const statusFilter = status === "all" ? undefined : status;
+	const listQuery = useFeedbackQueries.adminList({ category, status: statusFilter, page, pageSize: PAGE_SIZE });
 
-	const totalPages = useMemo(() => {
-		const total = listQuery.data?.total ?? 0;
-		return Math.max(1, Math.ceil(total / PAGE_SIZE));
-	}, [listQuery.data?.total]);
+	// Status-tab counters, scoped to the active category filter. pageSize:1 keeps them cheap.
+	const openCount = useFeedbackQueries.adminList({ category, status: "Open", page: 1, pageSize: 1 });
+	const resolvedCount = useFeedbackQueries.adminList({ category, status: "Resolved", page: 1, pageSize: 1 });
+	const discardedCount = useFeedbackQueries.adminList({ category, status: "Discarded", page: 1, pageSize: 1 });
+	const allCount = useFeedbackQueries.adminList({ category, page: 1, pageSize: 1 });
+	const counts: Record<FeedbackStatus | "all", number> = {
+		Open: openCount.data?.total ?? 0,
+		Resolved: resolvedCount.data?.total ?? 0,
+		Discarded: discardedCount.data?.total ?? 0,
+		all: allCount.data?.total ?? 0,
+	};
+
+	const totalPages = useMemo(() => Math.max(1, Math.ceil((listQuery.data?.total ?? 0) / PAGE_SIZE)), [listQuery.data?.total]);
+
+	const items = listQuery.data?.items ?? [];
+	const filtered = useMemo(() => {
+		const q = search.trim().toLowerCase();
+		if (!q) return items;
+		return items.filter((f) => f.title.toLowerCase().includes(q) || f.body.toLowerCase().includes(q) || f.author.displayName.toLowerCase().includes(q));
+	}, [items, search]);
+
+	// Deep-link from the dashboard: ?selected=<id> opens that ticket once it lands in the list.
+	const targetId = searchParams.get("selected");
+	useEffect(() => {
+		if (!targetId || selected) return;
+		const found = items.find((f) => f.id === targetId);
+		if (!found) return;
+		setSelected(found);
+		const next = new URLSearchParams(searchParams);
+		next.delete("selected");
+		setSearchParams(next, { replace: true });
+	}, [targetId, selected, items, searchParams, setSearchParams]);
 
 	if (!isAdmin) return <Navigate to={routes.app.calendar.path} replace />;
 
+	const master = (
+		<MasterPane
+			status={status}
+			counts={counts}
+			onStatus={(value) => {
+				setStatus(value);
+				setPage(1);
+			}}
+			category={category}
+			onCategory={(value) => {
+				setCategory(value);
+				setPage(1);
+			}}
+			search={search}
+			onSearch={setSearch}
+			items={filtered}
+			isPending={listQuery.isPending}
+			isError={listQuery.isError}
+			selectedId={selected?.id ?? null}
+			onSelect={setSelected}
+			page={page}
+			totalPages={totalPages}
+			onPage={setPage}
+		/>
+	);
+
 	return (
-		<Container maxWidth="lg" sx={{ py: { xs: 3, md: 5 }, px: { xs: 2.5, md: 5 } }}>
-			<Stack spacing={3} data-testid="admin-feedback-page">
-				<Stack spacing={0.75}>
-					<Typography variant="h2">Avis</Typography>
-					<Typography variant="body1" color="text.secondary">
-						Bug reports, suggestions et questions envoyés par les utilisateurs.
-					</Typography>
-				</Stack>
-
-				<Stack direction={{ xs: "column", md: "row" }} spacing={2} alignItems={{ md: "center" }} justifyContent="space-between">
-					<Tabs
-						value={status ?? "all"}
-						onChange={(_, value) => {
-							const next = STATUS_TABS.find((tab) => (tab.value ?? "all") === value)?.value;
-							setStatus(next);
-							setPage(1);
-						}}
-						sx={{ minHeight: 36 }}
-					>
-						{STATUS_TABS.map((tab) => (
-							<Tab key={tab.label} label={tab.label} value={tab.value ?? "all"} sx={{ minHeight: 36, textTransform: "none", fontWeight: 700 }} />
-						))}
-					</Tabs>
-
-					<Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap>
-						<CategoryFilterChip
-							selected={category === undefined}
-							onClick={() => {
-								setCategory(undefined);
-								setPage(1);
-							}}
-							label="Toutes"
-							accent="var(--ink-soft)"
-							accentSoft="var(--surface-soft)"
-						/>
-						{ALL_CATEGORIES.map((cat) => {
-							const meta = CATEGORY_META[cat];
-							return (
-								<CategoryFilterChip
-									key={cat}
-									selected={category === cat}
-									onClick={() => {
-										setCategory(cat);
-										setPage(1);
-									}}
-									label={meta.label}
-									accent={meta.accent}
-									accentSoft={meta.accentSoft}
-								/>
-							);
-						})}
-					</Stack>
-				</Stack>
-
-				{listQuery.isError && <Alert severity="error">Chargement impossible.</Alert>}
-
-				{listQuery.isPending ? (
-					<Stack alignItems="center" sx={{ py: 6 }}>
-						<CircularProgress size={28} />
-					</Stack>
-				) : listQuery.data && listQuery.data.items.length === 0 ? (
-					<Alert severity="info" data-testid="admin-feedback-empty">
-						Aucun retour pour ces filtres.
-					</Alert>
-				) : (
-					<Stack spacing={1.25}>
-						{listQuery.data?.items.map((item) => (
-							<FeedbackRow key={item.id} feedback={item} onSelect={() => setSelected(item)} />
-						))}
-					</Stack>
-				)}
-
-				{totalPages > 1 && (
-					<Stack alignItems="center">
-						<Pagination count={totalPages} page={page} onChange={(_, p) => setPage(p)} color="primary" />
-					</Stack>
-				)}
-			</Stack>
-
-			<FeedbackDetailDrawer feedback={selected} onClose={() => setSelected(null)} onUpdated={setSelected} />
+		<Container
+			data-testid="admin-feedback-page"
+			maxWidth="xl"
+			sx={{ maxWidth: "1280px", px: { xs: 0, md: 3 }, py: { xs: 0, md: 3 }, height: "100%", display: "flex", flexDirection: "column", minHeight: 0 }}
+		>
+			<Box
+				sx={{
+					display: "grid",
+					gridTemplateColumns: { xs: "1fr", md: "392px 1fr" },
+					flex: "1 1 0",
+					minHeight: 0,
+					border: { md: "1px solid var(--line)" },
+					borderRadius: { md: 2 },
+					overflow: "hidden",
+					bgcolor: "var(--surface)",
+				}}
+			>
+				<Box sx={{ display: { xs: selected ? "none" : "flex", md: "flex" }, flexDirection: "column", minHeight: 0, borderRight: { md: "1px solid var(--line)" } }}>
+					{master}
+				</Box>
+				<Box sx={{ display: { xs: selected ? "flex" : "none", md: "flex" }, minHeight: 0 }}>
+					<DetailPane feedback={selected} onUpdated={setSelected} onBack={() => setSelected(null)} />
+				</Box>
+			</Box>
 		</Container>
 	);
 }
 
-function CategoryFilterChip({ selected, onClick, label, accent, accentSoft }: { selected: boolean; onClick: () => void; label: string; accent: string; accentSoft: string }) {
+function MasterPane({
+	status,
+	counts,
+	onStatus,
+	category,
+	onCategory,
+	search,
+	onSearch,
+	items,
+	isPending,
+	isError,
+	selectedId,
+	onSelect,
+	page,
+	totalPages,
+	onPage,
+}: {
+	status: FeedbackStatus | "all";
+	counts: Record<FeedbackStatus | "all", number>;
+	onStatus: (value: FeedbackStatus | "all") => void;
+	category: FeedbackCategory | undefined;
+	onCategory: (value: FeedbackCategory | undefined) => void;
+	search: string;
+	onSearch: (value: string) => void;
+	items: Feedback[];
+	isPending: boolean;
+	isError: boolean;
+	selectedId: string | null;
+	onSelect: (feedback: Feedback) => void;
+	page: number;
+	totalPages: number;
+	onPage: (page: number) => void;
+}) {
+	return (
+		<>
+			<Stack spacing={1.25} sx={{ p: 1.75, borderBottom: "1px solid var(--line)", flexShrink: 0 }}>
+				<TextField
+					size="small"
+					value={search}
+					onChange={(e) => onSearch(e.target.value)}
+					placeholder="Rechercher un ticket…"
+					slotProps={{
+						input: {
+							startAdornment: <Search sx={{ fontSize: 18, color: "var(--ink-mute)", mr: 1 }} />,
+							endAdornment: search ? (
+								<IconButton size="small" onClick={() => onSearch("")} aria-label="Effacer">
+									<Close sx={{ fontSize: 16 }} />
+								</IconButton>
+							) : undefined,
+						},
+					}}
+				/>
+				<Stack direction="row" spacing={0.5}>
+					{STATUS_TABS.map((tab) => {
+						const on = status === tab.value;
+						return (
+							<Box
+								key={tab.value}
+								component="button"
+								type="button"
+								onClick={() => onStatus(tab.value)}
+								sx={{
+									all: "unset",
+									flex: 1,
+									textAlign: "center",
+									py: 0.85,
+									borderRadius: "8px",
+									cursor: "pointer",
+									fontSize: 12,
+									fontWeight: 800,
+									bgcolor: on ? "var(--ink)" : "var(--surface-soft)",
+									color: on ? "#fff" : "var(--ink-soft)",
+								}}
+							>
+								{tab.label}{" "}
+								<Box component="span" sx={{ opacity: 0.6 }}>
+									{counts[tab.value]}
+								</Box>
+							</Box>
+						);
+					})}
+				</Stack>
+				<Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap>
+					<CategoryChip
+						selected={category === undefined}
+						onClick={() => onCategory(undefined)}
+						label="Toutes"
+						accent="var(--ink-soft)"
+						accentSoft="var(--surface-soft)"
+					/>
+					{ALL_CATEGORIES.map((cat) => {
+						const meta = CATEGORY_META[cat];
+						return (
+							<CategoryChip
+								key={cat}
+								selected={category === cat}
+								onClick={() => onCategory(cat)}
+								label={meta.label}
+								accent={meta.accent}
+								accentSoft={meta.accentSoft}
+							/>
+						);
+					})}
+				</Stack>
+			</Stack>
+
+			<Box sx={{ flex: "1 1 0", minHeight: 0, overflowY: "auto", p: 1 }}>
+				{isError ? (
+					<Alert severity="error" sx={{ m: 1 }}>
+						Chargement impossible.
+					</Alert>
+				) : isPending ? (
+					<Stack alignItems="center" sx={{ py: 6 }}>
+						<CircularProgress size={26} />
+					</Stack>
+				) : items.length === 0 ? (
+					<Stack alignItems="center" spacing={1} sx={{ py: 6, color: "var(--ink-mute)" }} data-testid="admin-feedback-empty">
+						<Typography sx={{ fontWeight: 700 }}>Aucun ticket pour ces filtres.</Typography>
+					</Stack>
+				) : (
+					<Stack spacing={0.5}>
+						{items.map((feedback) => (
+							<MasterRow key={feedback.id} feedback={feedback} active={feedback.id === selectedId} onClick={() => onSelect(feedback)} />
+						))}
+					</Stack>
+				)}
+			</Box>
+
+			{totalPages > 1 && (
+				<Stack alignItems="center" sx={{ p: 1, borderTop: "1px solid var(--line)", flexShrink: 0 }}>
+					<Pagination count={totalPages} page={page} onChange={(_, p) => onPage(p)} color="primary" size="small" />
+				</Stack>
+			)}
+		</>
+	);
+}
+
+function MasterRow({ feedback, active, onClick }: { feedback: Feedback; active: boolean; onClick: () => void }) {
+	const meta = CATEGORY_META[feedback.category];
+	return (
+		<Box
+			data-testid={`admin-feedback-row-${feedback.id}`}
+			role="button"
+			tabIndex={0}
+			onClick={onClick}
+			onKeyDown={(e) => {
+				if (e.key === "Enter" || e.key === " ") {
+					e.preventDefault();
+					onClick();
+				}
+			}}
+			sx={{
+				display: "flex",
+				gap: 1.25,
+				p: 1.5,
+				borderRadius: "11px",
+				cursor: "pointer",
+				border: active ? "1px solid var(--primary-blue-soft)" : "1px solid transparent",
+				bgcolor: active ? "var(--surface-blue)" : "transparent",
+				transition: "background-color 150ms ease, border-color 150ms ease",
+				"&:hover": { bgcolor: active ? "var(--surface-blue)" : "var(--surface-soft)" },
+				"&:focus-visible": { outline: "2px solid var(--primary-blue)", outlineOffset: 2 },
+			}}
+		>
+			<Box sx={{ mt: 0.6, flexShrink: 0, width: 8, height: 8, borderRadius: "50%", bgcolor: meta.accent }} />
+			<Box sx={{ flex: 1, minWidth: 0 }}>
+				<Stack direction="row" alignItems="center" spacing={0.75}>
+					<Typography
+						sx={{
+							flex: 1,
+							minWidth: 0,
+							fontSize: 13.5,
+							fontWeight: 800,
+							color: active ? "var(--primary-blue)" : "var(--ink)",
+							whiteSpace: "nowrap",
+							overflow: "hidden",
+							textOverflow: "ellipsis",
+						}}
+					>
+						{feedback.title}
+					</Typography>
+					{feedback.attachments.length > 0 && <AttachFile sx={{ fontSize: 14, color: "var(--ink-mute)" }} />}
+				</Stack>
+				<Typography sx={{ fontSize: 12, color: "var(--ink-soft)", mt: 0.25, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+					{feedback.body}
+				</Typography>
+				<Stack direction="row" alignItems="center" spacing={1} sx={{ mt: 0.75 }}>
+					<Typography sx={{ fontSize: 11, fontWeight: 600, color: "var(--ink-mute)", minWidth: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+						{feedback.author.displayName} · {formatDistanceToNow(new Date(feedback.createdAt), { addSuffix: true, locale: fr })}
+					</Typography>
+					{feedback.status !== "Open" && (
+						<Box sx={{ ml: "auto" }}>
+							<StatusChip status={feedback.status} />
+						</Box>
+					)}
+				</Stack>
+			</Box>
+		</Box>
+	);
+}
+
+function CategoryChip({ selected, onClick, label, accent, accentSoft }: { selected: boolean; onClick: () => void; label: string; accent: string; accentSoft: string }) {
 	return (
 		<Chip
 			label={label}
@@ -145,76 +347,193 @@ function CategoryFilterChip({ selected, onClick, label, accent, accentSoft }: { 
 	);
 }
 
-function FeedbackRow({ feedback, onSelect }: { feedback: Feedback; onSelect: () => void }) {
-	const meta = CATEGORY_META[feedback.category];
-	const Icon = meta.icon;
-	const initials = feedback.author.displayName
-		.split(/\s+/)
-		.filter(Boolean)
-		.slice(0, 2)
-		.map((part) => part[0]?.toUpperCase() ?? "")
-		.join("");
+function DetailPane({ feedback, onUpdated, onBack }: { feedback: Feedback | null; onUpdated: (next: Feedback) => void; onBack: () => void }) {
+	const updateMutation = useFeedbackMutations.updateStatus();
+	const replyMutation = useFeedbackMutations.addReply();
+	const [reply, setReply] = useState("");
+	const scrollRef = useRef<HTMLDivElement>(null);
+
+	useEffect(() => {
+		setReply("");
+		if (scrollRef.current) scrollRef.current.scrollTop = 0;
+	}, [feedback?.id]);
+
+	if (!feedback) {
+		return (
+			<Box sx={{ flex: 1, display: "grid", placeItems: "center", color: "var(--ink-mute)", p: 4 }}>
+				<Stack alignItems="center" spacing={1.5} textAlign="center">
+					<Box sx={{ width: 52, height: 52, borderRadius: "14px", bgcolor: "var(--surface-soft)", display: "grid", placeItems: "center" }}>
+						<TouchAppOutlined sx={{ fontSize: 26, color: "var(--ink-mute)" }} />
+					</Box>
+					<Typography sx={{ fontSize: 14.5, fontWeight: 800, color: "var(--ink-soft)" }}>Sélectionnez un ticket</Typography>
+					<Typography variant="body2" sx={{ color: "var(--ink-mute)" }}>
+						Choisissez un avis dans la liste pour le traiter ici.
+					</Typography>
+				</Stack>
+			</Box>
+		);
+	}
+
+	const handleStatus = async (next: FeedbackStatus) => {
+		const updated = await updateMutation.mutateAsync({ id: feedback.id, status: next });
+		onUpdated(updated);
+	};
+
+	const handleReply = async () => {
+		const body = reply.trim();
+		if (!body) return;
+		const updated = await replyMutation.mutateAsync({ id: feedback.id, body });
+		onUpdated(updated);
+		setReply("");
+	};
 
 	return (
-		<Box
-			data-testid={`admin-feedback-row-${feedback.id}`}
-			onClick={onSelect}
-			role="button"
-			tabIndex={0}
-			onKeyDown={(e) => {
-				if (e.key === "Enter" || e.key === " ") {
-					e.preventDefault();
-					onSelect();
-				}
-			}}
-			sx={{
-				display: "flex",
-				gap: 2,
-				p: 2,
-				border: "1px solid var(--line)",
-				borderRadius: "14px",
-				backgroundColor: "var(--surface)",
-				cursor: "pointer",
-				transition: "border-color 180ms ease, background-color 180ms ease",
-				"&:hover": { borderColor: "var(--primary-blue)", backgroundColor: "var(--surface-blue)" },
-				"&:focus-visible": { outline: "2px solid var(--primary-blue)", outlineOffset: 2 },
-			}}
-		>
-			<Avatar sx={{ width: 36, height: 36, fontSize: 13, fontWeight: 700, bgcolor: "var(--surface-soft)", color: "var(--ink)" }}>{initials || "?"}</Avatar>
-			<Stack sx={{ flex: 1, minWidth: 0 }} spacing={0.5}>
-				<Stack direction="row" alignItems="center" spacing={1} flexWrap="wrap">
-					<Chip
-						icon={<Icon sx={{ fontSize: 14 }} />}
-						label={meta.label}
-						size="small"
-						sx={{ bgcolor: meta.accentSoft, color: meta.accent, fontWeight: 700, "& .MuiChip-icon": { color: meta.accent } }}
-					/>
-					<StatusChip status={feedback.status} />
-					{feedback.attachments.length > 0 && (
-						<Chip
-							icon={<AttachFile sx={{ fontSize: 14 }} />}
-							label={feedback.attachments.length}
-							size="small"
-							sx={{ bgcolor: "var(--surface-soft)", color: "var(--ink-soft)", fontWeight: 700 }}
-						/>
-					)}
+		<Box ref={scrollRef} sx={{ flex: 1, minWidth: 0, overflowY: "auto", p: { xs: 2.25, md: 3 } }}>
+			<Stack spacing={2} sx={{ maxWidth: 760 }}>
+				<Stack direction="row" alignItems="center" justifyContent="space-between">
+					<Button onClick={onBack} startIcon={<ArrowBack />} variant="text" sx={{ display: { xs: "inline-flex", md: "none" }, minHeight: 0, p: 0.5 }}>
+						Liste
+					</Button>
+					<Typography variant="overline" sx={{ display: { xs: "none", md: "block" } }}>
+						Détail du ticket
+					</Typography>
 				</Stack>
-				<Typography sx={{ fontWeight: 700, color: "var(--ink)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{feedback.title}</Typography>
-				<Typography
-					variant="body2"
+
+				<Stack spacing={1}>
+					<Typography variant="h4">{feedback.title}</Typography>
+					<Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap>
+						<DetailCategoryChip category={feedback.category} />
+						<StatusChip status={feedback.status} />
+					</Stack>
+					<Typography variant="caption" sx={{ color: "var(--ink-mute)" }}>
+						{feedback.author.displayName}
+						{feedback.author.email ? ` · ${feedback.author.email}` : ""} · {formatDistanceToNow(new Date(feedback.createdAt), { addSuffix: true, locale: fr })}
+					</Typography>
+				</Stack>
+
+				<Box
 					sx={{
-						color: "var(--ink-soft)",
-						display: "-webkit-box",
-						WebkitLineClamp: 2,
-						WebkitBoxOrient: "vertical",
-						overflow: "hidden",
+						whiteSpace: "pre-wrap",
+						p: 2,
+						borderRadius: "12px",
+						border: "1px solid var(--line)",
+						bgcolor: "var(--surface-soft)",
+						color: "var(--ink)",
+						lineHeight: 1.6,
 					}}
 				>
 					{feedback.body}
-				</Typography>
-				<Typography variant="caption" sx={{ color: "var(--ink-mute)" }}>
-					{feedback.author.displayName} · {formatDistanceToNow(new Date(feedback.createdAt), { addSuffix: true, locale: fr })}
-				</Typography>
+				</Box>
+
+				{feedback.attachments.length > 0 && (
+					<Stack spacing={1}>
+						<Typography variant="overline">Pièces jointes</Typography>
+						{feedback.attachments.map((attachment) => (
+							<Button
+								key={attachment.id}
+								variant="outlined"
+								startIcon={<AttachFile sx={{ fontSize: 18 }} />}
+								onClick={() => void downloadWithAuth(attachment.downloadUrl, attachment.fileName)}
+								sx={{ justifyContent: "flex-start", textTransform: "none", borderRadius: "10px" }}
+							>
+								{attachment.fileName}
+							</Button>
+						))}
+					</Stack>
+				)}
+
+				{feedback.context && (feedback.context.url || feedback.context.userAgent || feedback.context.appVersion) && (
+					<Stack spacing={0.5}>
+						<Typography variant="overline">Contexte technique</Typography>
+						{feedback.context.url && (
+							<Typography variant="caption" sx={{ color: "var(--ink-soft)", wordBreak: "break-all" }}>
+								URL : {feedback.context.url}
+							</Typography>
+						)}
+						{feedback.context.appVersion && (
+							<Typography variant="caption" sx={{ color: "var(--ink-soft)" }}>
+								Version : {feedback.context.appVersion}
+							</Typography>
+						)}
+						{feedback.context.userAgent && (
+							<Typography variant="caption" sx={{ color: "var(--ink-mute)", wordBreak: "break-all" }}>
+								{feedback.context.userAgent}
+							</Typography>
+						)}
+					</Stack>
+				)}
+
+				<Box sx={{ borderTop: "1px solid var(--line)", pt: 2 }}>
+					<Typography variant="overline" sx={{ display: "block", mb: 1.25 }}>
+						Échanges {feedback.replies.length > 0 ? `(${feedback.replies.length})` : ""}
+					</Typography>
+					{feedback.replies.length === 0 && (
+						<Typography variant="body2" sx={{ color: "var(--ink-mute)", mb: 1.5 }}>
+							Aucune réponse pour l'instant.
+						</Typography>
+					)}
+					<Stack spacing={1.25} sx={{ mb: 1.75 }}>
+						{feedback.replies.map((r) => (
+							<Box
+								key={r.id}
+								sx={{
+									bgcolor: r.isAdmin ? "var(--surface-blue)" : "var(--surface-soft)",
+									border: `1px solid ${r.isAdmin ? "var(--primary-blue-soft)" : "var(--line)"}`,
+									borderRadius: "12px",
+									p: 1.5,
+								}}
+							>
+								<Typography sx={{ fontSize: 12, fontWeight: 800, color: "var(--ink)" }}>
+									{r.authorDisplayName}
+									{r.isAdmin ? " · admin" : ""}{" "}
+									<Box component="span" sx={{ color: "var(--ink-mute)", fontWeight: 600 }}>
+										· {formatDistanceToNow(new Date(r.createdAt), { addSuffix: true, locale: fr })}
+									</Box>
+								</Typography>
+								<Typography sx={{ fontSize: 13.5, color: "var(--ink)", mt: 0.5, lineHeight: 1.5, whiteSpace: "pre-wrap" }}>{r.body}</Typography>
+							</Box>
+						))}
+					</Stack>
+					<Stack spacing={1}>
+						<TextField value={reply} onChange={(e) => setReply(e.target.value)} placeholder="Répondre au copropriétaire…" multiline minRows={2} fullWidth />
+						<Box sx={{ display: "flex", justifyContent: "flex-end" }}>
+							<Button variant="contained" startIcon={<Send />} onClick={() => void handleReply()} disabled={!reply.trim() || replyMutation.isPending}>
+								Envoyer
+							</Button>
+						</Box>
+						{replyMutation.isError && <Alert severity="error">Envoi de la réponse impossible.</Alert>}
+					</Stack>
+				</Box>
+
+				<Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap sx={{ borderTop: "1px solid var(--line)", pt: 2 }}>
+					{feedback.status !== "Resolved" && (
+						<Button
+							variant="contained"
+							color="secondary"
+							startIcon={<CheckCircleOutline />}
+							onClick={() => void handleStatus("Resolved")}
+							disabled={updateMutation.isPending}
+							sx={{ bgcolor: "var(--mint-soft)", color: "#047857", "&:hover": { bgcolor: "var(--mint-soft)" } }}
+						>
+							Marquer résolu
+						</Button>
+					)}
+					{feedback.status !== "Discarded" && (
+						<Button variant="outlined" startIcon={<DoNotDisturbAltOutlined />} onClick={() => void handleStatus("Discarded")} disabled={updateMutation.isPending}>
+							Écarter
+						</Button>
+					)}
+					{feedback.status !== "Open" && (
+						<Button variant="outlined" startIcon={<ReplayOutlined />} onClick={() => void handleStatus("Open")} disabled={updateMutation.isPending}>
+							Ré-ouvrir
+						</Button>
+					)}
+					{updateMutation.isError && (
+						<Typography variant="caption" sx={{ color: "var(--danger)", alignSelf: "center" }}>
+							Mise à jour impossible.
+						</Typography>
+					)}
+				</Stack>
 			</Stack>
 		</Box>
 	);
@@ -228,156 +547,6 @@ function StatusChip({ status }: { status: FeedbackStatus }) {
 	};
 	const c = config[status];
 	return <Chip label={c.label} size="small" sx={{ bgcolor: c.bg, color: c.color, fontWeight: 700 }} />;
-}
-
-function FeedbackDetailDrawer({ feedback, onClose, onUpdated }: { feedback: Feedback | null; onClose: () => void; onUpdated: (next: Feedback) => void }) {
-	const updateMutation = useFeedbackMutations.updateStatus();
-
-	const handleStatus = async (status: FeedbackStatus) => {
-		if (!feedback) return;
-		// Lift the freshly-returned Feedback back to the parent so the drawer's status chip,
-		// resolvedAt, and the visible "Marquer résolu / Écarter / Ré-ouvrir" buttons reflect
-		// the new state immediately. The list query is invalidated by the mutation's
-		// onSuccess; this keeps the drawer in sync without waiting for that round-trip.
-		const updated = await updateMutation.mutateAsync({ id: feedback.id, status });
-		onUpdated(updated);
-	};
-
-	return (
-		<Drawer anchor="right" open={!!feedback} onClose={onClose} slotProps={{ paper: { sx: { width: { xs: "100%", sm: 520 }, p: 3 } } }} data-testid="admin-feedback-drawer">
-			{feedback && (
-				<Stack spacing={2.5}>
-					<Stack direction="row" alignItems="center" justifyContent="space-between">
-						<Typography variant="overline">Détail</Typography>
-						<IconButton size="small" onClick={onClose} aria-label="Fermer" sx={{ color: "var(--ink-soft)" }}>
-							<Close />
-						</IconButton>
-					</Stack>
-
-					<Stack spacing={1}>
-						<Typography variant="h4">{feedback.title}</Typography>
-						<Stack direction="row" spacing={0.75} flexWrap="wrap">
-							<DetailCategoryChip category={feedback.category} />
-							<StatusChip status={feedback.status} />
-						</Stack>
-						<Typography variant="caption" sx={{ color: "var(--ink-mute)" }}>
-							{feedback.author.displayName}
-							{feedback.author.email ? ` · ${feedback.author.email}` : ""} · {formatDistanceToNow(new Date(feedback.createdAt), { addSuffix: true, locale: fr })}
-						</Typography>
-					</Stack>
-
-					<Box
-						sx={{
-							whiteSpace: "pre-wrap",
-							p: 2,
-							borderRadius: "12px",
-							border: "1px solid var(--line)",
-							backgroundColor: "var(--surface-soft)",
-							color: "var(--ink)",
-							fontSize: "0.92rem",
-							lineHeight: 1.55,
-						}}
-					>
-						{feedback.body}
-					</Box>
-
-					{feedback.attachments.length > 0 && (
-						<Stack spacing={1}>
-							<Typography variant="overline">Pièces jointes</Typography>
-							{feedback.attachments.map((attachment) => (
-								<Box
-									key={attachment.id}
-									component="button"
-									type="button"
-									onClick={() => {
-										// The download endpoint is `[Authorize]` and `downloadUrl` is a relative path
-										// served by the API host — a plain <a href> hits the front origin (port 3000)
-										// without the Bearer header. Routing through the axios interceptor handles both.
-										void downloadWithAuth(attachment.downloadUrl, attachment.fileName);
-									}}
-									sx={{
-										all: "unset",
-										display: "flex",
-										alignItems: "center",
-										gap: 1,
-										p: 1,
-										borderRadius: "10px",
-										border: "1px solid var(--line)",
-										color: "var(--ink)",
-										cursor: "pointer",
-										transition: "border-color 160ms ease, color 160ms ease, background-color 160ms ease",
-										"&:hover": { borderColor: "var(--primary-blue)", color: "var(--primary-blue)", backgroundColor: "var(--surface-blue)" },
-										"&:focus-visible": { outline: "2px solid var(--primary-blue)", outlineOffset: 2 },
-									}}
-								>
-									<AttachFile sx={{ fontSize: 18 }} />
-									<Typography sx={{ fontSize: 13, fontWeight: 600 }}>{attachment.fileName}</Typography>
-								</Box>
-							))}
-						</Stack>
-					)}
-
-					{feedback.context && (feedback.context.url || feedback.context.userAgent || feedback.context.appVersion) && (
-						<Stack spacing={0.5}>
-							<Typography variant="overline">Contexte technique</Typography>
-							{feedback.context.url && (
-								<Typography variant="caption" sx={{ color: "var(--ink-soft)", wordBreak: "break-all" }}>
-									URL : {feedback.context.url}
-								</Typography>
-							)}
-							{feedback.context.appVersion && (
-								<Typography variant="caption" sx={{ color: "var(--ink-soft)" }}>
-									Version : {feedback.context.appVersion}
-								</Typography>
-							)}
-							{feedback.context.userAgent && (
-								<Typography variant="caption" sx={{ color: "var(--ink-mute)", wordBreak: "break-all" }}>
-									{feedback.context.userAgent}
-								</Typography>
-							)}
-						</Stack>
-					)}
-
-					<Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-						{feedback.status !== "Resolved" && (
-							<Chip
-								icon={<CheckCircleOutline sx={{ fontSize: 16 }} />}
-								label="Marquer résolu"
-								onClick={() => void handleStatus("Resolved")}
-								disabled={updateMutation.isPending}
-								sx={{ bgcolor: "var(--mint-soft)", color: "#047857", fontWeight: 700, "& .MuiChip-icon": { color: "#047857" } }}
-							/>
-						)}
-						{feedback.status !== "Discarded" && (
-							<Chip
-								icon={<DoNotDisturbAltOutlined sx={{ fontSize: 16 }} />}
-								label="Écarter"
-								onClick={() => void handleStatus("Discarded")}
-								disabled={updateMutation.isPending}
-								sx={{ bgcolor: "var(--surface-soft)", color: "var(--ink-soft)", fontWeight: 700 }}
-							/>
-						)}
-						{feedback.status !== "Open" && (
-							<Tooltip title="Ré-ouvrir">
-								<Chip
-									icon={<ReplayOutlined sx={{ fontSize: 16 }} />}
-									label="Ré-ouvrir"
-									onClick={() => void handleStatus("Open")}
-									disabled={updateMutation.isPending}
-									sx={{ bgcolor: "var(--primary-blue-soft)", color: "var(--primary-blue)", fontWeight: 700, "& .MuiChip-icon": { color: "var(--primary-blue)" } }}
-								/>
-							</Tooltip>
-						)}
-						{updateMutation.isError && (
-							<Typography variant="caption" sx={{ color: "var(--danger)", alignSelf: "center" }}>
-								Mise à jour impossible. Veuillez réessayer.
-							</Typography>
-						)}
-					</Stack>
-				</Stack>
-			)}
-		</Drawer>
-	);
 }
 
 function DetailCategoryChip({ category }: { category: FeedbackCategory }) {
