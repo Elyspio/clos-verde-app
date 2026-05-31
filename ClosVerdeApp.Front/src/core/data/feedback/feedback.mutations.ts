@@ -42,6 +42,24 @@ function useUpdateStatus() {
 	});
 }
 
+/** Admin: post a reply on a feedback's thread. Invalidates admin lists and the author's own list. */
+function useAddReply() {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: async ({ id, body }: { id: string; body: string }) => {
+			try {
+				return await feedbackService.addReply(id, { body });
+			} catch (e) {
+				throw new Error(extractApiError(e, "Envoi de la réponse impossible."));
+			}
+		},
+		onSuccess: () => {
+			void qc.invalidateQueries({ queryKey: feedbackKeys.adminLists() });
+			void qc.invalidateQueries({ queryKey: feedbackKeys.mine() });
+		},
+	});
+}
+
 /** Current user: close one of their own open tickets. */
 function useCloseMine() {
 	const qc = useQueryClient();
@@ -63,5 +81,6 @@ function useCloseMine() {
 export const useFeedbackMutations = {
 	create: useCreate,
 	updateStatus: useUpdateStatus,
+	addReply: useAddReply,
 	closeMine: useCloseMine,
 };

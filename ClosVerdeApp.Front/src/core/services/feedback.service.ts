@@ -1,5 +1,5 @@
 import { backendApi } from "@apis/rest/api/clients/api.client";
-import type { CreateFeedbackRequest, FeedbackCategory, FeedbackStatus, UpdateFeedbackStatusRequest } from "@apis/rest/api/generated";
+import type { CreateFeedbackReplyRequest, CreateFeedbackRequest, FeedbackCategory, FeedbackStatus, UpdateFeedbackStatusRequest } from "@apis/rest/api/generated";
 
 export const feedbackService = {
 	create: async (request: CreateFeedbackRequest) => (await backendApi.feedbackCreate(request)).data,
@@ -8,4 +8,5 @@ export const feedbackService = {
 	getById: async (id: string) => (await backendApi.feedbackGetById(id)).data,
 	closeMine: async (id: string) => (await backendApi.feedbackCloseMine(id)).data,
 	updateStatus: async (id: string, request: UpdateFeedbackStatusRequest) => (await backendApi.feedbackUpdateStatus(id, request)).data,
+	addReply: async (id: string, request: CreateFeedbackReplyRequest) => (await backendApi.feedbackAddReply(id, request)).data,
 };
