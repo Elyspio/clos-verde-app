@@ -1,18 +1,26 @@
-import { Badge, Box, Container, Stack, Typography } from "@mui/material";
+import { Badge, Box, Container, IconButton, Stack, Tooltip, Typography } from "@mui/material";
 import { NavLink, Outlet } from "react-router-dom";
 import { UserMenu } from "./UserMenu";
-import { Home } from "@mui/icons-material";
+import { HelpOutline, Home } from "@mui/icons-material";
 import { useUnreadQueries } from "@data/unread/unread.queries";
+import { useIsAdmin } from "@data/client/useIsAdmin";
+import { FeedbackTrigger } from "@/view/components/feedback/FeedbackTrigger";
+import { routes } from "@/config/routes";
 
-const navItems = [
-	{ to: "/calendrier", label: "Calendrier" },
-	{ to: "/reserver", label: "Réserver" },
-	{ to: "/classement", label: "Classement" },
+const baseNavItems = [
+	{ to: "/calendrier", label: "Calendrier", badge: false },
+	{ to: "/reserver", label: "Réserver", badge: false },
+	{ to: "/classement", label: "Classement", badge: false },
 	{ to: "/messages", label: "Messages", badge: true },
+	{ to: "/mes-tickets", label: "Mes tickets", badge: false },
 ];
+
+const adminNavItem = { to: "/admin/feedback", label: "Avis", badge: false };
 
 export function AppShell() {
 	const unreadTotal = useUnreadQueries.total();
+	const isAdmin = useIsAdmin();
+	const navItems = isAdmin ? [...baseNavItems, adminNavItem] : baseNavItems;
 	return (
 		<Box
 			sx={{
@@ -108,6 +116,28 @@ export function AppShell() {
 							</NavLink>
 						))}
 					</Stack>
+					<Tooltip title="Aide">
+						<IconButton
+							component={NavLink}
+							to={routes.app.faq.path}
+							aria-label="Aide"
+							data-testid="faq-trigger"
+							sx={{
+								border: "1px solid var(--line)",
+								backgroundColor: "var(--surface)",
+								color: "var(--ink-soft)",
+								transition: "color 180ms ease, background-color 180ms ease, border-color 180ms ease",
+								"&:hover": {
+									color: "var(--primary-blue)",
+									backgroundColor: "var(--surface-blue)",
+									borderColor: "var(--primary-blue)",
+								},
+							}}
+						>
+							<HelpOutline />
+						</IconButton>
+					</Tooltip>
+					<FeedbackTrigger />
 					<UserMenu />
 				</Container>
 				<Stack

@@ -12,6 +12,14 @@
 	"ssoSessionIdleTimeout": 1800,
 	"ssoSessionMaxLifespan": 36000,
 	"defaultSignatureAlgorithm": "RS256",
+	"roles": {
+		"realm": [
+			{
+				"name": "admin",
+				"description": "Administrateur Clos Verde — accès au back-office feedback"
+			}
+		]
+	},
 	"clients": [
 		{
 			"clientId": "cv_dev-front",
@@ -71,6 +79,25 @@
 		}
 	],
 	"users": [
+		{
+			"id": "00000000-0000-4000-8000-0000000000ad",
+			"username": "admin",
+			"enabled": true,
+			"emailVerified": true,
+			"firstName": "Admin",
+			"lastName": "Clos Verde",
+			"email": "admin@clos-verde.local",
+			"credentials": [
+				{
+					"type": "password",
+					"value": "password",
+					"temporary": false
+				}
+			],
+			"realmRoles": [
+				"admin"
+			]
+		},
 		{
 			"id": "00000000-0000-4000-8000-000000000000",
 			"username": "user",

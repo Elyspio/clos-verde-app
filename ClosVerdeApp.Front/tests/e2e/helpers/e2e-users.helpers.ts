@@ -21,7 +21,7 @@ type Realm = {
 	users?: RealmUser[];
 };
 
-export type E2eUserKey = "user" | "alice" | "camille" | "david" | "elodie" | "francois" | "gabrielle" | "hugo" | "ines" | "julien";
+export type E2eUserKey = "admin" | "user" | "alice" | "camille" | "david" | "elodie" | "francois" | "gabrielle" | "hugo" | "ines" | "julien";
 export type E2eUserRef = E2eUserKey | (string & {});
 
 export type E2eUser = {
@@ -63,6 +63,7 @@ export type E2eStorageState = {
 };
 
 const aliasByUsername: Record<string, E2eUserKey> = {
+	admin: "admin",
 	user: "user",
 	"alice.martin": "alice",
 	"camille.dubois": "camille",

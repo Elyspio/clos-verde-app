@@ -29,6 +29,7 @@ public static class AppRuntime
 
 		app.MapHub<ReservationHub>("/hubs/reservations");
 		app.MapHub<MessageHub>("/hubs/messages");
+		app.MapHub<FeedbackHub>("/hubs/feedback");
 
 		// Setup Controllers
 		app.MapControllers();

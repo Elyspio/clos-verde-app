@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "react-oidc-context";
 import { useNavigate, useParams } from "react-router-dom";
 import { useClientStore } from "@data/client/clientStore";
+import { useIsAdmin } from "@data/client/useIsAdmin";
 import { useMessagesQueries } from "@data/messages/messages.queries";
 import { useMessagesMutations } from "@data/messages/messages.mutations";
 import { useTopicsQueries } from "@data/topics/topics.queries";
@@ -32,6 +33,7 @@ export function TopicView() {
 	const { messages, isLoading } = useMessagesQueries.list(topicId);
 	const isMuted = useTopicsQueries.isMuted(topicId);
 	const userId = auth.user?.profile?.sub;
+	const isAdmin = useIsAdmin();
 	const lastMarkedReadRef = useRef<{ topicId: string | null; at: string | null }>({ topicId: null, at: null });
 	// Captured *before* auto-markRead runs so the initial scroll target reflects the user's
 	// real last-read position. Stored as state (not a ref) so React re-renders downstream
@@ -93,7 +95,7 @@ export function TopicView() {
 		markReadMutation.mutate({ topicId, at: lastAt });
 	}, [markReadMutation, messages, topicId, capturedLastReadAt]);
 
-	const isOwnerOfCustom = topic?.kind === "Custom" && !!userId && topic.createdByUserId === userId;
+	const canManage = isAdmin || (topic?.kind === "Custom" && !!userId && topic.createdByUserId === userId);
 
 	const handleSend = async ({ html, attachments }: { html: string; attachments: Attachment[] }) => {
 		if (!topicId) return;
@@ -167,7 +169,7 @@ export function TopicView() {
 					>
 						{isMuted ? "Réactiver" : "Muter"}
 					</Button>
-					{isOwnerOfCustom && (
+					{canManage && (
 						<>
 							<Button data-testid="topic-rename-button" size="small" startIcon={<Edit fontSize="inherit" />} onClick={() => setRenameOpen(true)}>
 								Renommer

@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useAuth } from "react-oidc-context";
 import { useLocation, useNavigate } from "react-router-dom";
 import { routes } from "@/config/routes";
+import { useFeedbackBridge } from "@/core/bridges/feedback.bridge";
 import { useRealtimeBridge } from "@/core/bridges/realtime.bridge";
 import { notificationsSideEffects } from "@data/notifications/notifications.sideEffects";
 import { NotificationOnboarding } from "@/view/components/onboarding/NotificationOnboarding";
@@ -27,6 +28,7 @@ export function ProtectedRoute() {
 	// SignalR bridges + push subscription state are scoped to the auth-protected layout: they
 	// only run once the user is authenticated and unmount cleanly on logout.
 	useRealtimeBridge(auth.isAuthenticated);
+	useFeedbackBridge(auth.isAuthenticated);
 	useEffect(() => {
 		if (auth.isAuthenticated) void notificationsSideEffects.refreshPushStatus();
 	}, [auth.isAuthenticated]);

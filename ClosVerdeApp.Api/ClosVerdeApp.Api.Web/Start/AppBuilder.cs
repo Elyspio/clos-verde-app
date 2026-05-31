@@ -74,7 +74,12 @@ public sealed class AppBuilder
 					ValidateLifetime = true,
 					ValidateIssuerSigningKey = true,
 					NameClaimType = "name",
-					RoleClaimType = "realm_access.roles",
+					// RoleClaimType stays at the default ClaimTypes.Role. Keycloak emits the
+					// realm roles as a JSON object (`"realm_access": { "roles": [...] }`),
+					// which the JWT handler cannot traverse via a dotted RoleClaimType —
+					// it would store the whole object as one opaque claim. We flatten the
+					// roles into individual ClaimTypes.Role claims in OnTokenValidated
+					// below, so User.IsInRole("admin") and [Authorize(Roles = "admin")] work.
 					ClockSkew = TimeSpan.FromMinutes(1)
 				};
 				opts.Events = new JwtBearerEvents
@@ -99,7 +104,37 @@ public sealed class AppBuilder
 					{
 						var azp = ctx.Principal?.FindFirst("azp")?.Value;
 						if (!string.Equals(azp, clientId, StringComparison.Ordinal))
+						{
 							ctx.Fail($"Invalid azp claim: expected '{clientId}', got '{azp}'.");
+							return Task.CompletedTask;
+						}
+
+						// Flatten Keycloak's `realm_access.roles` JSON object into individual
+						// role claims so [Authorize(Roles = "...")] works. The raw claim value
+						// looks like `{"roles":["admin","offline_access","..."]}`.
+						var realmAccess = ctx.Principal?.FindFirst("realm_access")?.Value;
+						if (!string.IsNullOrEmpty(realmAccess) && ctx.Principal?.Identity is System.Security.Claims.ClaimsIdentity identity)
+						{
+							try
+							{
+								using var doc = System.Text.Json.JsonDocument.Parse(realmAccess);
+								if (doc.RootElement.TryGetProperty("roles", out var rolesElement) && rolesElement.ValueKind == System.Text.Json.JsonValueKind.Array)
+								{
+									foreach (var role in rolesElement.EnumerateArray())
+									{
+										var name = role.GetString();
+										if (!string.IsNullOrEmpty(name))
+											identity.AddClaim(new System.Security.Claims.Claim(identity.RoleClaimType, name));
+									}
+								}
+							}
+							catch (System.Text.Json.JsonException)
+							{
+								// Malformed realm_access — skip role hydration but let the token through;
+								// the user just won't satisfy any role-based policy.
+							}
+						}
+
 						return Task.CompletedTask;
 					}
 				};

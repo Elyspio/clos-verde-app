@@ -18,6 +18,9 @@ const ReservationPage = lazy(() => import("@/view/components/reservation/Reserva
 const LeaderboardPage = lazy(() => import("@/view/components/leaderboard/LeaderboardPage").then((m) => ({ default: m.LeaderboardPage })));
 const MessagesPage = lazy(() => import("@/view/components/messages/MessagesPage").then((m) => ({ default: m.MessagesPage })));
 const TopicView = lazy(() => import("@/view/components/messages/TopicView").then((m) => ({ default: m.TopicView })));
+const AdminFeedbackPage = lazy(() => import("@/view/components/feedback/AdminFeedbackPage").then((m) => ({ default: m.AdminFeedbackPage })));
+const MyFeedbackPage = lazy(() => import("@/view/components/feedback/MyFeedbackPage").then((m) => ({ default: m.MyFeedbackPage })));
+const FaqPage = lazy(() => import("@/view/components/faq/FaqPage").then((m) => ({ default: m.FaqPage })));
 
 export function AppRouter() {
 	const auth = useAuth();
@@ -46,6 +49,9 @@ export function AppRouter() {
 				<Route path={routes.auth.login.path} element={<LoginPage />} />
 				<Route path={routes.auth.callback.path} element={<Navigate to={routes.app.root.path} replace />} />
 				<Route path={routes.auth.tokenError.path} element={<TokenErrorPage />} />
+				{/* The FAQ is intentionally outside the ProtectedRoute so anonymous visitors
+				    (e.g. recipients of the onboarding email) can open it without signing in. */}
+				<Route path={routes.app.faq.path} element={<FaqPage />} />
 				<Route element={<ProtectedRoute />}>
 					<Route index element={<Navigate to={routes.app.calendar.path} replace />} />
 					<Route path={routes.app.calendar.path} element={<CalendarPage />} />
@@ -54,6 +60,8 @@ export function AppRouter() {
 					<Route path={routes.app.messages.path} element={<MessagesPage />}>
 						<Route path=":topicId" element={<TopicView />} />
 					</Route>
+					<Route path={routes.app.myFeedback.path} element={<MyFeedbackPage />} />
+					<Route path={routes.app.feedbackAdmin.path} element={<AdminFeedbackPage />} />
 				</Route>
 				<Route path="*" element={<Navigate to={routes.app.calendar.path} replace />} />
 			</Routes>

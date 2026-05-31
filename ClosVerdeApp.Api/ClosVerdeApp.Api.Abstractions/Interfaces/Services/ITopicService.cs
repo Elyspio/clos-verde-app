@@ -11,8 +11,8 @@ public interface ITopicService
 	Task<List<TopicListItem>> ListForUser(Guid currentUserId);
 	Task<Topic> GetById(Guid id);
 	Task<Topic> CreateCustom(string name, Guid currentUserId, string currentDisplayName);
-	Task<Topic> Rename(Guid topicId, string newName, Guid currentUserId);
-	Task Delete(Guid topicId, Guid currentUserId);
+	Task<Topic> Rename(Guid topicId, string newName, Guid currentUserId, bool isAdmin);
+	Task Delete(Guid topicId, Guid currentUserId, bool isAdmin);
 	Task EnsureGlobalSeeded();
 
 	/// <summary>Topic ids the user is "subscribed by activity" — author of a message or @mentioned in one.</summary>

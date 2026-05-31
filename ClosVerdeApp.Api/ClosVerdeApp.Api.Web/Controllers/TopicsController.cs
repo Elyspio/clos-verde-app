@@ -65,7 +65,7 @@ public class TopicsController(
 	public async Task<IActionResult> Rename(Guid id, [FromBody] RenameTopicRequest request)
 	{
 		using var logger = LogController($"{Log.F(id)} {Log.F(request.Name)}");
-		return Ok(await topicService.Rename(id, request.Name, CurrentUserId));
+		return Ok(await topicService.Rename(id, request.Name, CurrentUserId, User.IsInRole("admin")));
 	}
 
 	[HttpDelete("{id:guid}")]
@@ -74,7 +74,7 @@ public class TopicsController(
 	public async Task<IActionResult> Delete(Guid id)
 	{
 		using var logger = LogController(Log.F(id));
-		await topicService.Delete(id, CurrentUserId);
+		await topicService.Delete(id, CurrentUserId, User.IsInRole("admin"));
 		return NoContent();
 	}
 

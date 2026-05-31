@@ -70,6 +70,7 @@ public static class ApiExtentions
 			);
 		services.AddSingleton<IReservationRealtimePublisher, ReservationHubPublisher>();
 		services.AddSingleton<IMessageRealtimePublisher, MessageHubPublisher>();
+		services.AddSingleton<IFeedbackRealtimePublisher, FeedbackHubPublisher>();
 		services.AddSingleton<Microsoft.AspNetCore.SignalR.IUserIdProvider, SubjectUserIdProvider>();
 
 		return services;

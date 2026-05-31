@@ -12,8 +12,10 @@ using Microsoft.Extensions.Logging;
 namespace ClosVerdeApp.Api.Core.Services;
 
 /// <summary>
-/// Implements <see cref="ITopicService"/>. The Global topic is read-only and undeletable;
-/// Reservation topics are managed by the reservation cascade; only Custom topics are user-managed.
+/// Implements <see cref="ITopicService"/>. Regular users can only manage Custom topics they created;
+/// admins bypass both the Kind and ownership checks (Global/Reservation topics included). The Global
+/// topic is reseeded on demand if deleted; Reservation topic cleanup is otherwise driven by the
+/// reservation cascade.
 /// </summary>
 public class TopicService(
 	ITopicRepository topicRepository,
@@ -95,18 +97,21 @@ public class TopicService(
 		return topic;
 	}
 
-	public async Task<Topic> Rename(Guid topicId, string newName, Guid currentUserId)
+	public async Task<Topic> Rename(Guid topicId, string newName, Guid currentUserId, bool isAdmin)
 	{
-		using var logger = LogService($"{Log.F(topicId)} {Log.F(currentUserId)}");
+		using var logger = LogService($"{Log.F(topicId)} {Log.F(currentUserId)} {Log.F(isAdmin)}");
 
 		if (string.IsNullOrWhiteSpace(newName))
 			throw new HttpException.BadRequest("Le nom du salon est requis.");
 
 		var t = await topicRepository.GetById(topicId) ?? throw new HttpException.NotFound<TopicEntity>(topicId);
-		if (t.Kind != TopicKind.Custom)
-			throw new HttpException.Forbidden("Seuls les salons personnalisés peuvent être renommés.");
-		if (t.CreatedByUserId != currentUserId)
-			throw new HttpException.Forbidden("Seul le créateur peut renommer ce salon.");
+		if (!isAdmin)
+		{
+			if (t.Kind != TopicKind.Custom)
+				throw new HttpException.Forbidden("Seuls les salons personnalisés peuvent être renommés.");
+			if (t.CreatedByUserId != currentUserId)
+				throw new HttpException.Forbidden("Seul le créateur ou un administrateur peut renommer ce salon.");
+		}
 
 		var updated = await topicRepository.Rename(topicId, newName) ?? throw new HttpException.NotFound<TopicEntity>(topicId);
 		var topic = ToTransport(updated);
@@ -114,15 +119,18 @@ public class TopicService(
 		return topic;
 	}
 
-	public async Task Delete(Guid topicId, Guid currentUserId)
+	public async Task Delete(Guid topicId, Guid currentUserId, bool isAdmin)
 	{
-		using var logger = LogService($"{Log.F(topicId)} {Log.F(currentUserId)}");
+		using var logger = LogService($"{Log.F(topicId)} {Log.F(currentUserId)} {Log.F(isAdmin)}");
 
 		var t = await topicRepository.GetById(topicId) ?? throw new HttpException.NotFound<TopicEntity>(topicId);
-		if (t.Kind != TopicKind.Custom)
-			throw new HttpException.Forbidden("Seuls les salons personnalisés peuvent être supprimés.");
-		if (t.CreatedByUserId != currentUserId)
-			throw new HttpException.Forbidden("Seul le créateur peut supprimer ce salon.");
+		if (!isAdmin)
+		{
+			if (t.Kind != TopicKind.Custom)
+				throw new HttpException.Forbidden("Seuls les salons personnalisés peuvent être supprimés.");
+			if (t.CreatedByUserId != currentUserId)
+				throw new HttpException.Forbidden("Seul le créateur ou un administrateur peut supprimer ce salon.");
+		}
 
 		await messageRepository.DeleteByTopic(topicId);
 		await topicRepository.Delete(topicId);

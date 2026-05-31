@@ -29,4 +29,11 @@ public class RealtimeEventsSchemaController : ControllerBase
 	{
 		return Ok();
 	}
+
+	[HttpGet("feedback-changed")]
+	[ProducesResponseType(typeof(FeedbackChangedEvent), StatusCodes.Status200OK)]
+	public IActionResult FeedbackChanged()
+	{
+		return Ok();
+	}
 }

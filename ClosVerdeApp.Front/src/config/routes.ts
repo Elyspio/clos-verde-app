@@ -11,5 +11,8 @@ export const routes = {
 		leaderboard: { path: "/classement" },
 		messages: { path: "/messages" },
 		messageTopic: { path: "/messages/:topicId" },
+		myFeedback: { path: "/mes-tickets" },
+		feedbackAdmin: { path: "/admin/feedback" },
+		faq: { path: "/faq" },
 	},
 } as const;

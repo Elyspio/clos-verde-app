@@ -12,6 +12,3 @@ peerDependencyRules:
     allowedVersions:
         vite: "*"
         vitest: "*"
-packages:
-    - .
-    - ./tests/e2e
