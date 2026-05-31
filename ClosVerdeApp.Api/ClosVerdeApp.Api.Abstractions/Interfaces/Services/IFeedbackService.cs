@@ -23,6 +23,8 @@ public interface IFeedbackService
 
 	Task<Feedback> UpdateStatus(Guid id, FeedbackStatus newStatus, string? adminNote);
 
+	Task<Feedback> AddReply(Guid id, string body, Guid authorId, string authorDisplayName, bool isAdmin);
+
 	Task<Feedback?> GetById(Guid id);
 }
 

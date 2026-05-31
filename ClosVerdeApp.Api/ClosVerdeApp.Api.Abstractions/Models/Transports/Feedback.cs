@@ -15,9 +15,19 @@ public class Feedback : ITransport
 	[Required] public required FeedbackAuthorDto Author { get; init; }
 	[Required] public required List<Attachment> Attachments { get; init; }
 	public FeedbackContextDto? Context { get; init; }
+	[Required] public required List<FeedbackReplyDto> Replies { get; init; }
 	[Required] public required DateTime CreatedAt { get; init; }
 	public DateTime? ResolvedAt { get; init; }
 	public string? AdminNote { get; init; }
+}
+
+public class FeedbackReplyDto
+{
+	[Required] public required Guid Id { get; init; }
+	[Required] public required string AuthorDisplayName { get; init; }
+	[Required] public required bool IsAdmin { get; init; }
+	[Required] public required string Body { get; init; }
+	[Required] public required DateTime CreatedAt { get; init; }
 }
 
 public class FeedbackAuthorDto

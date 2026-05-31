@@ -8,6 +8,7 @@ using ClosVerdeApp.Api.Abstractions.Models.Entities.Enums;
 using ClosVerdeApp.Api.Abstractions.Models.Transports;
 using Elyspio.Utils.Telemetry.Tracing.Elements;
 using Microsoft.Extensions.Logging;
+using MongoDB.Bson;
 
 namespace ClosVerdeApp.Api.Core.Services;
 
@@ -168,6 +169,33 @@ public class FeedbackService(
 		return feedback;
 	}
 
+	public async Task<Feedback> AddReply(Guid id, string body, Guid authorId, string authorDisplayName, bool isAdmin)
+	{
+		using var _ = LogService($"{Log.F(id)} {Log.F(authorId)} {Log.F(isAdmin)}");
+
+		var text = (body ?? string.Empty).Trim();
+		if (string.IsNullOrWhiteSpace(text))
+			throw new HttpException.BadRequest("La réponse est requise.");
+		if (text.Length > 4000)
+			throw new HttpException.BadRequest("La réponse est trop longue (4000 caractères maximum).");
+
+		var reply = new FeedbackReply
+		{
+			Id = ObjectId.GenerateNewId(),
+			AuthorId = authorId,
+			AuthorDisplayName = string.IsNullOrWhiteSpace(authorDisplayName) ? "Anonyme" : authorDisplayName,
+			IsAdmin = isAdmin,
+			Body = text,
+		};
+
+		var updated = await feedbackRepository.AddReply(id, reply)
+			?? throw new HttpException.NotFound<FeedbackEntity>(id);
+
+		var feedback = ToTransport(updated);
+		await feedbackRealtimePublisher.PublishFeedbackUpdated(feedback);
+		return feedback;
+	}
+
 	public async Task<Feedback?> GetById(Guid id)
 	{
 		using var _ = LogService($"{Log.F(id)}");
@@ -195,6 +223,14 @@ public class FeedbackService(
 			UserAgent = e.Context.UserAgent,
 			AppVersion = e.Context.AppVersion,
 		},
+		Replies = e.Replies.Select(r => new FeedbackReplyDto
+		{
+			Id = r.Id.AsGuid(),
+			AuthorDisplayName = r.AuthorDisplayName,
+			IsAdmin = r.IsAdmin,
+			Body = r.Body,
+			CreatedAt = r.CreatedAt,
+		}).ToList(),
 		CreatedAt = e.CreatedAt,
 		ResolvedAt = e.ResolvedAt,
 		AdminNote = includeAdminNote ? e.AdminNote : null,

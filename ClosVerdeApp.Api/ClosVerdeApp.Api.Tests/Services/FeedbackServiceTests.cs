@@ -184,6 +184,61 @@ public class FeedbackServiceTests
 	}
 
 	[Fact]
+	public async Task AddReplyAppendsReplyAndPublishes()
+	{
+		var harness = new Harness();
+		var authorId = Guid.NewGuid();
+		var adminId = Guid.NewGuid();
+		var created = await harness.Service.Create(
+			new CreateFeedbackRequest { Category = FeedbackCategory.Question, Title = "t", Body = "b" },
+			authorId, "Alice", null);
+
+		var updated = await harness.Service.AddReply(created.Id, "  Bonjour, voici la réponse.  ", adminId, "Admin", isAdmin: true);
+
+		updated.Replies.ShouldHaveSingleItem();
+		updated.Replies[0].Body.ShouldBe("Bonjour, voici la réponse.");
+		updated.Replies[0].IsAdmin.ShouldBeTrue();
+		updated.Replies[0].AuthorDisplayName.ShouldBe("Admin");
+		harness.Publisher.Updated.ShouldHaveSingleItem();
+	}
+
+	[Fact]
+	public async Task AddReplyRejectsEmptyBody()
+	{
+		var harness = new Harness();
+		var created = await harness.Service.Create(
+			new CreateFeedbackRequest { Category = FeedbackCategory.Bug, Title = "t", Body = "b" },
+			Guid.NewGuid(), "Alice", null);
+
+		var ex = await Should.ThrowAsync<HttpException>(() => harness.Service.AddReply(created.Id, "   ", Guid.NewGuid(), "Admin", true));
+		ex.ShouldBeOfType<HttpException.BadRequest>();
+	}
+
+	[Fact]
+	public async Task AddReplyThrowsWhenFeedbackUnknown()
+	{
+		var harness = new Harness();
+
+		var ex = await Should.ThrowAsync<HttpException>(() => harness.Service.AddReply(Guid.NewGuid(), "ok", Guid.NewGuid(), "Admin", true));
+		ex.ShouldBeOfType<HttpException.NotFound<FeedbackEntity>>();
+	}
+
+	[Fact]
+	public async Task ListMineIncludesReplies()
+	{
+		var harness = new Harness();
+		var authorId = Guid.NewGuid();
+		var created = await harness.Service.Create(
+			new CreateFeedbackRequest { Category = FeedbackCategory.Question, Title = "t", Body = "b" },
+			authorId, "Alice", null);
+		await harness.Service.AddReply(created.Id, "Réponse de l'équipe", Guid.NewGuid(), "Admin", true);
+
+		var mine = await harness.Service.ListMine(authorId, null, 1, 50);
+
+		mine.Items.ShouldHaveSingleItem().Replies.ShouldHaveSingleItem().Body.ShouldBe("Réponse de l'équipe");
+	}
+
+	[Fact]
 	public async Task ListPaginatesAndFiltersByCategoryAndStatus()
 	{
 		var harness = new Harness();
@@ -396,6 +451,14 @@ public class FeedbackServiceTests
 			entity.Status = status;
 			entity.AdminNote = adminNote;
 			entity.ResolvedAt = resolvedAt;
+			return Task.FromResult<FeedbackEntity?>(entity);
+		}
+
+		public Task<FeedbackEntity?> AddReply(Guid id, FeedbackReply reply)
+		{
+			var entity = Items.FirstOrDefault(f => f.Id.AsGuid() == id);
+			if (entity is null) return Task.FromResult<FeedbackEntity?>(null);
+			entity.Replies.Add(reply);
 			return Task.FromResult<FeedbackEntity?>(entity);
 		}
 	}
