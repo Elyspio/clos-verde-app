@@ -116,7 +116,7 @@ public class ObjectionService(
 	private static string BuildTopicName(ReservationEntity reservation)
 	{
 		var localStart = reservation.StartDate.ToLocalTime();
-		return $"Réservation du {localStart:dd/MM} par {reservation.User.DisplayName}";
+		return $"{localStart:dd/MM} par {reservation.User.DisplayName}";
 	}
 
 	private static string BuildObjectionMessageHtml(string author, string? reason)
