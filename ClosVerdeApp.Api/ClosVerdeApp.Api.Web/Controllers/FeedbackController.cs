@@ -109,4 +109,16 @@ public class FeedbackController(
 		using var logger = LogController($"{Log.F(id)} {Log.F(request.Status)}");
 		return Ok(await feedbackService.UpdateStatus(id, request.Status, request.AdminNote));
 	}
+
+	[HttpPost("{id:guid}/replies")]
+	[Authorize(Roles = "admin")]
+	[ProducesResponseType(typeof(Feedback), StatusCodes.Status200OK)]
+	[ProducesResponseType(StatusCodes.Status400BadRequest)]
+	[ProducesResponseType(StatusCodes.Status404NotFound)]
+	[ProducesResponseType(StatusCodes.Status403Forbidden)]
+	public async Task<IActionResult> AddReply(Guid id, [FromBody] CreateFeedbackReplyRequest request)
+	{
+		using var logger = LogController(Log.F(id));
+		return Ok(await feedbackService.AddReply(id, request.Body, CurrentUserId, CurrentDisplayName, isAdmin: true));
+	}
 }

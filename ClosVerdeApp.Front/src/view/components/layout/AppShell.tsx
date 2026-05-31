@@ -1,212 +1,250 @@
-import { Badge, Box, Container, IconButton, Stack, Tooltip, Typography } from "@mui/material";
-import { NavLink, Outlet } from "react-router-dom";
-import { UserMenu } from "./UserMenu";
-import { HelpOutline, Home } from "@mui/icons-material";
+import { Badge, Box, Drawer, IconButton, Stack, Tooltip, Typography } from "@mui/material";
+import { ChevronRight, Home, HelpOutline, Menu as MenuIcon, NotificationsNoneOutlined, ShieldOutlined } from "@mui/icons-material";
+import { useState } from "react";
+import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { useUnreadQueries } from "@data/unread/unread.queries";
 import { useIsAdmin } from "@data/client/useIsAdmin";
 import { FeedbackTrigger } from "@/view/components/feedback/FeedbackTrigger";
 import { routes } from "@/config/routes";
+import { UserMenu } from "./UserMenu";
+import { NAV_GROUP_LABELS, NAV_ITEMS, resolveBreadcrumb, type NavGroupKey } from "./navConfig";
 
-const baseNavItems = [
-	{ to: "/calendrier", label: "Calendrier", badge: false },
-	{ to: "/reserver", label: "Réserver", badge: false },
-	{ to: "/classement", label: "Classement", badge: false },
-	{ to: "/messages", label: "Messages", badge: true },
-	{ to: "/mes-tickets", label: "Mes tickets", badge: false },
-];
+const SIDEBAR_WIDTH = 244;
+const GROUP_ORDER: NavGroupKey[] = ["community", "info", "admin"];
 
-const adminNavItem = { to: "/admin/feedback", label: "Avis", badge: false };
-
+/**
+ * App chrome: a grouped left sidebar (Communauté / Informations / Admin) isolating the admin
+ * space, a slim topbar reduced to a breadcrumb + notifications, and a temporary drawer on mobile.
+ * The admin group only renders for admins (UI affordance; every admin route is also server-gated).
+ */
 export function AppShell() {
-	const unreadTotal = useUnreadQueries.total();
+	const [drawerOpen, setDrawerOpen] = useState(false);
+	const location = useLocation();
 	const isAdmin = useIsAdmin();
-	const navItems = isAdmin ? [...baseNavItems, adminNavItem] : baseNavItems;
+	const crumb = resolveBreadcrumb(location.pathname);
+
 	return (
 		<Box
+			data-testid="app-shell"
 			sx={{
 				height: "100dvh",
 				display: "flex",
-				flexDirection: "column",
 				bgcolor: "var(--app-bg)",
 				// Shell never scrolls itself; only the main child (and only what it allows).
 				overflow: "hidden",
 			}}
 		>
-			<Box
-				component="header"
-				data-testid="app-shell"
-				sx={{
-					flex: "0 0 auto",
-					zIndex: 10,
-					bgcolor: "rgba(255,255,255,0.92)",
-					backdropFilter: "blur(14px)",
-					borderBottom: "1px solid var(--line)",
-				}}
+			{/* Permanent sidebar (desktop) */}
+			<Box sx={{ display: { xs: "none", md: "flex" }, flex: `0 0 ${SIDEBAR_WIDTH}px`, width: SIDEBAR_WIDTH }}>
+				<SidebarBody isAdmin={isAdmin} />
+			</Box>
+
+			{/* Temporary sidebar (mobile) */}
+			<Drawer
+				open={drawerOpen}
+				onClose={() => setDrawerOpen(false)}
+				slotProps={{ paper: { sx: { width: SIDEBAR_WIDTH, border: "none" } } }}
+				sx={{ display: { xs: "block", md: "none" } }}
 			>
-				<Container
-					maxWidth="xl"
+				<SidebarBody isAdmin={isAdmin} onNavigate={() => setDrawerOpen(false)} />
+			</Drawer>
+
+			{/* Content column */}
+			<Box sx={{ flex: "1 1 0", minWidth: 0, display: "flex", flexDirection: "column" }}>
+				<Box
+					component="header"
 					sx={{
-						maxWidth: "1280px",
-						px: { xs: 2.5, md: 5 },
-						minHeight: { xs: 68, md: 76 },
+						flex: "0 0 auto",
+						zIndex: 10,
+						minHeight: 64,
 						display: "flex",
 						alignItems: "center",
-						gap: 2,
+						gap: 1.5,
+						px: { xs: 2, md: 3 },
+						bgcolor: "rgba(255,255,255,0.92)",
+						backdropFilter: "blur(14px)",
+						borderBottom: "1px solid var(--line)",
 					}}
 				>
-					<Stack component={NavLink} to="/calendrier" direction="row" alignItems="center" spacing={1.2} sx={{ flexShrink: 0 }}>
-						<Box
-							aria-hidden
-							sx={{
-								width: 34,
-								height: 34,
-								borderRadius: "12px",
-								bgcolor: "var(--primary-blue)",
-								color: "var(--surface)",
-								display: "grid",
-								placeItems: "center",
-								fontWeight: 800,
-							}}
-						>
-							<Home />
-						</Box>
-						<Box>
-							<Typography sx={{ fontWeight: 800, fontSize: { xs: 17, md: 19 }, lineHeight: 1, color: "var(--ink)" }}>Clos Verde</Typography>
-							<Typography sx={{ display: { xs: "none", md: "block" }, color: "var(--ink-mute)", fontSize: 11, fontWeight: 700 }}>
-								Gestion de la place partagée
-							</Typography>
-						</Box>
-					</Stack>
-					<Stack
-						component="nav"
-						data-testid="main-navigation"
-						direction="row"
-						spacing={0.5}
-						sx={{
-							ml: "auto",
-							display: { xs: "none", sm: "flex" },
-							p: 0.5,
-							border: "1px solid var(--line)",
-							borderRadius: "999px",
-							bgcolor: "var(--surface)",
-							"& a": {
-								borderRadius: "999px",
-								px: { sm: 1.6, md: 2 },
-								py: 1,
-								fontSize: "0.82rem",
-								fontWeight: 800,
-								color: "var(--ink-soft)",
-								transition: "background-color 180ms ease, color 180ms ease",
-							},
-							"& a.active": { color: "var(--primary-blue)", bgcolor: "var(--surface-blue)" },
-							"& a:hover": { color: "var(--primary-blue)", bgcolor: "var(--surface-soft)" },
-						}}
+					<IconButton
+						aria-label="Ouvrir le menu"
+						onClick={() => setDrawerOpen(true)}
+						sx={{ display: { xs: "inline-flex", md: "none" }, border: "1px solid var(--line)", borderRadius: "11px", color: "var(--ink-soft)" }}
 					>
-						{navItems.map((item) => (
-							<NavLink key={item.to} to={item.to}>
-								{item.badge && unreadTotal > 0 ? (
-									<Badge badgeContent={unreadTotal} color="error" sx={{ "& .MuiBadge-badge": { right: -10, top: 4, fontSize: 10, height: 16, minWidth: 16 } }}>
-										<Box component="span" sx={{ pr: 0.5 }}>
+						<MenuIcon />
+					</IconButton>
+					<Stack direction="row" alignItems="center" spacing={1} sx={{ minWidth: 0 }}>
+						<Typography sx={{ fontSize: 12, fontWeight: 700, color: "var(--ink-mute)", display: { xs: "none", sm: "block" } }}>{crumb.group}</Typography>
+						<ChevronRight sx={{ fontSize: 16, color: "var(--line-strong)", display: { xs: "none", sm: "block" } }} />
+						<Typography noWrap sx={{ fontSize: 14, fontWeight: 800, color: "var(--ink)" }}>
+							{crumb.label}
+						</Typography>
+					</Stack>
+					<Stack direction="row" alignItems="center" spacing={1.25} sx={{ ml: "auto" }}>
+						<FeedbackTrigger />
+						<Tooltip title="Aide">
+							<IconButton
+								component={NavLink}
+								to={routes.app.faq.path}
+								aria-label="Aide"
+								data-testid="faq-trigger"
+								sx={{
+									border: "1px solid var(--line)",
+									backgroundColor: "var(--surface)",
+									color: "var(--ink-soft)",
+									borderRadius: "11px",
+									"&:hover": { color: "var(--primary-blue)", backgroundColor: "var(--surface-blue)", borderColor: "var(--primary-blue)" },
+								}}
+							>
+								<HelpOutline />
+							</IconButton>
+						</Tooltip>
+						<Tooltip title="Notifications">
+							<IconButton
+								aria-label="Notifications"
+								sx={{ position: "relative", border: "1px solid var(--line)", backgroundColor: "var(--surface)", color: "var(--ink-soft)", borderRadius: "11px" }}
+							>
+								<NotificationsNoneOutlined />
+								<Box component="span" sx={{ position: "absolute", top: 9, right: 10, width: 7, height: 7, borderRadius: "50%", bgcolor: "var(--danger)" }} />
+							</IconButton>
+						</Tooltip>
+					</Stack>
+				</Box>
+				<Box
+					component="main"
+					sx={{
+						// flex:1 + minHeight:0 lets the main area take the remaining height and constrain
+						// its children. overflow:auto keeps document-flow pages scrollable while the shell
+						// stays locked; pages that own their scrolling (Messages, Avis) set height:100%.
+						flex: "1 1 0",
+						minHeight: 0,
+						overflow: "auto",
+						display: "flex",
+						flexDirection: "column",
+					}}
+				>
+					<Outlet />
+				</Box>
+			</Box>
+		</Box>
+	);
+}
+
+function SidebarBody({ isAdmin, onNavigate }: { isAdmin: boolean; onNavigate?: () => void }) {
+	const unreadTotal = useUnreadQueries.total();
+	const visible = NAV_ITEMS.filter((it) => !it.adminOnly || isAdmin);
+
+	return (
+		<Box
+			sx={{
+				width: "100%",
+				height: "100%",
+				display: "flex",
+				flexDirection: "column",
+				bgcolor: "var(--surface)",
+				borderRight: "1px solid var(--line)",
+				p: 1.75,
+			}}
+		>
+			<Stack
+				component={NavLink}
+				to={routes.app.calendar.path}
+				direction="row"
+				alignItems="center"
+				spacing={1.25}
+				onClick={onNavigate}
+				sx={{ px: 0.5, pb: 0.5, flexShrink: 0 }}
+			>
+				<Box
+					aria-hidden
+					sx={{
+						width: 32,
+						height: 32,
+						borderRadius: "11px",
+						bgcolor: "var(--primary-blue)",
+						color: "var(--surface)",
+						display: "grid",
+						placeItems: "center",
+						flexShrink: 0,
+					}}
+				>
+					<Home sx={{ fontSize: 20 }} />
+				</Box>
+				<Box>
+					<Typography sx={{ fontWeight: 800, fontSize: 16, lineHeight: 1, color: "var(--ink)" }}>Clos Verde</Typography>
+					<Typography sx={{ fontSize: 10.5, color: "var(--ink-mute)", fontWeight: 700, mt: 0.3 }}>Place partagée</Typography>
+				</Box>
+			</Stack>
+
+			<Box component="nav" data-testid="main-navigation" sx={{ flex: 1, overflowY: "auto", mt: 0.5 }}>
+				{GROUP_ORDER.map((group) => {
+					const items = visible.filter((it) => it.group === group);
+					if (items.length === 0) return null;
+					const isAdminGroup = group === "admin";
+					return (
+						<Box key={group}>
+							<Stack direction="row" alignItems="center" spacing={0.5} sx={{ px: 1.5, pt: 1.75, pb: 0.75 }}>
+								{isAdminGroup && <ShieldOutlined sx={{ fontSize: 13, color: "var(--warning)" }} />}
+								<Typography
+									sx={{
+										fontSize: 10.5,
+										fontWeight: 800,
+										letterSpacing: "0.06em",
+										textTransform: "uppercase",
+										color: isAdminGroup ? "var(--warning)" : "var(--ink-mute)",
+									}}
+								>
+									{NAV_GROUP_LABELS[group]}
+								</Typography>
+							</Stack>
+							{items.map((item) => {
+								const Icon = item.icon;
+								const badge = item.unreadBadge ? unreadTotal : 0;
+								return (
+									<Box
+										key={item.to}
+										component={NavLink}
+										to={item.to}
+										onClick={onNavigate}
+										sx={{
+											display: "flex",
+											alignItems: "center",
+											gap: 1.4,
+											px: 1.4,
+											py: 1.1,
+											mb: 0.25,
+											borderRadius: "10px",
+											color: "var(--ink-soft)",
+											fontSize: "0.84rem",
+											fontWeight: 700,
+											transition: "background-color 160ms ease, color 160ms ease",
+											"& .nav-icon": { color: "var(--ink-mute)", transition: "color 160ms ease" },
+											"&:hover": { backgroundColor: "var(--surface-soft)" },
+											"&.active": { backgroundColor: "var(--surface-blue)", color: "var(--primary-blue)", fontWeight: 800 },
+											"&.active .nav-icon": { color: "var(--primary-blue)" },
+										}}
+									>
+										<Icon className="nav-icon" sx={{ fontSize: 20 }} />
+										<Box component="span" sx={{ flex: 1, minWidth: 0 }}>
 											{item.label}
 										</Box>
-									</Badge>
-								) : (
-									item.label
-								)}
-							</NavLink>
-						))}
-					</Stack>
-					<Tooltip title="Aide">
-						<IconButton
-							component={NavLink}
-							to={routes.app.faq.path}
-							aria-label="Aide"
-							data-testid="faq-trigger"
-							sx={{
-								border: "1px solid var(--line)",
-								backgroundColor: "var(--surface)",
-								color: "var(--ink-soft)",
-								transition: "color 180ms ease, background-color 180ms ease, border-color 180ms ease",
-								"&:hover": {
-									color: "var(--primary-blue)",
-									backgroundColor: "var(--surface-blue)",
-									borderColor: "var(--primary-blue)",
-								},
-							}}
-						>
-							<HelpOutline />
-						</IconButton>
-					</Tooltip>
-					<FeedbackTrigger />
-					<UserMenu />
-				</Container>
-				<Stack
-					component="nav"
-					direction="row"
-					spacing={0.75}
-					sx={{
-						display: { xs: "flex", sm: "none" },
-						overflowX: "auto",
-						px: 2.5,
-						pb: 1.25,
-						"& a": {
-							flex: "1 0 auto",
-							borderRadius: "999px",
-							bgcolor: "var(--surface)",
-							border: "1px solid var(--line)",
-							px: 1.4,
-							py: 0.85,
-							textAlign: "center",
-							color: "var(--ink-soft)",
-							fontSize: 12,
-							fontWeight: 800,
-						},
-						"& a.active": { color: "var(--primary-blue)", bgcolor: "var(--surface-blue)", borderColor: "var(--primary-blue-soft)" },
-					}}
-				>
-					{navItems.map((item) => (
-						<NavLink key={item.to} to={item.to}>
-							{item.label}
-						</NavLink>
-					))}
-				</Stack>
+										{badge > 0 && (
+											<Badge
+												badgeContent={badge}
+												color="error"
+												sx={{ "& .MuiBadge-badge": { position: "static", transform: "none", fontSize: 10, height: 18, minWidth: 18, fontWeight: 800 } }}
+											/>
+										)}
+									</Box>
+								);
+							})}
+						</Box>
+					);
+				})}
 			</Box>
-			<Box
-				component="main"
-				sx={{
-					// flex: 1 + minHeight: 0 is the canonical combo that lets a flex child
-					// (a) take all remaining vertical space and (b) actually constrain its
-					// own children so they can declare their own overflow.
-					// `overflow: auto` keeps document-flow pages (calendar, reservation, etc.)
-					// scrollable while the body stays locked — only the main area scrolls.
-					// Pages that want to own their scrolling (Messages) set themselves to
-					// `height: 100%` + internal overflow so this wrapper never scrolls.
-					flex: "1 1 0",
-					minHeight: 0,
-					overflow: "auto",
-					display: "flex",
-					flexDirection: "column",
-				}}
-			>
-				<Outlet />
-			</Box>
-			<Box
-				component="footer"
-				sx={{
-					flex: "0 0 auto",
-					borderTop: "1px solid var(--line)",
-					// Visual "rail": minimal vertical weight so the messages thread keeps the room.
-					// Flat border-top (no shadow) — a drop-shadow would compete with the message
-					// composer that already sits right above on /messages.
-					py: 0.75,
-					bgcolor: "var(--surface)",
-				}}
-			>
-				<Container maxWidth="xl" sx={{ maxWidth: "1280px", px: { xs: 2.5, md: 5 } }}>
-					<Typography variant="caption" sx={{ color: "var(--ink-mute)", fontSize: 11, letterSpacing: 0.1 }}>
-						© 2026 — Jonathan GUICHARD · Clos Verde
-					</Typography>
-				</Container>
+
+			<Box sx={{ flexShrink: 0, pt: 1, borderTop: "1px solid var(--line)" }}>
+				<UserMenu />
 			</Box>
 		</Box>
 	);

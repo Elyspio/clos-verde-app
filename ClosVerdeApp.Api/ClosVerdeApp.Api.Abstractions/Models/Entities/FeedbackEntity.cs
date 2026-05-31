@@ -31,12 +31,34 @@ public class FeedbackEntity : IEntity
 
 	public FeedbackContext? Context { get; set; }
 
+	/// <summary>Conversation thread between the admin and the author. Ordered oldest-first.</summary>
+	public List<FeedbackReply> Replies { get; set; } = [];
+
 	[BsonIgnore]
 	public DateTime CreatedAt => Id.GetCreatedAt();
 
 	public DateTime? ResolvedAt { get; set; }
 
 	public string? AdminNote { get; set; }
+}
+
+public class FeedbackReply
+{
+	[BsonRepresentation(BsonType.ObjectId)]
+	public ObjectId Id { get; set; }
+
+	[BsonGuidRepresentation(GuidRepresentation.Standard)]
+	public required Guid AuthorId { get; set; }
+
+	public required string AuthorDisplayName { get; set; }
+
+	/// <summary>True when written by an admin (vs. the feedback author).</summary>
+	public required bool IsAdmin { get; set; }
+
+	public required string Body { get; set; }
+
+	[BsonIgnore]
+	public DateTime CreatedAt => Id.GetCreatedAt();
 }
 
 public class FeedbackAuthor

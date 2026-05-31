@@ -25,4 +25,6 @@ public interface IFeedbackRepository
 	Task<long> CountByAuthor(Guid authorId, IReadOnlyCollection<FeedbackStatus>? statuses);
 
 	Task<FeedbackEntity?> UpdateStatus(Guid id, FeedbackStatus status, string? adminNote, DateTime? resolvedAt);
+
+	Task<FeedbackEntity?> AddReply(Guid id, FeedbackReply reply);
 }

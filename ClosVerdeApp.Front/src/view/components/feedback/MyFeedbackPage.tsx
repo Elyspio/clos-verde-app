@@ -220,6 +220,23 @@ function MyFeedbackDrawer({ feedback, onClose, onUpdated }: { feedback: Feedback
 						</Stack>
 					)}
 
+					{feedback.replies.length > 0 && (
+						<Stack spacing={1}>
+							<Typography variant="overline">Réponse de l'équipe</Typography>
+							{feedback.replies.map((reply) => (
+								<Box key={reply.id} sx={{ bgcolor: "var(--surface-blue)", border: "1px solid var(--primary-blue-soft)", borderRadius: "12px", p: 1.5 }}>
+									<Typography sx={{ fontSize: 12, fontWeight: 800, color: "var(--ink)" }}>
+										{reply.authorDisplayName}{" "}
+										<Box component="span" sx={{ color: "var(--ink-mute)", fontWeight: 600 }}>
+											· {formatDistanceToNow(new Date(reply.createdAt), { addSuffix: true, locale: fr })}
+										</Box>
+									</Typography>
+									<Typography sx={{ fontSize: 13.5, color: "var(--ink)", mt: 0.5, lineHeight: 1.5, whiteSpace: "pre-wrap" }}>{reply.body}</Typography>
+								</Box>
+							))}
+						</Stack>
+					)}
+
 					{feedback.status === "Open" && (
 						<Stack spacing={1}>
 							<Button

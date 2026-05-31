@@ -43,6 +43,9 @@ export interface Attachment {
 	downloadUrl: string;
 	isImage: boolean;
 }
+export interface CreateFeedbackReplyRequest {
+	body: string;
+}
 export interface CreateFeedbackRequest {
 	category: FeedbackCategory;
 	title: string;
@@ -79,6 +82,7 @@ export interface Feedback {
 	author: FeedbackAuthorDto;
 	attachments: Array<Attachment>;
 	context?: FeedbackContextDto | null;
+	replies: Array<FeedbackReplyDto>;
 	createdAt: string;
 	resolvedAt?: string | null;
 	adminNote?: string | null;
@@ -115,6 +119,13 @@ export interface FeedbackListResult {
 	total: number;
 	page: number;
 	pageSize: number;
+}
+export interface FeedbackReplyDto {
+	id: string;
+	authorDisplayName: string;
+	isAdmin: boolean;
+	body: string;
+	createdAt: string;
 }
 
 export const FeedbackStatus = {
@@ -373,6 +384,41 @@ export const BackendApiAxiosParamCreator = function (configuration?: Configurati
 			setSearchParams(localVarUrlObj, localVarQueryParameter);
 			let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
 			localVarRequestOptions.headers = { ...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers };
+
+			return {
+				url: toPathString(localVarUrlObj),
+				options: localVarRequestOptions,
+			};
+		},
+		/**
+		 *
+		 * @param {string} id
+		 * @param {CreateFeedbackReplyRequest} [createFeedbackReplyRequest]
+		 * @param {*} [options] Override http request option.
+		 * @throws {RequiredError}
+		 */
+		feedbackAddReply: async (id: string, createFeedbackReplyRequest?: CreateFeedbackReplyRequest, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+			// verify required parameter 'id' is not null or undefined
+			assertParamExists("feedbackAddReply", "id", id);
+			const localVarPath = `/api/feedback/{id}/replies`.replace("{id}", encodeURIComponent(String(id)));
+			// use dummy base URL string because the URL constructor only accepts absolute URLs.
+			const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+			let baseOptions;
+			if (configuration) {
+				baseOptions = configuration.baseOptions;
+			}
+
+			const localVarRequestOptions = { method: "POST", ...baseOptions, ...options };
+			const localVarHeaderParameter = {} as any;
+			const localVarQueryParameter = {} as any;
+
+			localVarHeaderParameter["Content-Type"] = "application/json-patch+json";
+			localVarHeaderParameter["Accept"] = "application/json,text/json";
+
+			setSearchParams(localVarUrlObj, localVarQueryParameter);
+			let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+			localVarRequestOptions.headers = { ...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers };
+			localVarRequestOptions.data = serializeDataIfNeeded(createFeedbackReplyRequest, localVarRequestOptions, configuration);
 
 			return {
 				url: toPathString(localVarUrlObj),
@@ -1549,6 +1595,23 @@ export const BackendApiFp = function (configuration?: Configuration) {
 		/**
 		 *
 		 * @param {string} id
+		 * @param {CreateFeedbackReplyRequest} [createFeedbackReplyRequest]
+		 * @param {*} [options] Override http request option.
+		 * @throws {RequiredError}
+		 */
+		async feedbackAddReply(
+			id: string,
+			createFeedbackReplyRequest?: CreateFeedbackReplyRequest,
+			options?: RawAxiosRequestConfig,
+		): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Feedback>> {
+			const localVarAxiosArgs = await localVarAxiosParamCreator.feedbackAddReply(id, createFeedbackReplyRequest, options);
+			const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
+			const localVarOperationServerBasePath = operationServerMap["BackendApi.feedbackAddReply"]?.[localVarOperationServerIndex]?.url;
+			return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
+		},
+		/**
+		 *
+		 * @param {string} id
 		 * @param {*} [options] Override http request option.
 		 * @throws {RequiredError}
 		 */
@@ -2060,6 +2123,16 @@ export const BackendApiFactory = function (configuration?: Configuration, basePa
 		/**
 		 *
 		 * @param {string} id
+		 * @param {CreateFeedbackReplyRequest} [createFeedbackReplyRequest]
+		 * @param {*} [options] Override http request option.
+		 * @throws {RequiredError}
+		 */
+		feedbackAddReply(id: string, createFeedbackReplyRequest?: CreateFeedbackReplyRequest, options?: RawAxiosRequestConfig): AxiosPromise<Feedback> {
+			return localVarFp.feedbackAddReply(id, createFeedbackReplyRequest, options).then((request) => request(axios, basePath));
+		},
+		/**
+		 *
+		 * @param {string} id
 		 * @param {*} [options] Override http request option.
 		 * @throws {RequiredError}
 		 */
@@ -2402,6 +2475,15 @@ export interface BackendApiInterface {
 	/**
 	 *
 	 * @param {string} id
+	 * @param {CreateFeedbackReplyRequest} [createFeedbackReplyRequest]
+	 * @param {*} [options] Override http request option.
+	 * @throws {RequiredError}
+	 */
+	feedbackAddReply(id: string, createFeedbackReplyRequest?: CreateFeedbackReplyRequest, options?: RawAxiosRequestConfig): AxiosPromise<Feedback>;
+
+	/**
+	 *
+	 * @param {string} id
 	 * @param {*} [options] Override http request option.
 	 * @throws {RequiredError}
 	 */
@@ -2714,6 +2796,19 @@ export class BackendApi extends BaseAPI implements BackendApiInterface {
 	public attachmentsUpload(options?: RawAxiosRequestConfig) {
 		return BackendApiFp(this.configuration)
 			.attachmentsUpload(options)
+			.then((request) => request(this.axios, this.basePath));
+	}
+
+	/**
+	 *
+	 * @param {string} id
+	 * @param {CreateFeedbackReplyRequest} [createFeedbackReplyRequest]
+	 * @param {*} [options] Override http request option.
+	 * @throws {RequiredError}
+	 */
+	public feedbackAddReply(id: string, createFeedbackReplyRequest?: CreateFeedbackReplyRequest, options?: RawAxiosRequestConfig) {
+		return BackendApiFp(this.configuration)
+			.feedbackAddReply(id, createFeedbackReplyRequest, options)
 			.then((request) => request(this.axios, this.basePath));
 	}
 

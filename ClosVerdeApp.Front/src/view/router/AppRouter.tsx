@@ -15,9 +15,9 @@ const LoginPage = lazy(() => import("@/view/components/auth/LoginPage").then((m)
 const TokenErrorPage = lazy(() => import("@/view/components/auth/TokenErrorPage").then((m) => ({ default: m.TokenErrorPage })));
 const CalendarPage = lazy(() => import("@/view/components/calendar/CalendarPage").then((m) => ({ default: m.CalendarPage })));
 const ReservationPage = lazy(() => import("@/view/components/reservation/ReservationPage").then((m) => ({ default: m.ReservationPage })));
-const LeaderboardPage = lazy(() => import("@/view/components/leaderboard/LeaderboardPage").then((m) => ({ default: m.LeaderboardPage })));
 const MessagesPage = lazy(() => import("@/view/components/messages/MessagesPage").then((m) => ({ default: m.MessagesPage })));
 const TopicView = lazy(() => import("@/view/components/messages/TopicView").then((m) => ({ default: m.TopicView })));
+const AdminDashboardPage = lazy(() => import("@/view/components/feedback/AdminDashboardPage").then((m) => ({ default: m.AdminDashboardPage })));
 const AdminFeedbackPage = lazy(() => import("@/view/components/feedback/AdminFeedbackPage").then((m) => ({ default: m.AdminFeedbackPage })));
 const MyFeedbackPage = lazy(() => import("@/view/components/feedback/MyFeedbackPage").then((m) => ({ default: m.MyFeedbackPage })));
 const FaqPage = lazy(() => import("@/view/components/faq/FaqPage").then((m) => ({ default: m.FaqPage })));
@@ -56,11 +56,13 @@ export function AppRouter() {
 					<Route index element={<Navigate to={routes.app.calendar.path} replace />} />
 					<Route path={routes.app.calendar.path} element={<CalendarPage />} />
 					<Route path={routes.app.reservation.path} element={<ReservationPage />} />
-					<Route path={routes.app.leaderboard.path} element={<LeaderboardPage />} />
+					{/* Classement is now a tab inside the calendar; keep the old route as a redirect for existing links. */}
+					<Route path={routes.app.leaderboard.path} element={<Navigate to={`${routes.app.calendar.path}?tab=leaderboard`} replace />} />
 					<Route path={routes.app.messages.path} element={<MessagesPage />}>
 						<Route path=":topicId" element={<TopicView />} />
 					</Route>
 					<Route path={routes.app.myFeedback.path} element={<MyFeedbackPage />} />
+					<Route path={routes.app.adminDashboard.path} element={<AdminDashboardPage />} />
 					<Route path={routes.app.feedbackAdmin.path} element={<AdminFeedbackPage />} />
 				</Route>
 				<Route path="*" element={<Navigate to={routes.app.calendar.path} replace />} />

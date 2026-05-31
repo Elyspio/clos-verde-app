@@ -106,6 +106,19 @@ internal class FeedbackRepository : BaseRepository<FeedbackEntity>, IFeedbackRep
 			new FindOneAndUpdateOptions<FeedbackEntity> { ReturnDocument = ReturnDocument.After });
 	}
 
+	public async Task<FeedbackEntity?> AddReply(Guid id, FeedbackReply reply)
+	{
+		using var logger = LogAdapter($"{Log.F(id)} {Log.F(reply.AuthorId)}");
+		var oid = id.AsObjectId();
+
+		var update = Builders<FeedbackEntity>.Update.Push(f => f.Replies, reply);
+
+		return await EntityCollection.FindOneAndUpdateAsync(
+			Builders<FeedbackEntity>.Filter.Eq(f => f.Id, oid),
+			update,
+			new FindOneAndUpdateOptions<FeedbackEntity> { ReturnDocument = ReturnDocument.After });
+	}
+
 	private static FilterDefinition<FeedbackEntity> BuildFilter(FeedbackCategory? category, FeedbackStatus? status)
 	{
 		var filters = new List<FilterDefinition<FeedbackEntity>>();
