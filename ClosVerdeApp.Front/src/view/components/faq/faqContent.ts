@@ -44,7 +44,7 @@ export const FAQ_SECTIONS: FaqSectionContent[] = [
 		title: "Réserver la place",
 		intro: "Le workflow se déroule en trois temps, sans qu'il soit nécessaire d'écrire à qui que ce soit en parallèle.",
 		bullets: [
-			"Vous déposez votre demande : elle apparaît immédiatement sur le calendrier au statut « En attente ».",
+			"Vous déposez votre demande depuis le calendrier — via le bouton « Réserver un jour » ou en cliquant directement sur un jour libre. Elle apparaît immédiatement sur le calendrier au statut « En attente ».",
 			"Pendant un court délai (par défaut une heure, ou jusqu'à la date de début si elle est plus proche), tout copropriétaire peut s'opposer s'il a un conflit. L'objection ouvre alors une discussion dédiée pour en parler ensemble.",
 			"Si aucune objection n'est déposée à la fin du délai, la réservation passe automatiquement en « Validée ». Vous n'avez rien à faire de plus.",
 		],
@@ -56,7 +56,7 @@ export const FAQ_SECTIONS: FaqSectionContent[] = [
 		accent: "var(--coral)",
 		accentSoft: "var(--coral-soft)",
 		title: "Le classement",
-		intro: "Le classement affiche les jours de réservation cumulés depuis le début, sans quota imposé. L'objectif n'est pas de compter pour compter mais de garder une vue d'ensemble afin que chacun puisse profiter de la place équitablement.",
+		intro: "Accessible depuis l'onglet « Classement » du calendrier, il affiche les jours de réservation cumulés depuis le début, sans quota imposé. L'objectif n'est pas de compter pour compter mais de garder une vue d'ensemble afin que chacun puisse profiter de la place équitablement.",
 	},
 	{
 		id: "messages",
@@ -83,8 +83,9 @@ export const FAQ_SECTIONS: FaqSectionContent[] = [
 			"Décrivez votre retour et joignez si besoin une capture d'écran ou un PDF.",
 			"Suivez vos tickets envoyés dans la rubrique « Mes tickets » : onglet « En cours » pour les ouverts, « Historique » pour les clôturés.",
 			"Vous pouvez clôturer vous-même un ticket si vous estimez la question résolue.",
+			"Lorsque l'équipe répond, sa réponse apparaît directement dans le détail du ticket, dans « Mes tickets ».",
 		],
-		tip: "Activez les notifications depuis le menu de votre compte pour être prévenu lorsqu'un retour reçoit une réponse.",
+		tip: "Activez les notifications depuis le menu de votre compte (en bas de la barre latérale) pour être prévenu lorsqu'un retour reçoit une réponse.",
 	},
 ];
 
@@ -107,7 +108,7 @@ export const FAQ_QUESTIONS: FaqQuestion[] = [
 	{
 		id: "enable-notifications",
 		question: "Comment activer les notifications ?",
-		answer: "Cliquez sur votre menu de compte en haut à droite, puis sur « Activer les notifications ». Acceptez la demande du navigateur. Vous serez alors prévenu en temps réel des mentions et des objections.",
+		answer: "Ouvrez votre menu de compte, en bas de la barre latérale (ou via le menu ☰ sur mobile), puis cliquez sur « Activer les notifications ». Acceptez la demande du navigateur. Vous serez alors prévenu en temps réel des mentions, des objections et des réponses à vos tickets.",
 	},
 	{
 		id: "mute-topic",
@@ -127,6 +128,6 @@ export const FAQ_QUESTIONS: FaqQuestion[] = [
 	{
 		id: "find-my-tickets",
 		question: "Où retrouver mes retours envoyés ?",
-		answer: "Dans le menu de navigation, la rubrique « Mes tickets » liste l'ensemble de vos retours envoyés. L'onglet « En cours » affiche les tickets ouverts, l'onglet « Historique » ceux qui sont clôturés.",
+		answer: "Dans la barre latérale, groupe « Informations », la rubrique « Mes tickets » liste l'ensemble de vos retours envoyés. L'onglet « En cours » affiche les tickets ouverts, l'onglet « Historique » ceux qui sont clôturés. Le détail d'un ticket reprend aussi les réponses de l'équipe.",
 	},
 ];
