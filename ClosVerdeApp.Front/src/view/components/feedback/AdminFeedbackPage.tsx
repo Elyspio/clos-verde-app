@@ -169,6 +169,7 @@ function MasterPane({
 					value={search}
 					onChange={(e) => onSearch(e.target.value)}
 					placeholder="Rechercher un ticket…"
+					data-testid="admin-feedback-search"
 					slotProps={{
 						input: {
 							startAdornment: <Search sx={{ fontSize: 18, color: "var(--ink-mute)", mr: 1 }} />,
@@ -188,6 +189,7 @@ function MasterPane({
 								key={tab.value}
 								component="button"
 								type="button"
+								data-testid={`admin-feedback-tab-${tab.value}`}
 								onClick={() => onStatus(tab.value)}
 								sx={{
 									all: "unset",
@@ -388,7 +390,7 @@ function DetailPane({ feedback, onUpdated, onBack }: { feedback: Feedback | null
 	};
 
 	return (
-		<Box ref={scrollRef} sx={{ flex: 1, minWidth: 0, overflowY: "auto", p: { xs: 2.25, md: 3 } }}>
+		<Box ref={scrollRef} data-testid="admin-feedback-detail" sx={{ flex: 1, minWidth: 0, overflowY: "auto", p: { xs: 2.25, md: 3 } }}>
 			<Stack spacing={2} sx={{ maxWidth: 760 }}>
 				<Stack direction="row" alignItems="center" justifyContent="space-between">
 					<Button onClick={onBack} startIcon={<ArrowBack />} variant="text" sx={{ display: { xs: "inline-flex", md: "none" }, minHeight: 0, p: 0.5 }}>
@@ -495,9 +497,23 @@ function DetailPane({ feedback, onUpdated, onBack }: { feedback: Feedback | null
 						))}
 					</Stack>
 					<Stack spacing={1}>
-						<TextField value={reply} onChange={(e) => setReply(e.target.value)} placeholder="Répondre au copropriétaire…" multiline minRows={2} fullWidth />
+						<TextField
+							value={reply}
+							onChange={(e) => setReply(e.target.value)}
+							placeholder="Répondre au copropriétaire…"
+							multiline
+							minRows={2}
+							fullWidth
+							data-testid="admin-feedback-reply"
+						/>
 						<Box sx={{ display: "flex", justifyContent: "flex-end" }}>
-							<Button variant="contained" startIcon={<Send />} onClick={() => void handleReply()} disabled={!reply.trim() || replyMutation.isPending}>
+							<Button
+								data-testid="admin-feedback-reply-send"
+								variant="contained"
+								startIcon={<Send />}
+								onClick={() => void handleReply()}
+								disabled={!reply.trim() || replyMutation.isPending}
+							>
 								Envoyer
 							</Button>
 						</Box>
