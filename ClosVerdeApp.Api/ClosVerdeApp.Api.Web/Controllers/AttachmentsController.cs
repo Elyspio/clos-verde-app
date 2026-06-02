@@ -28,6 +28,7 @@ namespace ClosVerdeApp.Api.Web.Controllers;
 [ApiController]
 public class AttachmentsController(
 	IAttachmentService attachmentService,
+	IFeedbackService feedbackService,
 	ILogger<AttachmentsController> logger)
 	: TracingController(logger)
 {
@@ -102,6 +103,7 @@ public class AttachmentsController(
 	public async Task<IActionResult> Download(Guid id)
 	{
 		using var logger = LogController(Log.F(id));
+		await feedbackService.EnsureAttachmentReadable(id, CurrentUserId, User.IsInRole("admin"));
 		var (metadata, content) = await attachmentService.Download(id);
 
 		var disposition = new ContentDisposition
@@ -124,6 +126,7 @@ public class AttachmentsController(
 	public async Task<IActionResult> GetMetadata(Guid id)
 	{
 		using var logger = LogController(Log.F(id));
+		await feedbackService.EnsureAttachmentReadable(id, CurrentUserId, User.IsInRole("admin"));
 		var (metadata, content) = await attachmentService.Download(id);
 		await content.DisposeAsync();
 		return Ok(attachmentService.ToTransport(metadata));

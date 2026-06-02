@@ -18,6 +18,7 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\ClosVerdeApp.Api.Abstractions\ClosVerdeApp.Api.Abstractions.csproj" />
+		<ProjectReference Include="..\ClosVerdeApp.Api.Adapters.Mongo\ClosVerdeApp.Api.Adapters.Mongo.csproj" />
 		<ProjectReference Include="..\ClosVerdeApp.Api.Core\ClosVerdeApp.Api.Core.csproj" />
 	</ItemGroup>
 

@@ -89,7 +89,7 @@ public class TopicsController(
 
 	[HttpGet("{id:guid}/messages")]
 	[ProducesResponseType(typeof(List<Message>), StatusCodes.Status200OK)]
-	public async Task<IActionResult> ListMessages(Guid id, [FromQuery] DateTime? before, [FromQuery] int? limit)
+	public async Task<IActionResult> ListMessages(Guid id, [FromQuery] Guid? before, [FromQuery] int? limit)
 	{
 		using var logger = LogController($"{Log.F(id)} {Log.F(before)} {Log.F(limit)}");
 		return Ok(await messageService.List(id, before, limit ?? 50));

@@ -1335,7 +1335,7 @@ export const BackendApiAxiosParamCreator = function (configuration?: Configurati
 			const localVarQueryParameter = {} as any;
 
 			if (before !== undefined) {
-				localVarQueryParameter["before"] = (before as any) instanceof Date ? (before as any).toISOString() : before;
+				localVarQueryParameter["before"] = before;
 			}
 
 			if (limit !== undefined) {

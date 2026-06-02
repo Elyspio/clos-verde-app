@@ -13,6 +13,10 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<InternalsVisibleTo Include="ClosVerdeApp.Api.Tests" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<ProjectReference Include="..\ClosVerdeApp.Api.Abstractions\ClosVerdeApp.Api.Abstractions.csproj" />
 	</ItemGroup>
 

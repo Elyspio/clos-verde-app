@@ -9,7 +9,9 @@ const PAGE_SIZE = 50;
 
 /**
  * Cursor-based infinite query for a topic's message history.
- * "Next page" = older messages; cursor is the `createdAt` of the oldest loaded message.
+ * "Next page" = older messages; cursor is the `id` of the oldest loaded message — an exact,
+ * opaque cursor (message ids embed a sortable ObjectId), so messages sharing the same
+ * one-second timestamp can't be duplicated or skipped at page boundaries.
  * `staleTime: 0` — cache is kept current exclusively via SignalR and optimistic mutations.
  */
 function useInfinite(topicId: string | undefined) {
@@ -17,9 +19,9 @@ function useInfinite(topicId: string | undefined) {
 		queryKey: topicId ? messagesKeys.list(topicId) : ["messages", "list", "__none__"],
 		queryFn: ({ pageParam }) => messagesService.list(topicId!, pageParam, PAGE_SIZE),
 		initialPageParam: undefined as string | undefined,
-		getNextPageParam: (firstPage) => {
-			if (firstPage.length < PAGE_SIZE) return undefined;
-			return firstPage[0]?.createdAt;
+		getNextPageParam: (oldestLoadedPage) => {
+			if (oldestLoadedPage.length < PAGE_SIZE) return undefined;
+			return oldestLoadedPage[0]?.id;
 		},
 		enabled: !!topicId,
 		staleTime: 0,
