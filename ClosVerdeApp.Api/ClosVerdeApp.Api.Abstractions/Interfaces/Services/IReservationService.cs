@@ -8,8 +8,8 @@ public interface IReservationService
 	Task<List<Reservation>> GetRange(DateTime from, DateTime to);
 	Task<List<Reservation>> GetAll();
 	Task<List<LeaderboardEntry>> GetLeaderboard();
-	Task<Reservation> Create(CreateReservationRequest request, Guid userId, string displayName);
-	Task<Reservation> Update(Guid id, CreateReservationRequest request, Guid currentUserId);
-	Task Delete(Guid id, Guid currentUserId);
-	Task<Reservation> ForceValidate(Guid id, Guid currentUserId);
+	Task<Reservation> Create(CreateReservationRequest request, Guid userId, string displayName, bool isAdmin = false);
+	Task<Reservation> Update(Guid id, CreateReservationRequest request, Guid currentUserId, bool isAdmin = false);
+	Task Delete(Guid id, Guid currentUserId, bool isAdmin = false);
+	Task<Reservation> ForceValidate(Guid id, Guid currentUserId, bool isAdmin = false);
 }

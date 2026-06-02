@@ -11,10 +11,13 @@ function dataUri(file) {
 	return `data:image/png;base64,${buf.toString("base64")}`;
 }
 
-const calendrier = dataUri("02-calendrier.png");
-const reserver = dataUri("03-reserver.png");
-const classement = dataUri("04-classement.png");
-const messages = dataUri("05-messages.png");
+const calendrier = dataUri("01-calendrier.png");
+const reserver = dataUri("02-reserver.png");
+const classement = dataUri("03-classement.png");
+const messages = dataUri("04-messages.png");
+const tickets = dataUri("05-tickets.png");
+const faq = dataUri("06-faq.png");
+const avis = dataUri("07-avis.png");
 
 const html = `<!doctype html>
 <html lang="fr">
@@ -46,10 +49,10 @@ const html = `<!doctype html>
           <td style="padding:32px 32px 8px 32px;">
             <h1 style="margin:0 0 14px 0;font-size:24px;line-height:1.25;color:#1f2a24;font-weight:700;">Bonjour à toutes et à tous,</h1>
             <p style="margin:0 0 12px 0;font-size:15px;line-height:1.6;color:#384a40;">
-              J'ai le plaisir de vous présenter <strong>Clos Verde</strong>, notre tout nouvel espace en ligne pour simplifier la vie du clos au quotidien&nbsp;: réserver la place commune sans s'écrire en boucle, voir d'un coup d'œil qui l'occupe ce week-end, et discuter ensemble au même endroit.
+              J'ai le plaisir de vous présenter <strong>Clos Verde</strong>, notre espace en ligne pour simplifier la vie du clos au quotidien&nbsp;: consulter les réservations, réserver la place commune, suivre le classement, discuter ensemble et envoyer vos retours à l'équipe.
             </p>
             <p style="margin:0 0 0 0;font-size:15px;line-height:1.6;color:#384a40;">
-              Voici en quelques captures les fonctionnalités que vous allez pouvoir utiliser dès maintenant.
+              Voici les fonctionnalités principales, avec des captures reprises de l'application actuelle.
             </p>
           </td>
         </tr>
@@ -62,7 +65,7 @@ const html = `<!doctype html>
                 <td style="border-left:4px solid #2e5e4e;padding-left:14px;">
                   <h2 style="margin:0 0 6px 0;font-size:18px;color:#1f2a24;font-weight:700;">1. Le calendrier, d'un coup d'œil</h2>
                   <p style="margin:0;font-size:14px;line-height:1.6;color:#445a4f;">
-                    Une vue mensuelle claire de toutes les réservations. Les vôtres apparaissent en bleu, celles des autres copropriétaires en vert. Vous naviguez entre les mois avec les flèches, et vous savez immédiatement si la place est libre ce samedi.
+                    Le premier écran affiche le calendrier mensuel. Vos réservations apparaissent en bleu, celles des autres copropriétaires en vert, et le jour courant est encadré. Le bouton <strong>Réserver un jour</strong> ouvre le formulaire de réservation, tandis que l'onglet <strong>Classement</strong> donne accès au cumul des jours réservés.
                   </p>
                 </td>
               </tr>
@@ -81,9 +84,9 @@ const html = `<!doctype html>
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
               <tr>
                 <td style="border-left:4px solid #2e5e4e;padding-left:14px;">
-                  <h2 style="margin:0 0 6px 0;font-size:18px;color:#1f2a24;font-weight:700;">2. Réserver la place&nbsp;: un workflow transparent en trois temps</h2>
+                  <h2 style="margin:0 0 6px 0;font-size:18px;color:#1f2a24;font-weight:700;">2. Réserver la place&nbsp;: un formulaire simple</h2>
                   <p style="margin:0 0 10px 0;font-size:14px;line-height:1.6;color:#445a4f;">
-                    Vous choisissez vos dates, vous pouvez préciser des horaires si vous n'avez besoin que d'une demi-journée, et vous ajoutez une petite note pour les voisins (par exemple&nbsp;: «&nbsp;repas de famille&nbsp;»). Une fois enregistrée, la réservation suit ce parcours&nbsp;:
+                    Par défaut, la réservation couvre la journée entière. Si vous avez seulement besoin d'un créneau, cochez <strong>Préciser les heures de début et de fin</strong>. Choisissez ensuite les dates, ajoutez une note si nécessaire, puis cliquez sur <strong>Confirmer la réservation</strong>.
                   </p>
                 </td>
               </tr>
@@ -112,7 +115,7 @@ const html = `<!doctype html>
                       <td valign="top">
                         <p style="margin:0 0 4px 0;font-size:14px;color:#1f2a24;font-weight:700;">Réservation déposée — <span style="color:#a86a00;">en attente</span></p>
                         <p style="margin:0;font-size:13px;line-height:1.55;color:#5a6b62;">
-                          Dès que vous validez le formulaire, votre réservation est enregistrée avec le statut <strong>En attente</strong>. Elle apparaît immédiatement sur le calendrier de tout le clos pour que chacun la voie.
+                          Dès que vous validez le formulaire, votre réservation est enregistrée avec le statut <strong>En attente</strong>. Elle apparaît immédiatement sur le calendrier de tout le clos.
                         </p>
                       </td>
                     </tr>
@@ -130,7 +133,7 @@ const html = `<!doctype html>
                       <td valign="top">
                         <p style="margin:0 0 4px 0;font-size:14px;color:#1f2a24;font-weight:700;">Délai d'opposition pour les voisins</p>
                         <p style="margin:0;font-size:13px;line-height:1.55;color:#5a6b62;">
-                          Pendant un court délai après le dépôt (par défaut 1&nbsp;heure, ou jusqu'à la date de début si elle est plus proche), n'importe quel copropriétaire peut <strong>s'opposer</strong> à la réservation s'il a un conflit ou une remarque. L'objection ouvre une discussion dédiée pour en parler ensemble, calmement, et trouver un arrangement.
+                          Pendant un court délai après le dépôt (par défaut 1&nbsp;heure, ou jusqu'à la date de début si elle est plus proche), tout copropriétaire peut <strong>s'opposer</strong> à la réservation s'il a un conflit. L'objection ouvre une discussion dédiée pour en parler ensemble et trouver un arrangement.
                         </p>
                       </td>
                     </tr>
@@ -158,7 +161,7 @@ const html = `<!doctype html>
               </tr>
             </table>
             <p style="margin:14px 4px 0 4px;font-size:13px;line-height:1.55;color:#6a7a72;font-style:italic;">
-              L'idée de ce parcours n'est pas d'ajouter de la lourdeur, mais au contraire de remplacer les conversations à rallonge par un cadre simple et équitable, où chacun a son mot à dire dans une fenêtre courte et où, par défaut, ça se valide tout seul.
+              Vous pouvez modifier ou annuler votre propre réservation depuis son détail dans le calendrier. Si quelqu'un s'y oppose, la conversation associée apparaît dans Messages.
             </p>
           </td>
         </tr>
@@ -171,7 +174,7 @@ const html = `<!doctype html>
                 <td style="border-left:4px solid #2e5e4e;padding-left:14px;">
                   <h2 style="margin:0 0 6px 0;font-size:18px;color:#1f2a24;font-weight:700;">3. Le classement, pour partager équitablement</h2>
                   <p style="margin:0;font-size:14px;line-height:1.6;color:#445a4f;">
-                    Le classement affiche les jours de réservation cumulés depuis le début, sans quota imposé. L'idée n'est pas de compter pour compter, mais de garder une vue d'ensemble pour que chacun puisse profiter de la place quand il en a envie.
+                    Le classement liste les copropriétaires avec leur nombre de réservations et le total de jours cumulés. Il n'impose pas de quota&nbsp;: il sert surtout de repère commun pour garder une utilisation équilibrée de la place.
                   </p>
                 </td>
               </tr>
@@ -192,7 +195,7 @@ const html = `<!doctype html>
                 <td style="border-left:4px solid #2e5e4e;padding-left:14px;">
                   <h2 style="margin:0 0 6px 0;font-size:18px;color:#1f2a24;font-weight:700;">4. Discuter ensemble, en direct</h2>
                   <p style="margin:0;font-size:14px;line-height:1.6;color:#445a4f;">
-                    Une messagerie pensée pour le clos&nbsp;: une discussion <em>Général</em> pour tout le monde, des sujets dédiés si on veut séparer les conversations, et la possibilité de mentionner un voisin avec <code style="background:#eef3ef;padding:1px 6px;border-radius:4px;font-size:13px;color:#2e5e4e;">@</code> pour qu'il soit notifié. Les messages arrivent en temps réel, sans rafraîchir la page. C'est aussi là qu'apparaîtront les discussions ouvertes en cas d'objection sur une réservation.
+                    La page Messages regroupe la discussion <em>Général</em>, les salons créés par les copropriétaires et les conversations liées aux réservations. Quand une objection est déposée, un sujet dédié apparaît dans <em>Réservations en discussion</em> pour échanger au bon endroit.
                   </p>
                 </td>
               </tr>
@@ -205,20 +208,124 @@ const html = `<!doctype html>
           </td>
         </tr>
 
+        <tr>
+          <td style="padding:18px 32px 4px 32px;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f7f4ee;border-radius:10px;">
+              <tr>
+                <td style="padding:18px 20px;">
+                  <p style="margin:0 0 8px 0;font-size:14px;color:#1f2a24;font-weight:700;">Dans les messages</p>
+                  <p style="margin:0 0 8px 0;font-size:13px;line-height:1.55;color:#5a6b62;">
+                    Utilisez le bouton <strong>Nouveau</strong> pour créer un salon lorsque la discussion mérite son propre sujet.
+                  </p>
+                  <p style="margin:0 0 8px 0;font-size:13px;line-height:1.55;color:#5a6b62;">
+                    Le champ de message permet d'écrire en direct et l'icône trombone sert à joindre un fichier.
+                  </p>
+                  <p style="margin:0;font-size:13px;line-height:1.55;color:#5a6b62;">
+                    Le bouton <strong>Muter</strong> coupe les notifications d'une discussion sans la masquer.
+                  </p>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- SECTION 5 — AVIS -->
+        <tr>
+          <td style="padding:28px 32px 8px 32px;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+              <tr>
+                <td style="border-left:4px solid #e8a23a;padding-left:14px;">
+                  <h2 style="margin:0 0 6px 0;font-size:18px;color:#1f2a24;font-weight:700;">5. Envoyer un avis</h2>
+                  <p style="margin:0;font-size:14px;line-height:1.6;color:#445a4f;">
+                    Le bouton <strong>Avis</strong>, en haut à droite de l'application, ouvre un formulaire de retour. Commencez par choisir l'objet de votre retour&nbsp;: <strong>Bug</strong>, <strong>Suggestion</strong>, <strong>Question</strong> ou <strong>Autre</strong>. L'étape suivante permet de décrire le sujet et d'ajouter une pièce jointe si besoin.
+                  </p>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:14px 32px 4px 32px;" align="center">
+            <img src="${avis}" alt="Formulaire d'avis Clos Verde" width="536" style="display:block;width:100%;max-width:536px;height:auto;border:1px solid #e1dbd0;border-radius:8px;" />
+          </td>
+        </tr>
+
+        <!-- SECTION 6 — TICKETS -->
+        <tr>
+          <td style="padding:28px 32px 8px 32px;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+              <tr>
+                <td style="border-left:4px solid #e8a23a;padding-left:14px;">
+                  <h2 style="margin:0 0 6px 0;font-size:18px;color:#1f2a24;font-weight:700;">6. Suivre ses tickets</h2>
+                  <p style="margin:0;font-size:14px;line-height:1.6;color:#445a4f;">
+                    La rubrique <strong>Mes tickets</strong> liste vos retours envoyés à l'équipe. L'onglet <strong>En cours</strong> affiche les tickets ouverts, l'onglet <strong>Historique</strong> les tickets terminés, et le bouton <strong>Créer un ticket</strong> permet d'envoyer un nouveau retour depuis cette page.
+                  </p>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:14px 32px 4px 32px;" align="center">
+            <img src="${tickets}" alt="Liste Mes tickets Clos Verde" width="536" style="display:block;width:100%;max-width:536px;height:auto;border:1px solid #e1dbd0;border-radius:8px;" />
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:14px 32px 4px 32px;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#fff8eb;border:1px solid #f1d9a7;border-radius:10px;">
+              <tr>
+                <td style="padding:18px 20px;">
+                  <p style="margin:0 0 8px 0;font-size:14px;color:#1f2a24;font-weight:700;">Où retrouver vos retours&nbsp;?</p>
+                  <p style="margin:0 0 8px 0;font-size:13px;line-height:1.55;color:#5a6b62;">
+                    Les badges indiquent le type du ticket, par exemple <strong>Bug</strong>, <strong>Suggestion</strong>, <strong>Question</strong> ou <strong>Autre</strong>.
+                  </p>
+                  <p style="margin:0 0 8px 0;font-size:13px;line-height:1.55;color:#5a6b62;">
+                    Quand une pièce jointe existe, l'icône trombone apparaît directement dans la ligne du ticket.
+                  </p>
+                  <p style="margin:0;font-size:13px;line-height:1.55;color:#5a6b62;">
+                    Le détail d'un ticket reprend les réponses de l'équipe et vous permet de clôturer ce qui est résolu.
+                  </p>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- SECTION 7 — FAQ -->
+        <tr>
+          <td style="padding:28px 32px 8px 32px;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+              <tr>
+                <td style="border-left:4px solid #3e76b9;padding-left:14px;">
+                  <h2 style="margin:0 0 6px 0;font-size:18px;color:#1f2a24;font-weight:700;">7. Retrouver l'aide et les notifications</h2>
+                  <p style="margin:0;font-size:14px;line-height:1.6;color:#445a4f;">
+                    La FAQ reprend les explications sur le calendrier, les réservations, les messages et les tickets. Elle indique aussi comment activer les notifications depuis le menu de votre compte, pour être prévenu des mentions, des objections et des réponses à vos tickets.
+                  </p>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:14px 32px 4px 32px;" align="center">
+            <img src="${faq}" alt="FAQ Clos Verde" width="536" style="display:block;width:100%;max-width:536px;height:auto;border:1px solid #e1dbd0;border-radius:8px;" />
+          </td>
+        </tr>
+
         <!-- CTA -->
         <tr>
           <td style="padding:32px 32px 8px 32px;" align="center">
             <table role="presentation" cellpadding="0" cellspacing="0" border="0">
               <tr>
                 <td style="background:#2e5e4e;border-radius:8px;">
-                  <a href="https://VOTRE_URL_CLOS_VERDE" style="display:inline-block;padding:14px 28px;font-size:15px;font-weight:600;color:#ffffff;text-decoration:none;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;">
+                  <a href="https://clos-verde.elyspio.fr/" style="display:inline-block;padding:14px 28px;font-size:15px;font-weight:600;color:#ffffff;text-decoration:none;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;">
                     Accéder à Clos Verde
                   </a>
                 </td>
               </tr>
             </table>
             <p style="margin:14px 0 0 0;font-size:13px;color:#6a7a72;line-height:1.5;">
-              Votre compte est déjà prêt — vous vous connectez simplement avec votre adresse mail.
+              Si vous n'avez pas encore de compte, vous pouvez le créer directement sur le site avec votre adresse mail. La FAQ reste disponible dans l'application pour retrouver ces explications.
             </p>
           </td>
         </tr>

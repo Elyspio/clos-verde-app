@@ -61,6 +61,7 @@ export interface CreateReservationRequest {
 	startDate: string;
 	endDate: string;
 	note?: string | null;
+	onBehalfOfUserId?: string | null;
 }
 export interface CreateTopicRequest {
 	name: string;

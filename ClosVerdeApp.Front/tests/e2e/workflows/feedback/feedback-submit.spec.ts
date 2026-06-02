@@ -83,6 +83,32 @@ test.describe("Feedback — submit flow", () => {
 		await expect(page.getByTestId("feedback-dialog")).toBeHidden();
 	});
 
+	test("crée un ticket depuis l'écran Mes tickets", async ({ page }) => {
+		const runId = createRunId();
+		const title = `E2E ticket depuis mes tickets ${runId}`;
+
+		await page.goto("/mes-tickets");
+		await expect(page.getByTestId("my-feedback-page")).toBeVisible();
+
+		await page.getByTestId("my-feedback-create-ticket").click();
+		await expect(page.getByTestId("feedback-dialog")).toBeVisible();
+		await page.getByTestId("feedback-category-question").click();
+		await page.getByTestId("feedback-title").locator("input").fill(title);
+		await page.getByTestId("feedback-body").locator("textarea").first().fill(`Question créée depuis Mes tickets pour le run ${runId}.`);
+
+		const postPromise = page.waitForResponse((response) => response.request().method() === "POST" && new URL(response.url()).pathname === "/api/feedback");
+		await page.getByTestId("feedback-submit").click();
+		const postResponse = await postPromise;
+		expect(postResponse.status(), `POST feedback: ${await postResponse.text()}`).toBe(201);
+		const created = (await postResponse.json()) as { id: string };
+
+		await page.getByTestId("feedback-close").click();
+		await expect(page.getByTestId("feedback-dialog")).toBeHidden();
+		const row = page.getByTestId(`my-feedback-row-${created.id}`);
+		await expect(row).toBeVisible();
+		await expect(row).toContainText(title);
+	});
+
 	test("permet de revenir au sélecteur depuis le formulaire", async ({ page }) => {
 		await page.goto("/calendrier");
 		await page.getByTestId("feedback-trigger").click();

@@ -103,7 +103,7 @@ export const FAQ_QUESTIONS: FaqQuestion[] = [
 	{
 		id: "objection-received",
 		question: "Quelqu'un s'est opposé à ma réservation, que faire ?",
-		answer: "Une discussion s'ouvre automatiquement dans la messagerie. Rendez-vous dans Messages, retrouvez la conversation associée et échangez sereinement avec le copropriétaire concerné pour trouver un arrangement.",
+		answer: "Une discussion s'ouvre automatiquement dans la messagerie. Rendez-vous dans Messages, retrouvez la conversation associée et échangez sereinement avec le copropriétaire concerné pour trouver un arrangement. Une fois que vous êtes mis d'accord, c'est à vous de valider ou annuler la réservation en fonction de votre accord.",
 	},
 	{
 		id: "enable-notifications",

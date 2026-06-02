@@ -99,15 +99,6 @@ export function AppShell() {
 								<HelpOutline />
 							</IconButton>
 						</Tooltip>
-						<Tooltip title="Notifications">
-							<IconButton
-								aria-label="Notifications"
-								sx={{ position: "relative", border: "1px solid var(--line)", backgroundColor: "var(--surface)", color: "var(--ink-soft)", borderRadius: "11px" }}
-							>
-								<NotificationsNoneOutlined />
-								<Box component="span" sx={{ position: "absolute", top: 9, right: 10, width: 7, height: 7, borderRadius: "50%", bgcolor: "var(--danger)" }} />
-							</IconButton>
-						</Tooltip>
 					</Stack>
 				</Box>
 				<Box

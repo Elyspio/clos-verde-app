@@ -61,7 +61,7 @@ public class ReservationController(
 	{
 		using var logger = LogController($"{Log.F(request.StartDate)} {Log.F(request.EndDate)}");
 
-		var reservation = await reservationService.Create(request, CurrentUserId, CurrentDisplayName);
+		var reservation = await reservationService.Create(request, CurrentUserId, CurrentDisplayName, User.IsInRole("admin"));
 		return Created($"/api/reservations/{reservation.Id}", reservation);
 	}
 
@@ -73,7 +73,7 @@ public class ReservationController(
 	{
 		using var logger = LogController($"{Log.F(id)} {Log.F(request.StartDate)} {Log.F(request.EndDate)}");
 
-		return Ok(await reservationService.Update(id, request, CurrentUserId));
+		return Ok(await reservationService.Update(id, request, CurrentUserId, User.IsInRole("admin")));
 	}
 
 	[HttpDelete("{id:guid}")]
@@ -83,7 +83,7 @@ public class ReservationController(
 	{
 		using var logger = LogController(Log.F(id));
 
-		await reservationService.Delete(id, CurrentUserId);
+		await reservationService.Delete(id, CurrentUserId, User.IsInRole("admin"));
 		return NoContent();
 	}
 
@@ -94,7 +94,7 @@ public class ReservationController(
 	public async Task<IActionResult> ForceValidate(Guid id)
 	{
 		using var logger = LogController(Log.F(id));
-		return Ok(await reservationService.ForceValidate(id, CurrentUserId));
+		return Ok(await reservationService.ForceValidate(id, CurrentUserId, User.IsInRole("admin")));
 	}
 
 	[HttpPost("{id:guid}/objections")]

@@ -27,6 +27,7 @@ public class ReservationService : TracingService, IReservationService
 	private readonly IReservationRealtimePublisher _reservationRealtimePublisher;
 	private readonly IMessageRealtimePublisher _messageRealtimePublisher;
 	private readonly IPushNotificationService _pushNotificationService;
+	private readonly IUserDirectoryService _userDirectoryService;
 	private readonly IBackgroundDispatcher _backgroundDispatcher;
 	private readonly IOptionsMonitor<ReservationOptions> _options;
 
@@ -41,6 +42,7 @@ public class ReservationService : TracingService, IReservationService
 		IReservationRealtimePublisher reservationRealtimePublisher,
 		IMessageRealtimePublisher messageRealtimePublisher,
 		IPushNotificationService pushNotificationService,
+		IUserDirectoryService userDirectoryService,
 		IBackgroundDispatcher backgroundDispatcher,
 		IOptionsMonitor<ReservationOptions> options,
 		ILogger<ReservationService> logger) : base(logger)
@@ -52,6 +54,7 @@ public class ReservationService : TracingService, IReservationService
 		_reservationRealtimePublisher = reservationRealtimePublisher;
 		_messageRealtimePublisher = messageRealtimePublisher;
 		_pushNotificationService = pushNotificationService;
+		_userDirectoryService = userDirectoryService;
 		_backgroundDispatcher = backgroundDispatcher;
 		_options = options;
 	}
@@ -107,9 +110,11 @@ public class ReservationService : TracingService, IReservationService
 		}).ToList();
 	}
 
-	public async Task<Reservation> Create(CreateReservationRequest request, Guid userId, string displayName)
+	public async Task<Reservation> Create(CreateReservationRequest request, Guid userId, string displayName, bool isAdmin = false)
 	{
-		using var logger = LogService($"{Log.F(userId)} {Log.F(request.StartDate)} {Log.F(request.EndDate)}");
+		using var logger = LogService($"{Log.F(userId)} {Log.F(isAdmin)} {Log.F(request.OnBehalfOfUserId)} {Log.F(request.StartDate)} {Log.F(request.EndDate)}");
+
+		var (ownerId, ownerName) = await ResolveOwner(request, userId, displayName, isAdmin);
 
 		var startUtc = request.StartDate.AsUtc();
 		var endUtc = request.EndDate.AsUtc();
@@ -130,7 +135,7 @@ public class ReservationService : TracingService, IReservationService
 			: now + TimeSpan.FromTicks(Math.Min(opts.ValidationDelay.Ticks, (startUtc - now).Ticks));
 
 		var entity = await _reservationRepository.Create(
-			new ReservationUserRef { Id = userId, DisplayName = displayName },
+			new ReservationUserRef { Id = ownerId, DisplayName = ownerName },
 			startUtc,
 			endUtc,
 			request.Note,
@@ -147,15 +152,16 @@ public class ReservationService : TracingService, IReservationService
 		return reservation;
 	}
 
-	public async Task<Reservation> Update(Guid id, CreateReservationRequest request, Guid currentUserId)
+	public async Task<Reservation> Update(Guid id, CreateReservationRequest request, Guid currentUserId, bool isAdmin = false)
 	{
-		using var logger = LogService($"{Log.F(id)} {Log.F(currentUserId)} {Log.F(request.StartDate)} {Log.F(request.EndDate)}");
+		using var logger = LogService($"{Log.F(id)} {Log.F(currentUserId)} {Log.F(isAdmin)} {Log.F(request.StartDate)} {Log.F(request.EndDate)}");
 
 		var entity = await _reservationRepository.GetById(id);
 		if (entity is null) throw new HttpException.NotFound<ReservationEntity>(id);
-		if (entity.User.Id != currentUserId)
+		// Admins can modify any user's reservation, in any state; regular users are limited to their own pending ones.
+		if (entity.User.Id != currentUserId && !isAdmin)
 			throw new HttpException.Forbidden("Vous ne pouvez modifier que vos propres réservations.");
-		if (entity.Validation.Status != ReservationStatus.Pending)
+		if (entity.Validation.Status != ReservationStatus.Pending && !isAdmin)
 			throw new HttpException.Conflict("Seules les réservations en attente peuvent être modifiées.");
 
 		var startUtc = request.StartDate.AsUtc();
@@ -213,13 +219,14 @@ public class ReservationService : TracingService, IReservationService
 		return reservation;
 	}
 
-	public async Task Delete(Guid id, Guid currentUserId)
+	public async Task Delete(Guid id, Guid currentUserId, bool isAdmin = false)
 	{
-		using var logger = LogService($"{Log.F(id)} {Log.F(currentUserId)}");
+		using var logger = LogService($"{Log.F(id)} {Log.F(currentUserId)} {Log.F(isAdmin)}");
 
 		var entity = await _reservationRepository.GetById(id);
 		if (entity is null) throw new HttpException.NotFound<ReservationEntity>(id);
-		if (entity.User.Id != currentUserId)
+		// Admins can delete any user's reservation; regular users are limited to their own.
+		if (entity.User.Id != currentUserId && !isAdmin)
 			throw new HttpException.Forbidden("Vous ne pouvez supprimer que vos propres réservations.");
 
 		// Cascade: remove the discussion topic, its messages and read receipts (if any) before the reservation row.
@@ -236,13 +243,14 @@ public class ReservationService : TracingService, IReservationService
 		await _reservationRealtimePublisher.PublishDeleted(reservation);
 	}
 
-	public async Task<Reservation> ForceValidate(Guid id, Guid currentUserId)
+	public async Task<Reservation> ForceValidate(Guid id, Guid currentUserId, bool isAdmin = false)
 	{
-		using var logger = LogService($"{Log.F(id)} {Log.F(currentUserId)}");
+		using var logger = LogService($"{Log.F(id)} {Log.F(currentUserId)} {Log.F(isAdmin)}");
 
 		var entity = await _reservationRepository.GetById(id);
 		if (entity is null) throw new HttpException.NotFound<ReservationEntity>(id);
-		if (entity.User.Id != currentUserId)
+		// Admins can resolve an objection on any user's reservation; otherwise only the creator may.
+		if (entity.User.Id != currentUserId && !isAdmin)
 			throw new HttpException.Forbidden("Seul le créateur peut valider sa réservation.");
 		if (entity.Validation.Status != ReservationStatus.Pending)
 			throw new HttpException.Conflict("Cette réservation n'est plus en attente.");
@@ -255,6 +263,25 @@ public class ReservationService : TracingService, IReservationService
 		var reservation = ToTransport(refreshed!);
 		await _reservationRealtimePublisher.PublishUpdated(reservation);
 		return reservation;
+	}
+
+	/// <summary>
+	/// Resolves the reservation owner. Defaults to the caller; an admin may target another directory
+	/// user via <see cref="CreateReservationRequest.OnBehalfOfUserId"/>. Non-admins who try to do so are rejected.
+	/// </summary>
+	private async Task<(Guid Id, string DisplayName)> ResolveOwner(CreateReservationRequest request, Guid callerId, string callerName, bool isAdmin)
+	{
+		if (request.OnBehalfOfUserId is not { } targetId || targetId == callerId)
+			return (callerId, callerName);
+
+		if (!isAdmin)
+			throw new HttpException.Forbidden("Seul un administrateur peut réserver pour un autre utilisateur.");
+
+		var users = await _userDirectoryService.ListAsync();
+		var target = users.FirstOrDefault(u => u.Id == targetId)
+			?? throw new HttpException.BadRequest("L'utilisateur ciblé est introuvable.");
+
+		return (target.Id, target.DisplayName);
 	}
 
 	private static void ValidatePeriod(DateTime startUtc, DateTime endUtc)

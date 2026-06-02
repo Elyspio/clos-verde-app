@@ -1,5 +1,5 @@
 import { AccessTime } from "@mui/icons-material";
-import { Alert, Box, Button, Checkbox, Container, Divider, FormControlLabel, Stack, TextField, Typography } from "@mui/material";
+import { Alert, Autocomplete, Box, Button, Checkbox, Container, Divider, FormControlLabel, Stack, TextField, Typography } from "@mui/material";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { DateTimePicker } from "@mui/x-date-pickers/DateTimePicker";
 import {
@@ -26,7 +26,9 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { routes } from "@/config/routes";
 import { useReservationsQueries } from "@data/reservations/reservations.queries";
 import { useReservationsMutations } from "@data/reservations/reservations.mutations";
-import type { Reservation } from "@apis/rest/api/generated";
+import { useUsersQueries } from "@data/users/users.queries";
+import { useIsAdmin } from "@data/client/useIsAdmin";
+import type { DirectoryUser, Reservation } from "@apis/rest/api/generated";
 import { reservationPeriodLabel } from "@/utils/date.utils";
 
 type ReservationLocationState = {
@@ -155,6 +157,11 @@ export function ReservationPage() {
 	const [endDate, setEndDate] = useState<Date | null>(initial.end);
 	const [preciseTimes, setPreciseTimes] = useState(initial.precise);
 	const [note, setNote] = useState(editingReservation?.note ?? "");
+	const isAdmin = useIsAdmin();
+	// Admins may book on behalf of another user when creating (not when editing). null = book for self.
+	const [onBehalfOf, setOnBehalfOf] = useState<DirectoryUser | null>(null);
+	const showUserPicker = isAdmin && !editingReservation;
+	const { data: directoryUsers = [] } = useUsersQueries.list();
 	const availabilityDay = useMemo(() => (startDate && isValid(startDate) ? startDate : initial.start), [initial.start, startDate]);
 	const availabilityYear = getYear(availabilityDay);
 	const availabilityMonth = getMonth(availabilityDay) + 1;
@@ -222,6 +229,7 @@ export function ReservationPage() {
 			startDate: serializeDateTime(effectiveStart),
 			endDate: serializeDateTime(effectiveEnd),
 			note: note.trim() || undefined,
+			onBehalfOfUserId: showUserPicker ? (onBehalfOf?.id ?? undefined) : undefined,
 		};
 
 		try {
@@ -249,6 +257,18 @@ export function ReservationPage() {
 			</Box>
 			<Stack component="form" data-testid="reservation-form" spacing={3.5} onSubmit={handleSubmit} maxWidth={720}>
 				{activeMutation.isError && <Alert severity="warning">{activeMutation.error?.message}</Alert>}
+				{showUserPicker && (
+					<Autocomplete
+						options={directoryUsers}
+						value={onBehalfOf}
+						onChange={(_event, value) => setOnBehalfOf(value)}
+						getOptionLabel={(option) => option.displayName}
+						isOptionEqualToValue={(option, value) => option.id === value.id}
+						renderInput={(params) => (
+							<TextField {...params} label="Réserver pour" placeholder="Vous-même" helperText="Administrateur : choisissez un membre pour réserver à sa place." />
+						)}
+					/>
+				)}
 				<FormControlLabel
 					control={<Checkbox checked={preciseTimes} onChange={(event) => handlePreciseChange(event.target.checked)} color="primary" />}
 					label="Préciser les heures de début et de fin"

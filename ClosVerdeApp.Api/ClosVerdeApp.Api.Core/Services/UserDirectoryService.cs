@@ -27,12 +27,9 @@ public class UserDirectoryService(
 	public async Task<List<DirectoryUser>> ListAsync(CancellationToken cancellationToken = default)
 	{
 		using var logger = LogService();
-
-		if (memoryCache.TryGetValue<List<DirectoryUser>>(CacheKey, out var cached) && cached is not null)
-			return cached;
-
+		
 		var users = await keycloakAdminClient.ListUsersAsync(cancellationToken);
-		memoryCache.Set(CacheKey, users, options.CurrentValue.CacheTtl);
+		
 		return users;
 	}
 }

@@ -1,5 +1,5 @@
 import { Alert, Box, Button, Chip, Container, Drawer, IconButton, Pagination, Skeleton, Stack, Tab, Tabs, Tooltip, Typography } from "@mui/material";
-import { AttachFile, CheckCircleOutline, Close, HistoryOutlined, InboxOutlined, OpenInNewOutlined } from "@mui/icons-material";
+import { AttachFile, CheckCircleOutline, Close, FeedbackOutlined, HistoryOutlined, InboxOutlined, OpenInNewOutlined } from "@mui/icons-material";
 import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
 import { useMemo, useState } from "react";
@@ -8,6 +8,7 @@ import { useFeedbackMutations } from "@data/feedback/feedback.mutations";
 import { useFeedbackQueries } from "@data/feedback/feedback.queries";
 import { downloadWithAuth } from "@data/messages/attachments.hooks";
 import { CATEGORY_META } from "./categoryMeta";
+import { FeedbackDialog } from "./FeedbackDialog";
 
 const PAGE_SIZE = 10;
 const OPEN_STATUSES: FeedbackStatus[] = ["Open"];
@@ -19,6 +20,7 @@ export function MyFeedbackPage() {
 	const [tab, setTab] = useState<TicketTab>("open");
 	const [page, setPage] = useState(1);
 	const [selected, setSelected] = useState<Feedback | null>(null);
+	const [createOpen, setCreateOpen] = useState(false);
 	const statuses = tab === "open" ? OPEN_STATUSES : HISTORY_STATUSES;
 	const listQuery = useFeedbackQueries.mine({ status: statuses, page, pageSize: PAGE_SIZE });
 
@@ -28,11 +30,22 @@ export function MyFeedbackPage() {
 	return (
 		<Container maxWidth="lg" sx={{ py: { xs: 3, md: 5 }, px: { xs: 2.5, md: 5 } }}>
 			<Stack spacing={3} data-testid="my-feedback-page">
-				<Stack spacing={0.75}>
-					<Typography variant="h2">Mes tickets</Typography>
-					<Typography variant="body1" color="text.secondary">
-						Suivez vos retours envoyés à l'équipe et clôturez ceux qui sont terminés.
-					</Typography>
+				<Stack direction={{ xs: "column", sm: "row" }} spacing={2} alignItems={{ xs: "stretch", sm: "flex-start" }} justifyContent="space-between">
+					<Stack spacing={0.75} sx={{ minWidth: 0 }}>
+						<Typography variant="h2">Mes tickets</Typography>
+						<Typography variant="body1" color="text.secondary">
+							Suivez vos retours envoyés à l'équipe et clôturez ceux qui sont terminés.
+						</Typography>
+					</Stack>
+					<Button
+						variant="contained"
+						startIcon={<FeedbackOutlined />}
+						onClick={() => setCreateOpen(true)}
+						data-testid="my-feedback-create-ticket"
+						sx={{ alignSelf: { xs: "stretch", sm: "center" }, textTransform: "none", fontWeight: 800, whiteSpace: "nowrap" }}
+					>
+						Créer un ticket
+					</Button>
 				</Stack>
 
 				<Box sx={{ borderBottom: "1px solid var(--line)" }}>
@@ -74,6 +87,7 @@ export function MyFeedbackPage() {
 			</Stack>
 
 			<MyFeedbackDrawer feedback={selected} onClose={() => setSelected(null)} onUpdated={setSelected} />
+			<FeedbackDialog open={createOpen} onClose={() => setCreateOpen(false)} />
 		</Container>
 	);
 }
