@@ -351,6 +351,59 @@ public class FeedbackServiceTests
 		secondClose.ResolvedAt.ShouldBe(firstClose.ResolvedAt);
 	}
 
+	[Fact]
+	public async Task EnsureAttachmentReadableLetsTheFeedbackAuthorIn()
+	{
+		var harness = new Harness();
+		var authorId = Guid.NewGuid();
+		var attachmentId = await harness.UploadAttachment(authorId, "trace.txt", "text/plain");
+		await harness.Service.Create(
+			new CreateFeedbackRequest { Category = FeedbackCategory.Bug, Title = "t", Body = "b", AttachmentIds = [attachmentId] },
+			authorId, "Alice", null);
+
+		await Should.NotThrowAsync(() => harness.Service.EnsureAttachmentReadable(attachmentId, authorId, isAdmin: false));
+	}
+
+	[Fact]
+	public async Task EnsureAttachmentReadableBlocksOtherUsersFromAFeedbackAttachment()
+	{
+		// Reproduces the IDOR: before the fix, any authenticated user could download another
+		// user's private feedback attachment by id. It must now be Forbidden.
+		var harness = new Harness();
+		var authorId = Guid.NewGuid();
+		var snooperId = Guid.NewGuid();
+		var attachmentId = await harness.UploadAttachment(authorId, "private.txt", "text/plain");
+		await harness.Service.Create(
+			new CreateFeedbackRequest { Category = FeedbackCategory.Bug, Title = "t", Body = "b", AttachmentIds = [attachmentId] },
+			authorId, "Alice", null);
+
+		var ex = await Should.ThrowAsync<HttpException>(
+			() => harness.Service.EnsureAttachmentReadable(attachmentId, snooperId, isAdmin: false));
+		ex.ShouldBeOfType<HttpException.Forbidden>();
+	}
+
+	[Fact]
+	public async Task EnsureAttachmentReadableLetsAdminsIn()
+	{
+		var harness = new Harness();
+		var authorId = Guid.NewGuid();
+		var attachmentId = await harness.UploadAttachment(authorId, "private.txt", "text/plain");
+		await harness.Service.Create(
+			new CreateFeedbackRequest { Category = FeedbackCategory.Bug, Title = "t", Body = "b", AttachmentIds = [attachmentId] },
+			authorId, "Alice", null);
+
+		await Should.NotThrowAsync(() => harness.Service.EnsureAttachmentReadable(attachmentId, Guid.NewGuid(), isAdmin: true));
+	}
+
+	[Fact]
+	public async Task EnsureAttachmentReadableIgnoresAttachmentsNotBoundToAnyFeedback()
+	{
+		// A message attachment (no feedback references it) stays readable — shared-topic rules apply.
+		var harness = new Harness();
+
+		await Should.NotThrowAsync(() => harness.Service.EnsureAttachmentReadable(Guid.NewGuid(), Guid.NewGuid(), isAdmin: false));
+	}
+
 	private sealed class Harness
 	{
 		public FakeFeedbackRepository Repo { get; } = new();
@@ -401,6 +454,9 @@ public class FeedbackServiceTests
 
 		public Task<FeedbackEntity?> GetById(Guid id) =>
 			Task.FromResult(Items.FirstOrDefault(f => f.Id.AsGuid() == id));
+
+		public Task<FeedbackEntity?> FindByAttachmentId(Guid attachmentId) =>
+			Task.FromResult(Items.FirstOrDefault(f => f.Attachments.Any(a => a.Id.AsGuid() == attachmentId)));
 
 		public Task<List<FeedbackEntity>> List(FeedbackCategory? category, FeedbackStatus? status, int skip, int take)
 		{

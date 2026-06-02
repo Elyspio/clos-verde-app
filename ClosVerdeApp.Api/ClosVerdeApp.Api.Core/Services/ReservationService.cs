@@ -7,6 +7,7 @@ using ClosVerdeApp.Api.Abstractions.Models.Configuration;
 using ClosVerdeApp.Api.Abstractions.Models.Entities;
 using ClosVerdeApp.Api.Abstractions.Models.Entities.Enums;
 using ClosVerdeApp.Api.Abstractions.Models.Transports;
+using ClosVerdeApp.Api.Core.Helpers;
 using Elyspio.Utils.Telemetry.Tracing.Elements;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -26,6 +27,7 @@ public class ReservationService : TracingService, IReservationService
 	private readonly IReservationRealtimePublisher _reservationRealtimePublisher;
 	private readonly IMessageRealtimePublisher _messageRealtimePublisher;
 	private readonly IPushNotificationService _pushNotificationService;
+	private readonly IBackgroundDispatcher _backgroundDispatcher;
 	private readonly IOptionsMonitor<ReservationOptions> _options;
 
 	/// <summary>
@@ -39,6 +41,7 @@ public class ReservationService : TracingService, IReservationService
 		IReservationRealtimePublisher reservationRealtimePublisher,
 		IMessageRealtimePublisher messageRealtimePublisher,
 		IPushNotificationService pushNotificationService,
+		IBackgroundDispatcher backgroundDispatcher,
 		IOptionsMonitor<ReservationOptions> options,
 		ILogger<ReservationService> logger) : base(logger)
 	{
@@ -49,6 +52,7 @@ public class ReservationService : TracingService, IReservationService
 		_reservationRealtimePublisher = reservationRealtimePublisher;
 		_messageRealtimePublisher = messageRealtimePublisher;
 		_pushNotificationService = pushNotificationService;
+		_backgroundDispatcher = backgroundDispatcher;
 		_options = options;
 	}
 
@@ -135,7 +139,11 @@ public class ReservationService : TracingService, IReservationService
 
 		var reservation = ToTransport(entity);
 		await _reservationRealtimePublisher.PublishCreated(reservation);
-		await _pushNotificationService.NotifyReservationCreated(reservation);
+		// Best-effort, network-bound push fan-out to every other user: run it off the request thread
+		// so creating a reservation isn't delayed by (or rolled back on) push delivery.
+		_backgroundDispatcher.Enqueue(
+			ct => _pushNotificationService.NotifyReservationCreated(reservation, ct),
+			$"push:reservation-created:{reservation.Id}");
 		return reservation;
 	}
 
@@ -260,29 +268,7 @@ public class ReservationService : TracingService, IReservationService
 
 	private static void ThrowConflict(ReservationEntity conflict) =>
 		throw new HttpException.Conflict(
-			$"La place est déjà réservée {FormatPeriod(conflict.StartDate, conflict.EndDate).ToLowerInvariant()} par {conflict.User.DisplayName}.");
-
-	private static string FormatPeriod(DateTime start, DateTime end)
-	{
-
-		start = start.ToLocalTime();
-		end = end.ToLocalTime();
-
-		var startLabel = IsStartOfDay(start) ? $"{start:dd/MM}" : $"{start:dd/MM 'à' HH'h'mm}";
-
-		if (start.Date == end.Date && IsEndOfDay(end))
-			return $"du {startLabel} jusqu'à la fin de la journée";
-
-		if (IsEndOfDay(end))
-			return $"du {startLabel} au {end:dd/MM}";
-
-		var endLabel = IsStartOfDay(end) ? $"{end:dd/MM}" : $"{end:dd/MM 'à' HH'h'mm}";
-		return $"du {startLabel} au {endLabel}";
-	}
-
-	private static bool IsStartOfDay(DateTime date) => date.Hour == 0 && date.Minute == 0;
-
-	private static bool IsEndOfDay(DateTime date) => date.Hour == 23 && date.Minute == 59;
+			$"La place est déjà réservée {ReservationPeriodFormatter.Format(conflict.StartDate, conflict.EndDate).ToLowerInvariant()} par {conflict.User.DisplayName}.");
 
 	private static Reservation ToTransport(ReservationEntity e) => new()
 	{

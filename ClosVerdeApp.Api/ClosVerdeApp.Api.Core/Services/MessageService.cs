@@ -21,10 +21,11 @@ public class MessageService(
 	IMessageRealtimePublisher messageRealtimePublisher,
 	IPushNotificationService pushNotificationService,
 	IAttachmentService attachmentService,
+	IBackgroundDispatcher backgroundDispatcher,
 	ILogger<MessageService> logger
 ) : TracingService(logger), IMessageService
 {
-	public async Task<List<Message>> List(Guid topicId, DateTime? before, int limit)
+	public async Task<List<Message>> List(Guid topicId, Guid? before, int limit)
 	{
 		using var logger = LogService($"{Log.F(topicId)} {Log.F(before)} {Log.F(limit)}");
 
@@ -76,7 +77,11 @@ public class MessageService(
 
 		var message = ToTransport(entity);
 		await messageRealtimePublisher.PublishMessageCreated(message);
-		await pushNotificationService.NotifyMessageMention(message, topic);
+		// Web Push fan-out is best-effort and network-bound: dispatch it off the request thread so
+		// posting a message never blocks on (or fails because of) push delivery.
+		backgroundDispatcher.Enqueue(
+			ct => pushNotificationService.NotifyMessageMention(message, topic, ct),
+			$"push:message-mention:{message.Id}");
 
 		// Push the updated topic so consumers can refresh LastMessageAt/MessageCount.
 		var refreshedTopic = await topicRepository.GetById(topic.Id.AsGuid());

@@ -6,7 +6,7 @@
 	"scripts": {
 		"dev": "vp dev",
 		"build": "tsc && vp build",
-		"refresh-api": "tsx scripts/refresh-api.ts",
+		"refresh-api": "tsx scripts/refresh-api.ts && pnpm run check:lint",
 		"check:types": "tsc --noEmit",
 		"check:types:watch": "tsc --noEmit --watch",
 		"check:lint": "vp check --fix",

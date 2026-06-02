@@ -2,10 +2,15 @@ using ClosVerdeApp.Api.Abstractions.Models.Entities;
 
 namespace ClosVerdeApp.Api.Abstractions.Interfaces.Repositories;
 
-/// <summary>Persistence for chat messages. Soft-delete only; cursor pagination is by <c>CreatedAt</c>.</summary>
+/// <summary>Persistence for chat messages. Soft-delete only; cursor pagination is by message id.</summary>
 public interface IMessageRepository
 {
-	Task<List<MessageEntity>> GetByTopic(Guid topicId, DateTime? before, int limit);
+	/// <summary>
+	/// Returns up to <paramref name="limit"/> messages of a topic, oldest-first. When
+	/// <paramref name="before"/> is set (the id of the oldest message already loaded), only
+	/// strictly-older messages are returned — an exact, stable cursor for "load more history".
+	/// </summary>
+	Task<List<MessageEntity>> GetByTopic(Guid topicId, Guid? before, int limit);
 	Task<MessageEntity?> GetById(Guid id);
 
 	Task<MessageEntity> Create(

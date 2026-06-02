@@ -26,6 +26,13 @@ public interface IFeedbackService
 	Task<Feedback> AddReply(Guid id, string body, Guid authorId, string authorDisplayName, bool isAdmin);
 
 	Task<Feedback?> GetById(Guid id);
+
+	/// <summary>
+	/// Authorises reading an attachment by id. Feedback attachments are private to their author
+	/// (and admins); throws <c>Forbidden</c> otherwise. No-op when the attachment is not bound to
+	/// any feedback (e.g. a message attachment, which follows the shared-topic visibility rules).
+	/// </summary>
+	Task EnsureAttachmentReadable(Guid attachmentId, Guid currentUserId, bool isAdmin);
 }
 
 /// <summary>Page of feedback entries plus the total count for the same filter.</summary>

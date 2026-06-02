@@ -203,6 +203,19 @@ public class FeedbackService(
 		return entity is null ? null : ToTransport(entity);
 	}
 
+	public async Task EnsureAttachmentReadable(Guid attachmentId, Guid currentUserId, bool isAdmin)
+	{
+		using var _ = LogService($"{Log.F(attachmentId)} {Log.F(currentUserId)} {Log.F(isAdmin)}");
+
+		if (isAdmin) return;
+
+		var feedback = await feedbackRepository.FindByAttachmentId(attachmentId);
+		if (feedback is null) return; // not a feedback attachment → governed by shared-topic rules
+
+		if (feedback.Author.Id != currentUserId)
+			throw new HttpException.Forbidden("Cette pièce jointe n'est pas accessible.");
+	}
+
 	internal Feedback ToTransport(FeedbackEntity e, bool includeAdminNote = true) => new()
 	{
 		Id = e.Id.AsGuid(),

@@ -50,6 +50,16 @@ internal class FeedbackRepository : BaseRepository<FeedbackEntity>, IFeedbackRep
 		return await EntityCollection.AsQueryable().FirstOrDefaultAsync(f => f.Id == oid);
 	}
 
+	public async Task<FeedbackEntity?> FindByAttachmentId(Guid attachmentId)
+	{
+		using var logger = LogAdapter($"{Log.F(attachmentId)}");
+		var oid = attachmentId.AsObjectId();
+		var filter = Builders<FeedbackEntity>.Filter.ElemMatch(
+			f => f.Attachments,
+			Builders<MessageAttachmentEntity>.Filter.Eq(a => a.Id, oid));
+		return await EntityCollection.Find(filter).FirstOrDefaultAsync();
+	}
+
 	public async Task<List<FeedbackEntity>> List(FeedbackCategory? category, FeedbackStatus? status, int skip, int take)
 	{
 		using var logger = LogAdapter($"{Log.F(category)} {Log.F(status)} {Log.F(skip)} {Log.F(take)}");

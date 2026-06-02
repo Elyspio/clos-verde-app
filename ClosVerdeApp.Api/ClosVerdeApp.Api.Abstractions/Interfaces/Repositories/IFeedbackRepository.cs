@@ -16,6 +16,12 @@ public interface IFeedbackRepository
 
 	Task<FeedbackEntity?> GetById(Guid id);
 
+	/// <summary>
+	/// Returns the feedback that embeds the given attachment id, or <c>null</c> if no feedback
+	/// references it. Used to gate downloads of private feedback attachments.
+	/// </summary>
+	Task<FeedbackEntity?> FindByAttachmentId(Guid attachmentId);
+
 	Task<List<FeedbackEntity>> List(FeedbackCategory? category, FeedbackStatus? status, int skip, int take);
 
 	Task<long> Count(FeedbackCategory? category, FeedbackStatus? status);

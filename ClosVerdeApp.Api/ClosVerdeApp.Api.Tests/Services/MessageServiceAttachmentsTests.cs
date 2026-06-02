@@ -132,6 +132,24 @@ public class MessageServiceAttachmentsTests
 		harness.Topics.ReadReceipts.ShouldContainKey(authorId);
 	}
 
+	[Fact]
+	public async Task PostDefersPushFanOutToBackgroundAndIsNotBrokenByPushFailures()
+	{
+		var harness = new Harness();
+		harness.PushNotifications.FailMention = true; // push transport is down / slow
+		var topicId = harness.SeedTopic();
+
+		// Previously Post awaited the push fan-out inline, so a failing transport made Post throw
+		// (and a slow one delayed the response). It must now return regardless.
+		var message = await harness.Service.Post(topicId, Guid.NewGuid(), "Alice", "<p>coucou</p>", []);
+
+		message.ShouldNotBeNull();
+		// The push was scheduled off-thread, not awaited.
+		harness.Dispatcher.Enqueued.ShouldHaveSingleItem();
+		// And that scheduled work is exactly what would have failed inline before.
+		await Should.ThrowAsync<InvalidOperationException>(() => harness.Dispatcher.Enqueued[0](CancellationToken.None));
+	}
+
 	private sealed class Harness
 	{
 		public FakeMessageRepository Messages { get; } = new();
@@ -142,10 +160,12 @@ public class MessageServiceAttachmentsTests
 		public AttachmentService AttachmentSvc { get; }
 		public MessageService Service { get; }
 
+		public FakeBackgroundDispatcher Dispatcher { get; } = new();
+
 		public Harness()
 		{
 			AttachmentSvc = new AttachmentService(Attachments, NullLogger<AttachmentService>.Instance);
-			Service = new MessageService(Messages, Topics, Publisher, PushNotifications, AttachmentSvc, NullLogger<MessageService>.Instance);
+			Service = new MessageService(Messages, Topics, Publisher, PushNotifications, AttachmentSvc, Dispatcher, NullLogger<MessageService>.Instance);
 		}
 
 		public Guid SeedTopic()
@@ -176,7 +196,7 @@ public class MessageServiceAttachmentsTests
 	{
 		public List<MessageEntity> Items { get; } = [];
 
-		public Task<List<MessageEntity>> GetByTopic(Guid topicId, DateTime? before, int limit) =>
+		public Task<List<MessageEntity>> GetByTopic(Guid topicId, Guid? before, int limit) =>
 			Task.FromResult(Items.Where(m => m.TopicId == topicId).ToList());
 
 		public Task<MessageEntity?> GetById(Guid id) =>
@@ -292,7 +312,18 @@ public class MessageServiceAttachmentsTests
 
 	private sealed class FakePushNotificationService : IPushNotificationService
 	{
-		public Task NotifyMessageMention(Message message, TopicEntity topic, CancellationToken cancellationToken = default) => Task.CompletedTask;
+		/// <summary>Simulates a failing / unreachable push transport.</summary>
+		public bool FailMention { get; set; }
+
+		public Task NotifyMessageMention(Message message, TopicEntity topic, CancellationToken cancellationToken = default) =>
+			FailMention ? Task.FromException(new InvalidOperationException("push transport unreachable")) : Task.CompletedTask;
+
 		public Task NotifyReservationCreated(Reservation reservation, CancellationToken cancellationToken = default) => Task.CompletedTask;
+	}
+
+	private sealed class FakeBackgroundDispatcher : IBackgroundDispatcher
+	{
+		public List<Func<CancellationToken, Task>> Enqueued { get; } = [];
+		public void Enqueue(Func<CancellationToken, Task> work, string description) => Enqueued.Add(work);
 	}
 }
