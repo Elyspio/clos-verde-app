@@ -1,6 +1,6 @@
 # ClosVerdeApp
 
-ClosVerdeApp is a full-stack reservation app built with **.NET 10**, **Aspire**, **MongoDB**, and a **React + Vite** frontend. It includes:
+ClosVerdeApp is a full-stack reservation app built with **.NET 10**, **Aspire**, **MongoDB**, and a **React + Vite+** frontend. It includes:
 
 - JWT authentication with register/login flow
 - Reservation creation, update, deletion, and monthly browsing
@@ -22,8 +22,8 @@ ClosVerdeApp is a full-stack reservation app built with **.NET 10**, **Aspire**,
 ## Prerequisites
 
 - .NET 10 SDK
-- Node.js 24+
-- pnpm 10
+- Node.js 26+
+- pnpm 12
 - MongoDB when running the API outside Aspire
 
 ## Local development
@@ -69,13 +69,13 @@ From `ClosVerdeApp.Front`:
 
 ```bash
 pnpm build
-pnpm check:types
-pnpm check:lint
-pnpm format
+pnpm check
+pnpm lint
+pnpm fmt
 pnpm refresh-api
 ```
 
-`pnpm check:lint` runs ESLint with `--fix`.
+`pnpm check` runs Vite+ (`vp check`): Oxfmt formatting, Oxlint (type-aware) and TypeScript type checking.
 
 ## Configuration
 
