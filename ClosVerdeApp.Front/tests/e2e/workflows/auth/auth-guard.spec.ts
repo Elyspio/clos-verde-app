@@ -28,7 +28,7 @@ test.describe("Auth guard public", () => {
 			page.evaluate(() => ({
 				appToken: window.localStorage.getItem("clos-verde-app.token"),
 				oidcUsers: Object.keys(window.localStorage).filter((key) => key.startsWith("oidc.user:")),
-			})),
+			}))
 		).resolves.toEqual({ appToken: null, oidcUsers: [] });
 	});
 

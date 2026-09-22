@@ -47,6 +47,6 @@ export async function seedAuthenticatedSession(page: Page, user: SeededOidcUser)
 			}
 			window.localStorage.setItem("clos-verde-app.token", token);
 		},
-		{ entries: oidcStorageEntries, token: accessToken },
+		{ entries: oidcStorageEntries, token: accessToken }
 	);
 }

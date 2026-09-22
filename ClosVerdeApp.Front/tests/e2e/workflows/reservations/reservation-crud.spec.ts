@@ -41,7 +41,7 @@ test.describe("Reservation CRUD", () => {
 		await page.getByTestId("reservation-note").getByRole("textbox").fill(initialNote);
 
 		const createResponsePromise = page.waitForResponse(
-			(response) => response.request().method() === "POST" && response.url().endsWith("/api/reservations") && response.status() === 201,
+			(response) => response.request().method() === "POST" && response.url().endsWith("/api/reservations") && response.status() === 201
 		);
 
 		await page.getByRole("button", { name: "Confirmer la réservation" }).click();
@@ -65,7 +65,7 @@ test.describe("Reservation CRUD", () => {
 		await page.getByTestId("reservation-note").getByRole("textbox").fill(updatedNote);
 
 		const updateResponsePromise = page.waitForResponse(
-			(response) => response.request().method() === "PUT" && response.url().endsWith(`/api/reservations/${createdReservation.id}`) && response.status() === 200,
+			(response) => response.request().method() === "PUT" && response.url().endsWith(`/api/reservations/${createdReservation.id}`) && response.status() === 200
 		);
 
 		await page.getByRole("button", { name: "Enregistrer les modifications" }).click();
@@ -77,7 +77,7 @@ test.describe("Reservation CRUD", () => {
 		await expect(page.getByText(updatedNote)).toBeVisible();
 
 		const deleteResponsePromise = page.waitForResponse(
-			(response) => response.request().method() === "DELETE" && response.url().endsWith(`/api/reservations/${createdReservation.id}`) && response.status() === 204,
+			(response) => response.request().method() === "DELETE" && response.url().endsWith(`/api/reservations/${createdReservation.id}`) && response.status() === 204
 		);
 
 		await page.getByRole("button", { name: "Annuler la réservation" }).click();

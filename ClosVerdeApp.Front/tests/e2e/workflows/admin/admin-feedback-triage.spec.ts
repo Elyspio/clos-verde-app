@@ -39,7 +39,7 @@ test.describe("Admin — triage des avis (master-detail)", () => {
 
 		// Mark resolved → it leaves the "Ouverts" tab.
 		const resolvePromise = page.waitForResponse(
-			(response) => response.request().method() === "PATCH" && new URL(response.url()).pathname === `/api/feedback/${created.id}/status` && response.status() === 200,
+			(response) => response.request().method() === "PATCH" && new URL(response.url()).pathname === `/api/feedback/${created.id}/status` && response.status() === 200
 		);
 		await detail.getByRole("button", { name: "Marquer résolu" }).click();
 		await resolvePromise;
@@ -52,7 +52,7 @@ test.describe("Admin — triage des avis (master-detail)", () => {
 		// Re-open from the detail → PATCH back to Open.
 		await page.getByTestId(`admin-feedback-row-${created.id}`).click();
 		const reopenPromise = page.waitForResponse(
-			(response) => response.request().method() === "PATCH" && new URL(response.url()).pathname === `/api/feedback/${created.id}/status` && response.status() === 200,
+			(response) => response.request().method() === "PATCH" && new URL(response.url()).pathname === `/api/feedback/${created.id}/status` && response.status() === 200
 		);
 		await detail.getByRole("button", { name: "Ré-ouvrir" }).click();
 		await reopenPromise;

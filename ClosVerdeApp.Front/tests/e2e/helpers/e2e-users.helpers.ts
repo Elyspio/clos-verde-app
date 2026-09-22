@@ -150,7 +150,7 @@ export function getOidcAuthorityCandidates(authority = playwrightPrivateEnv.keyc
 
 export function createOidcStorageValue(
 	user: E2eUser,
-	token: { access_token: string; refresh_token?: string; id_token?: string; token_type?: string; scope?: string; expires_in?: number },
+	token: { access_token: string; refresh_token?: string; id_token?: string; token_type?: string; scope?: string; expires_in?: number }
 ): string {
 	const expiresAt = Math.floor(Date.now() / 1_000) + (token.expires_in ?? 30 * 60);
 	const value: OidcUserStorageValue = {
@@ -174,7 +174,7 @@ export function createOidcStorageValue(
 
 export function createStorageState(
 	user: E2eUser,
-	token: { access_token: string; refresh_token?: string; id_token?: string; token_type?: string; scope?: string; expires_in?: number },
+	token: { access_token: string; refresh_token?: string; id_token?: string; token_type?: string; scope?: string; expires_in?: number }
 ): E2eStorageState {
 	const origin = new URL(playwrightPrivateEnv.baseUrl).origin;
 	const oidcValue = createOidcStorageValue(user, token);

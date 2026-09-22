@@ -58,7 +58,7 @@ test.describe("Messaging — topics", () => {
 		await expect(confirmDialog).toContainText(topicName);
 
 		const deletePromise = page.waitForResponse(
-			(response) => response.request().method() === "DELETE" && response.url().endsWith(`/api/topics/${created.id}`) && response.status() === 204,
+			(response) => response.request().method() === "DELETE" && response.url().endsWith(`/api/topics/${created.id}`) && response.status() === 204
 		);
 		await confirmDialog.getByRole("button", { name: "Supprimer" }).click();
 		await deletePromise;
@@ -92,7 +92,7 @@ test.describe("Messaging — topics", () => {
 		await nameField.fill(newName);
 
 		const renamePromise = page.waitForResponse(
-			(response) => response.request().method() === "PUT" && response.url().endsWith(`/api/topics/${created.id}`) && response.status() === 200,
+			(response) => response.request().method() === "PUT" && response.url().endsWith(`/api/topics/${created.id}`) && response.status() === 200
 		);
 		await renameDialog.getByRole("button", { name: "Enregistrer" }).click();
 		await renamePromise;

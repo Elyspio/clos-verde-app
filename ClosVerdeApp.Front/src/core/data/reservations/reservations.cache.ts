@@ -54,7 +54,7 @@ function refreshMonths(qc: QueryClient, reservation: Reservation) {
 		} else if (idx >= 0) {
 			qc.setQueryData<Reservation[]>(
 				key,
-				data.filter((item) => item.id !== reservation.id),
+				data.filter((item) => item.id !== reservation.id)
 			);
 		}
 	}

@@ -52,7 +52,7 @@ test.describe("Messaging — messages", () => {
 		const message = await postMessageViaApi(
 			camilleClient,
 			topic.id,
-			`<p><span class="mention" data-mention-id="${alice.id}" data-mention-name="${alice.displayName}">@${alice.displayName}</span> depuis ${runId}</p>`,
+			`<p><span class="mention" data-mention-id="${alice.id}" data-mention-name="${alice.displayName}">@${alice.displayName}</span> depuis ${runId}</p>`
 		);
 
 		expect(message.authorUserId).toBe(camille.id);

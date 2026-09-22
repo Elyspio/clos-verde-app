@@ -19,7 +19,10 @@ const targets = [
 ];
 
 async function openReservationDiscussion(page) {
-	const reservationTopic = page.locator("a").filter({ hasText: /Réservation|\d{2}\/\d{2} par/ }).first();
+	const reservationTopic = page
+		.locator("a")
+		.filter({ hasText: /Réservation|\d{2}\/\d{2} par/ })
+		.first();
 	if (await reservationTopic.count()) {
 		await reservationTopic.click().catch(() => {});
 		await page.waitForLoadState("networkidle").catch(() => {});

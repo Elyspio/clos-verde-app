@@ -104,7 +104,7 @@ export async function findFreeFutureDay(request: APIRequestContext, seed = `${Da
 		const intervalEnd = endOfMonth(monthDate);
 		const fallbackDay = await findFreeDayInCandidates(
 			request,
-			eachDayOfInterval({ start: intervalStart, end: intervalEnd }).filter((day) => !isBefore(day, searchStart)),
+			eachDayOfInterval({ start: intervalStart, end: intervalEnd }).filter((day) => !isBefore(day, searchStart))
 		);
 		if (fallbackDay) return fallbackDay;
 	}

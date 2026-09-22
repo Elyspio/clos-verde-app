@@ -48,7 +48,7 @@ function onTopicChanged(qc: QueryClient, event: TopicChangedEvent) {
  */
 function onReadReceiptUpdated(qc: QueryClient, payload: { topicId: string; lastReadAt: string }) {
 	qc.setQueryData<TopicListItem[]>(topicsKeys.list(), (old) =>
-		old?.map((item) => (item.topic.id === payload.topicId ? { ...item, lastReadAt: payload.lastReadAt, unreadCount: 0 } : item)),
+		old?.map((item) => (item.topic.id === payload.topicId ? { ...item, lastReadAt: payload.lastReadAt, unreadCount: 0 } : item))
 	);
 }
 

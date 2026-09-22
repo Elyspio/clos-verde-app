@@ -19,7 +19,7 @@ self.addEventListener("push", (event) => {
 		self.registration
 			.showNotification(title, options)
 			.then(() => console.log("[push-worker] showNotification resolved", title))
-			.catch((err) => console.error("[push-worker] showNotification failed", err)),
+			.catch((err) => console.error("[push-worker] showNotification failed", err))
 	);
 });
 
@@ -36,6 +36,6 @@ self.addEventListener("notificationclick", (event) => {
 				}
 			}
 			return self.clients.openWindow(targetUrl);
-		}),
+		})
 	);
 });

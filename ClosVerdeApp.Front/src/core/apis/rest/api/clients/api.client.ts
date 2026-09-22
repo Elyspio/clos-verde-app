@@ -30,7 +30,7 @@ axiosInstance.interceptors.response.use(
 			unauthorizedHandler?.();
 		}
 		return Promise.reject(error);
-	},
+	}
 );
 
 export const backendApi = new BackendApi(new Configuration({ accessToken: () => getAccessToken() ?? "", basePath: baseURL }), baseURL, axiosInstance);
