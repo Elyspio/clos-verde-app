@@ -1,7 +1,7 @@
 import { Add } from "@mui/icons-material";
 import { Badge, Box, Button, Stack, Typography } from "@mui/material";
 import { useState } from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink } from "react-router";
 import { useTopicsQueries } from "@data/topics/topics.queries";
 import { useUnreadQueries } from "@data/unread/unread.queries";
 import type { Topic } from "@apis/rest/api/generated";

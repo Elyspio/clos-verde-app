@@ -1,7 +1,7 @@
 import { Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Stack, Typography } from "@mui/material";
 import { Close, DeleteOutlined, EditOutlined, EventOutlined } from "@mui/icons-material";
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 import type { Reservation } from "@apis/rest/api/generated";
 import { useIsAdmin } from "@data/client/useIsAdmin";
 import { useReservationsMutations } from "@data/reservations/reservations.mutations";

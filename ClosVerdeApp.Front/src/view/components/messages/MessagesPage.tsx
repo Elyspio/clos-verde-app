@@ -1,6 +1,6 @@
 import { Box, Container } from "@mui/material";
 import { Suspense } from "react";
-import { Outlet, useParams } from "react-router-dom";
+import { Outlet, useParams } from "react-router";
 import { RouteFallback } from "@/view/components/layout/RouteFallback";
 import { TopicList } from "./TopicList";
 

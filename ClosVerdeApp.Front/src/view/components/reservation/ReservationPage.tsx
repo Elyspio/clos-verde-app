@@ -22,7 +22,7 @@ import {
 } from "date-fns";
 import { fr } from "date-fns/locale/fr";
 import { FormEvent, useMemo, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router";
 import { routes } from "@/config/routes";
 import { useReservationsQueries } from "@data/reservations/reservations.queries";
 import { useReservationsMutations } from "@data/reservations/reservations.mutations";

@@ -1,7 +1,7 @@
 import { Add } from "@mui/icons-material";
 import { Box, Button, Stack, Typography } from "@mui/material";
 import { format, isBefore, isSameMonth, isToday, parseISO, startOfToday } from "date-fns";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 import type { Reservation } from "@apis/rest/api/generated";
 import type { AuthUser } from "@/core/auth/auth.types";
 import { coversDay, hasEmptySpaceInReservation, isFullDay } from "@/utils/date.utils";

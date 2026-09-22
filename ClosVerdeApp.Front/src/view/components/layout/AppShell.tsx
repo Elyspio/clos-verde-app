@@ -1,7 +1,7 @@
 import { Badge, Box, Drawer, IconButton, Stack, Tooltip, Typography } from "@mui/material";
 import { ChevronRight, Home, HelpOutlined, Menu as MenuIcon, NotificationsNoneOutlined, ShieldOutlined } from "@mui/icons-material";
 import { useState } from "react";
-import { NavLink, Outlet, useLocation } from "react-router-dom";
+import { NavLink, Outlet, useLocation } from "react-router";
 import { useUnreadQueries } from "@data/unread/unread.queries";
 import { useIsAdmin } from "@data/client/useIsAdmin";
 import { FeedbackTrigger } from "@/view/components/feedback/FeedbackTrigger";

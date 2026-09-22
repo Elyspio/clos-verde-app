@@ -3,7 +3,7 @@ import { ArrowBack, AttachFile, CheckCircleOutlined, Close, DoNotDisturbAltOutli
 import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Navigate, useSearchParams } from "react-router-dom";
+import { Navigate, useSearchParams } from "react-router";
 import type { Feedback, FeedbackCategory, FeedbackStatus } from "@apis/rest/api/generated";
 import { useFeedbackMutations } from "@data/feedback/feedback.mutations";
 import { useFeedbackQueries } from "@data/feedback/feedback.queries";

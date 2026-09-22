@@ -3,7 +3,7 @@ import { Add, CalendarMonth, LeaderboardOutlined } from "@mui/icons-material";
 import { getMonth, getYear, parseISO, startOfMonth } from "date-fns";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "react-oidc-context";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router";
 import { useReservationsQueries } from "@data/reservations/reservations.queries";
 import type { Reservation } from "@apis/rest/api/generated";
 import type { AuthUser } from "@/core/auth/auth.types";

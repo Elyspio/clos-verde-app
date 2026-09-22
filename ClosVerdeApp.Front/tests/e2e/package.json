@@ -11,8 +11,8 @@
 		"e2e:install": "playwright install"
 	},
 	"devDependencies": {
-		"@playwright/test": "^1.58.2",
-		"date-fns": "^4.1.0",
-		"dotenv": "^17.4.2"
+		"@playwright/test": "^1.63.0",
+		"date-fns": "^4.4.0",
+		"dotenv": "^18.0.2"
 	}
 }

@@ -2,7 +2,7 @@ import { Alert, Box, Button, CircularProgress, Stack, Typography } from "@mui/ma
 import { DeleteOutlined, Edit, NotificationsActive, NotificationsOff } from "@mui/icons-material";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "react-oidc-context";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router";
 import { useClientStore } from "@data/client/clientStore";
 import { useIsAdmin } from "@data/client/useIsAdmin";
 import { useMessagesQueries } from "@data/messages/messages.queries";

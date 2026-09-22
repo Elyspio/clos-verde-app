@@ -5,7 +5,7 @@ import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { fr } from "date-fns/locale/fr";
 import { createRoot } from "react-dom/client";
 import { AuthProvider } from "react-oidc-context";
-import { BrowserRouter } from "react-router-dom";
+import { BrowserRouter } from "react-router";
 import { TokenSync } from "./core/auth/TokenSync";
 import { oidcConfig } from "./core/auth/oidc";
 import { QueryProvider } from "@data/QueryProvider";

@@ -2,7 +2,7 @@ import { Box, Button, Container, Stack, Typography } from "@mui/material";
 import { ArrowBack, Home, LoginOutlined } from "@mui/icons-material";
 import type { ReactNode } from "react";
 import { useAuth } from "react-oidc-context";
-import { Link as RouterLink } from "react-router-dom";
+import { Link as RouterLink } from "react-router";
 import { routes } from "@/config/routes";
 
 type Props = {

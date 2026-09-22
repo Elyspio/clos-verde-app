@@ -2,7 +2,7 @@ import { Box, Chip, Container, Stack, Typography } from "@mui/material";
 import { CheckCircleOutlined, ChevronRight, FeedbackOutlined, GroupsOutlined, ScheduleOutlined } from "@mui/icons-material";
 import type { SvgIconComponent } from "@mui/icons-material";
 import { useMemo } from "react";
-import { Navigate, useNavigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router";
 import { useAuth } from "react-oidc-context";
 import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
