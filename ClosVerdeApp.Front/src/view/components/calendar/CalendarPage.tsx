@@ -67,7 +67,16 @@ export function CalendarPage() {
 
 	return (
 		<Container maxWidth="xl" sx={{ maxWidth: "1280px", px: { xs: 2.5, md: 5 }, py: { xs: 4, md: 6 } }}>
-			<Stack direction="row" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap={2} mb={3}>
+			<Stack
+				direction="row"
+				sx={{
+					alignItems: "center",
+					justifyContent: "space-between",
+					flexWrap: "wrap",
+					gap: 2,
+					mb: 3,
+				}}
+			>
 				<CalendarTabs tab={tab} onChange={setTab} />
 				<Button variant="contained" startIcon={<Add />} onClick={() => void navigate(routes.app.reservation.path)} data-testid="reserve-day">
 					Réserver un jour

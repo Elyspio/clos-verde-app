@@ -69,7 +69,15 @@ export function TopicList() {
 
 	return (
 		<Box data-testid="topic-list" sx={{ borderRight: { md: "1px solid var(--line)" }, height: "100%", display: "flex", flexDirection: "column" }}>
-			<Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ px: 2, py: 1.5 }}>
+			<Stack
+				direction="row"
+				sx={{
+					alignItems: "center",
+					justifyContent: "space-between",
+					px: 2,
+					py: 1.5,
+				}}
+			>
 				<Typography sx={{ fontWeight: 800 }}>Discussions</Typography>
 				<Button data-testid="new-topic-button" size="small" startIcon={<Add fontSize="inherit" />} onClick={() => setCreating(true)}>
 					Nouveau

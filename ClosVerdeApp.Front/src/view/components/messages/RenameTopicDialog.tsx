@@ -59,13 +59,15 @@ export function RenameTopicDialog({ open, currentName, onClose, onSubmit }: Prop
 					label="Nom"
 					value={name}
 					onChange={(e) => setName(e.target.value)}
-					inputProps={{ maxLength: 80 }}
 					sx={{ mt: 1 }}
 					onKeyDown={(e) => {
 						if (e.key === "Enter") {
 							e.preventDefault();
 							void handleSubmit();
 						}
+					}}
+					slotProps={{
+						htmlInput: { maxLength: 80 },
 					}}
 				/>
 			</DialogContent>

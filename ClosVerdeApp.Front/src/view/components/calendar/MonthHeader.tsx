@@ -14,9 +14,23 @@ export function MonthHeader({ monthDate, onChangeMonth }: MonthHeaderProps) {
 	const next = addMonths(monthDate, 1);
 
 	return (
-		<Box display="grid" gridTemplateColumns={{ xs: "1fr", md: "1fr auto" }} gap={4} alignItems="end" mb={4}>
+		<Box
+			sx={{
+				display: "grid",
+				gridTemplateColumns: { xs: "1fr", md: "1fr auto" },
+				gap: 4,
+				alignItems: "end",
+				mb: 4,
+			}}
+		>
 			<Box>
-				<Stack direction="row" spacing={1} mb={2}>
+				<Stack
+					direction="row"
+					spacing={1}
+					sx={{
+						mb: 2,
+					}}
+				>
 					<Button variant="outlined" onClick={() => onChangeMonth(previous)} sx={{ py: 0.8 }}>
 						← {format(previous, "MMMM", { locale: fr })}
 					</Button>

@@ -1,4 +1,4 @@
-import { CalendarMonth, ChatBubbleOutline, EventAvailable, FeedbackOutlined, Leaderboard } from "@mui/icons-material";
+import { CalendarMonth, ChatBubbleOutlined, EventAvailable, FeedbackOutlined, Leaderboard } from "@mui/icons-material";
 import type { SvgIconComponent } from "@mui/icons-material";
 
 /**
@@ -60,7 +60,7 @@ export const FAQ_SECTIONS: FaqSectionContent[] = [
 	},
 	{
 		id: "messages",
-		icon: ChatBubbleOutline,
+		icon: ChatBubbleOutlined,
 		accent: "var(--ink-soft)",
 		accentSoft: "var(--surface-soft)",
 		title: "Discuter ensemble",

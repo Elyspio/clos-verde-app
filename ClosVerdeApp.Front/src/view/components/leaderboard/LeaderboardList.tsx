@@ -52,7 +52,15 @@ export function LeaderboardList() {
 					<Typography variant="body2" sx={{ width: 200, display: { xs: "none", sm: "block" } }}>
 						{entry.reservationCount} réservation{entry.reservationCount > 1 ? "s" : ""}
 					</Typography>
-					<Stack direction="row" spacing={0.5} alignItems="baseline" justifyContent="flex-end" sx={{ width: { xs: 74, md: 120 } }}>
+					<Stack
+						direction="row"
+						spacing={0.5}
+						sx={{
+							alignItems: "baseline",
+							justifyContent: "flex-end",
+							width: { xs: 74, md: 120 },
+						}}
+					>
 						<Typography className="mono" sx={{ fontSize: { xs: 24, md: 28 }, fontWeight: 800 }}>
 							{entry.totalDays}
 						</Typography>

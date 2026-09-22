@@ -169,7 +169,7 @@ export function ReservationPage() {
 	const { data: monthReservations = [] } = useReservationsQueries.byMonth(availabilityYear, availabilityMonth);
 	const availabilitySlots = useMemo(
 		() => (showAvailability ? buildAvailability(availabilityDay, monthReservations, editingReservation) : []),
-		[availabilityDay, editingReservation, monthReservations, showAvailability],
+		[availabilityDay, editingReservation, monthReservations, showAvailability]
 	);
 
 	const createMutation = useReservationsMutations.create();
@@ -249,13 +249,32 @@ export function ReservationPage() {
 			<Button variant="outlined" onClick={() => navigate(routes.app.calendar.path)} sx={{ mb: 4 }}>
 				← Retour au calendrier
 			</Button>
-			<Box maxWidth={720}>
+			<Box
+				sx={{
+					maxWidth: 720,
+				}}
+			>
 				<Typography variant="h1">{editingReservation ? "Modifier la réservation" : "Réserver la place"}</Typography>
-				<Typography variant="body1" color="text.secondary" mt={1.5} mb={4}>
+				<Typography
+					variant="body1"
+					sx={{
+						color: "text.secondary",
+						mt: 1.5,
+						mb: 4,
+					}}
+				>
 					{preciseTimes ? "Choisissez un créneau précis pour éviter les chevauchements." : "Par défaut, la réservation couvre la journée entière."}
 				</Typography>
 			</Box>
-			<Stack component="form" data-testid="reservation-form" spacing={3.5} onSubmit={handleSubmit} maxWidth={720}>
+			<Stack
+				component="form"
+				data-testid="reservation-form"
+				spacing={3.5}
+				onSubmit={handleSubmit}
+				sx={{
+					maxWidth: 720,
+				}}
+			>
 				{activeMutation.isError && <Alert severity="warning">{activeMutation.error?.message}</Alert>}
 				{showUserPicker && (
 					<Autocomplete
@@ -337,7 +356,14 @@ export function ReservationPage() {
 							p: { xs: 2, sm: 2.5 },
 						}}
 					>
-						<Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" spacing={1.5} mb={2}>
+						<Stack
+							direction={{ xs: "column", sm: "row" }}
+							spacing={1.5}
+							sx={{
+								justifyContent: "space-between",
+								mb: 2,
+							}}
+						>
 							<Box>
 								<Typography sx={{ fontSize: 16, fontWeight: 900 }}>Disponibilités du jour</Typography>
 								<Typography sx={{ color: "var(--ink-soft)", fontSize: 13 }}>

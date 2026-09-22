@@ -1,5 +1,5 @@
 import { Alert, Box, Button, CircularProgress, Stack, Typography } from "@mui/material";
-import { DeleteOutline, Edit, NotificationsActive, NotificationsOff } from "@mui/icons-material";
+import { DeleteOutlined, Edit, NotificationsActive, NotificationsOff } from "@mui/icons-material";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "react-oidc-context";
 import { useNavigate, useParams } from "react-router-dom";
@@ -110,7 +110,7 @@ export function TopicView() {
 		async (m: Message) => {
 			await deleteMessageMutation.mutateAsync(m.id);
 		},
-		[deleteMessageMutation],
+		[deleteMessageMutation]
 	);
 
 	const handleSubmitEdit = async ({ html }: { html: string }) => {
@@ -126,7 +126,7 @@ export function TopicView() {
 			if (!topic) return;
 			await renameMutation.mutateAsync({ id: topic.id, name });
 		},
-		[renameMutation, topic],
+		[renameMutation, topic]
 	);
 
 	const handleConfirmDelete = useCallback(async () => {
@@ -144,7 +144,13 @@ export function TopicView() {
 	if (!topic) {
 		return (
 			<Box sx={{ p: 3 }}>
-				<Typography color="text.secondary">Sélectionnez un topic pour voir les messages.</Typography>
+				<Typography
+					sx={{
+						color: "text.secondary",
+					}}
+				>
+					Sélectionnez un topic pour voir les messages.
+				</Typography>
 			</Box>
 		);
 	}
@@ -153,7 +159,16 @@ export function TopicView() {
 
 	return (
 		<Box data-testid="topic-view" data-topic-id={topic.id} sx={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 0 }}>
-			<Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1} sx={{ p: 2, borderBottom: "1px solid var(--line)" }}>
+			<Stack
+				direction="row"
+				spacing={1}
+				sx={{
+					alignItems: "center",
+					justifyContent: "space-between",
+					p: 2,
+					borderBottom: "1px solid var(--line)",
+				}}
+			>
 				<Box sx={{ minWidth: 0 }}>
 					<Typography data-testid="topic-title" sx={{ fontWeight: 800, fontSize: 18 }}>
 						{topic.name}
@@ -178,7 +193,7 @@ export function TopicView() {
 								data-testid="topic-delete-button"
 								size="small"
 								color="error"
-								startIcon={<DeleteOutline fontSize="inherit" />}
+								startIcon={<DeleteOutlined fontSize="inherit" />}
 								onClick={() => setDeleteOpen(true)}
 							>
 								Supprimer

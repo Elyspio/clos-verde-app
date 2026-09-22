@@ -1,5 +1,5 @@
 import { Alert, Box, Button, Chip, Container, Drawer, IconButton, Pagination, Skeleton, Stack, Tab, Tabs, Tooltip, Typography } from "@mui/material";
-import { AttachFile, CheckCircleOutline, Close, FeedbackOutlined, HistoryOutlined, InboxOutlined, OpenInNewOutlined } from "@mui/icons-material";
+import { AttachFile, CheckCircleOutlined, Close, FeedbackOutlined, HistoryOutlined, InboxOutlined, OpenInNewOutlined } from "@mui/icons-material";
 import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
 import { useMemo, useState } from "react";
@@ -30,10 +30,22 @@ export function MyFeedbackPage() {
 	return (
 		<Container maxWidth="lg" sx={{ py: { xs: 3, md: 5 }, px: { xs: 2.5, md: 5 } }}>
 			<Stack spacing={3} data-testid="my-feedback-page">
-				<Stack direction={{ xs: "column", sm: "row" }} spacing={2} alignItems={{ xs: "stretch", sm: "flex-start" }} justifyContent="space-between">
+				<Stack
+					direction={{ xs: "column", sm: "row" }}
+					spacing={2}
+					sx={{
+						alignItems: { xs: "stretch", sm: "flex-start" },
+						justifyContent: "space-between",
+					}}
+				>
 					<Stack spacing={0.75} sx={{ minWidth: 0 }}>
 						<Typography variant="h2">Mes tickets</Typography>
-						<Typography variant="body1" color="text.secondary">
+						<Typography
+							variant="body1"
+							sx={{
+								color: "text.secondary",
+							}}
+						>
 							Suivez vos retours envoyés à l'équipe et clôturez ceux qui sont terminés.
 						</Typography>
 					</Stack>
@@ -80,12 +92,15 @@ export function MyFeedbackPage() {
 				)}
 
 				{totalPages > 1 && (
-					<Stack alignItems="center">
+					<Stack
+						sx={{
+							alignItems: "center",
+						}}
+					>
 						<Pagination count={totalPages} page={page} onChange={(_, next) => setPage(next)} color="primary" />
 					</Stack>
 				)}
 			</Stack>
-
 			<MyFeedbackDrawer feedback={selected} onClose={() => setSelected(null)} onUpdated={setSelected} />
 			<FeedbackDialog open={createOpen} onClose={() => setCreateOpen(false)} />
 		</Container>
@@ -120,7 +135,14 @@ function TicketRow({ ticket, onSelect }: { ticket: Feedback; onSelect: () => voi
 				"&:focus-visible": { outline: "2px solid var(--primary-blue)", outlineOffset: 2 },
 			}}
 		>
-			<Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap>
+			<Stack
+				direction="row"
+				spacing={0.75}
+				useFlexGap
+				sx={{
+					flexWrap: "wrap",
+				}}
+			>
 				<Chip
 					icon={<Icon sx={{ fontSize: 14 }} />}
 					label={meta.label}
@@ -144,7 +166,14 @@ function TicketRow({ ticket, onSelect }: { ticket: Feedback; onSelect: () => voi
 					{ticket.body}
 				</Typography>
 			</Stack>
-			<Stack direction="row" spacing={1} alignItems="center" justifyContent={{ xs: "space-between", sm: "flex-end" }}>
+			<Stack
+				direction="row"
+				spacing={1}
+				sx={{
+					alignItems: "center",
+					justifyContent: { xs: "space-between", sm: "flex-end" },
+				}}
+			>
 				{ticket.attachments.length > 0 && <AttachmentCount count={ticket.attachments.length} />}
 				<Typography variant="caption" sx={{ color: "var(--ink-mute)", whiteSpace: "nowrap" }}>
 					{formatDistanceToNow(new Date(ticket.createdAt), { addSuffix: true, locale: fr })}
@@ -167,7 +196,13 @@ function MyFeedbackDrawer({ feedback, onClose, onUpdated }: { feedback: Feedback
 		<Drawer anchor="right" open={!!feedback} onClose={onClose} slotProps={{ paper: { sx: { width: { xs: "100%", sm: 540 }, p: 3 } } }} data-testid="my-feedback-drawer">
 			{feedback && (
 				<Stack spacing={2.5}>
-					<Stack direction="row" alignItems="center" justifyContent="space-between">
+					<Stack
+						direction="row"
+						sx={{
+							alignItems: "center",
+							justifyContent: "space-between",
+						}}
+					>
 						<Typography variant="overline">Ticket</Typography>
 						<IconButton size="small" onClick={onClose} aria-label="Fermer" sx={{ color: "var(--ink-soft)" }}>
 							<Close />
@@ -176,7 +211,14 @@ function MyFeedbackDrawer({ feedback, onClose, onUpdated }: { feedback: Feedback
 
 					<Stack spacing={1}>
 						<Typography variant="h4">{feedback.title}</Typography>
-						<Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap>
+						<Stack
+							direction="row"
+							spacing={0.75}
+							useFlexGap
+							sx={{
+								flexWrap: "wrap",
+							}}
+						>
 							<CategoryChip category={feedback.category} />
 							<StatusChip status={feedback.status} />
 						</Stack>
@@ -255,7 +297,7 @@ function MyFeedbackDrawer({ feedback, onClose, onUpdated }: { feedback: Feedback
 						<Stack spacing={1}>
 							<Button
 								variant="contained"
-								startIcon={<CheckCircleOutline />}
+								startIcon={<CheckCircleOutlined />}
 								onClick={() => void closeTicket()}
 								disabled={closeMutation.isPending}
 								data-testid="my-feedback-close-ticket"
@@ -277,7 +319,13 @@ function TicketSkeletonList() {
 		<Stack spacing={1} data-testid="my-feedback-loading">
 			{[0, 1, 2, 3].map((i) => (
 				<Box key={i} sx={{ p: 1.75, border: "1px solid var(--line)", borderRadius: "12px", bgcolor: "var(--surface)" }}>
-					<Stack direction="row" spacing={1} alignItems="center">
+					<Stack
+						direction="row"
+						spacing={1}
+						sx={{
+							alignItems: "center",
+						}}
+					>
 						<Skeleton variant="rounded" width={86} height={24} />
 						<Skeleton variant="rounded" width={72} height={24} />
 					</Stack>
@@ -293,10 +341,16 @@ function EmptyTickets({ tab }: { tab: TicketTab }) {
 	const isOpen = tab === "open";
 	return (
 		<Stack
-			alignItems="center"
 			spacing={1.5}
-			sx={{ py: 7, px: 2, border: "1px solid var(--line)", borderRadius: "12px", bgcolor: "var(--surface)" }}
 			data-testid="my-feedback-empty"
+			sx={{
+				alignItems: "center",
+				py: 7,
+				px: 2,
+				border: "1px solid var(--line)",
+				borderRadius: "12px",
+				bgcolor: "var(--surface)",
+			}}
 		>
 			<Box sx={{ width: 42, height: 42, borderRadius: "12px", display: "grid", placeItems: "center", bgcolor: "var(--surface-soft)", color: "var(--ink-soft)" }}>
 				{isOpen ? <InboxOutlined /> : <HistoryOutlined />}

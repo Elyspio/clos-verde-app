@@ -1,5 +1,5 @@
 import { Box, Chip, Container, Stack, Typography } from "@mui/material";
-import { CheckCircleOutline, ChevronRight, FeedbackOutlined, GroupsOutlined, ScheduleOutlined } from "@mui/icons-material";
+import { CheckCircleOutlined, ChevronRight, FeedbackOutlined, GroupsOutlined, ScheduleOutlined } from "@mui/icons-material";
 import type { SvgIconComponent } from "@mui/icons-material";
 import { useMemo } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
@@ -42,21 +42,46 @@ export function AdminDashboardPage() {
 			<Stack spacing={3} data-testid="admin-dashboard-page">
 				<Stack spacing={0.5}>
 					<Typography variant="h2">Bonjour {firstName} 👋</Typography>
-					<Typography variant="body1" color="text.secondary">
+					<Typography
+						variant="body1"
+						sx={{
+							color: "text.secondary",
+						}}
+					>
 						Voici l'état de la copropriété aujourd'hui.
 					</Typography>
 				</Stack>
 
-				<Stack direction="row" flexWrap="wrap" useFlexGap gap={1.5}>
+				<Stack
+					direction="row"
+					useFlexGap
+					sx={{
+						flexWrap: "wrap",
+						gap: 1.5,
+					}}
+				>
 					<KpiCard label="Tickets ouverts" value={openQuery.data?.total ?? 0} icon={FeedbackOutlined} accent="var(--coral)" />
-					<KpiCard label="Résolus" value={resolvedQuery.data?.total ?? 0} icon={CheckCircleOutline} accent="#047857" />
+					<KpiCard label="Résolus" value={resolvedQuery.data?.total ?? 0} icon={CheckCircleOutlined} accent="#047857" />
 					<KpiCard label="Délai médian" value="—" icon={ScheduleOutlined} />
 					<KpiCard label="Membres actifs" value={activeMembers} icon={GroupsOutlined} />
 				</Stack>
 
-				<Stack direction={{ xs: "column", md: "row" }} spacing={2} alignItems="stretch">
+				<Stack
+					direction={{ xs: "column", md: "row" }}
+					spacing={2}
+					sx={{
+						alignItems: "stretch",
+					}}
+				>
 					<Box sx={{ flex: "2 1 460px", minWidth: 0, p: 2.25, border: "1px solid var(--line)", borderRadius: "16px", bgcolor: "var(--surface)" }}>
-						<Stack direction="row" alignItems="center" justifyContent="space-between" mb={1.5}>
+						<Stack
+							direction="row"
+							sx={{
+								alignItems: "center",
+								justifyContent: "space-between",
+								mb: 1.5,
+							}}
+						>
 							<Typography sx={{ fontSize: 15, fontWeight: 800, color: "var(--ink)" }}>À traiter</Typography>
 							<Box
 								component="button"
@@ -97,7 +122,16 @@ export function AdminDashboardPage() {
 								const meta = CATEGORY_META[category];
 								return (
 									<Box key={category}>
-										<Stack direction="row" justifyContent="space-between" sx={{ fontSize: 12.5, fontWeight: 700, color: "var(--ink-soft)", mb: 0.75 }}>
+										<Stack
+											direction="row"
+											sx={{
+												justifyContent: "space-between",
+												fontSize: 12.5,
+												fontWeight: 700,
+												color: "var(--ink-soft)",
+												mb: 0.75,
+											}}
+										>
 											<span>{meta.label}</span>
 											<span>{count}</span>
 										</Stack>
@@ -118,7 +152,13 @@ export function AdminDashboardPage() {
 function KpiCard({ label, value, icon: Icon, accent }: { label: string; value: number | string; icon: SvgIconComponent; accent?: string }) {
 	return (
 		<Box sx={{ flex: "1 1 160px", minWidth: 150, p: 2, border: "1px solid var(--line)", borderRadius: "14px", bgcolor: "var(--surface)" }}>
-			<Stack direction="row" alignItems="center" spacing={1}>
+			<Stack
+				direction="row"
+				spacing={1}
+				sx={{
+					alignItems: "center",
+				}}
+			>
 				<Box sx={{ width: 30, height: 30, borderRadius: "9px", bgcolor: "var(--surface-soft)", display: "grid", placeItems: "center" }}>
 					<Icon sx={{ fontSize: 18, color: accent ?? "var(--ink-soft)" }} />
 				</Box>

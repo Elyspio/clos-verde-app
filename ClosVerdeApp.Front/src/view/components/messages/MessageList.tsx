@@ -88,7 +88,7 @@ function MessageListImpl({ messages, currentUserId, onEdit, onDelete, editingMes
 			if (el) itemRefs.current.set(id, el);
 			else itemRefs.current.delete(id);
 		},
-		[],
+		[]
 	);
 
 	const [flashingId, setFlashingId] = useState<string | null>(null);
@@ -155,8 +155,8 @@ function MessageListImpl({ messages, currentUserId, onEdit, onDelete, editingMes
 							data-message-highlighted={isFlashing ? "true" : undefined}
 							direction="row"
 							spacing={1}
-							alignItems="center"
 							sx={{
+								alignItems: "center",
 								mx: "auto",
 								maxWidth: "80%",
 								px: 1.5,
@@ -198,8 +198,8 @@ function MessageListImpl({ messages, currentUserId, onEdit, onDelete, editingMes
 						data-message-highlighted={isFlashing ? "true" : undefined}
 						direction={isMe ? "row-reverse" : "row"}
 						spacing={1.25}
-						alignItems="flex-start"
 						sx={{
+							alignItems: "flex-start",
 							alignSelf: isMe ? "flex-end" : "flex-start",
 							maxWidth: { xs: "92%", sm: "85%" },
 							p: isFlashing || isEditing ? 1 : 0,
@@ -213,7 +213,14 @@ function MessageListImpl({ messages, currentUserId, onEdit, onDelete, editingMes
 					>
 						<Avatar sx={{ width: 32, height: 32, fontSize: 13, bgcolor: isMe ? "var(--primary-blue)" : "var(--mint)" }}>{initialOf(m.authorDisplayName)}</Avatar>
 						<Box sx={{ flex: 1, minWidth: 0 }}>
-							<Stack direction={isMe ? "row-reverse" : "row"} spacing={1} alignItems="baseline" sx={{ mb: 0.25 }}>
+							<Stack
+								direction={isMe ? "row-reverse" : "row"}
+								spacing={1}
+								sx={{
+									alignItems: "baseline",
+									mb: 0.25,
+								}}
+							>
 								<Typography sx={{ fontWeight: 700, fontSize: 13 }}>{m.authorDisplayName}</Typography>
 								<Typography sx={{ fontSize: 11, color: "var(--ink-mute)" }}>
 									{format(new Date(m.createdAt), "dd/MM HH:mm", { locale: fr })}

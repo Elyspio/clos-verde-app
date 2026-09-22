@@ -9,7 +9,14 @@ type AuthSplitLayoutProps = {
 
 export function AuthSplitLayout({ title, subtitle, children }: AuthSplitLayoutProps) {
 	return (
-		<Box minHeight="100vh" bgcolor="var(--app-bg)" sx={{ display: "flex", alignItems: "stretch" }}>
+		<Box
+			sx={{
+				minHeight: "100vh",
+				bgcolor: "var(--app-bg)",
+				display: "flex",
+				alignItems: "stretch",
+			}}
+		>
 			<Container
 				maxWidth={false}
 				disableGutters
@@ -20,8 +27,21 @@ export function AuthSplitLayout({ title, subtitle, children }: AuthSplitLayoutPr
 				}}
 			>
 				<Box sx={{ px: { xs: 2.5, sm: 6, lg: 10 }, py: { xs: 5, md: 8 }, display: "flex", alignItems: "center" }}>
-					<Box width="100%" maxWidth={480} mx="auto">
-						<Stack direction="row" alignItems="center" spacing={1.2} mb={6}>
+					<Box
+						sx={{
+							width: "100%",
+							maxWidth: 480,
+							mx: "auto",
+						}}
+					>
+						<Stack
+							direction="row"
+							spacing={1.2}
+							sx={{
+								alignItems: "center",
+								mb: 6,
+							}}
+						>
 							<Box
 								aria-hidden
 								sx={{
@@ -39,10 +59,21 @@ export function AuthSplitLayout({ title, subtitle, children }: AuthSplitLayoutPr
 							</Box>
 							<Typography sx={{ fontWeight: 800, fontSize: 19 }}>Clos Verde</Typography>
 						</Stack>
-						<Typography variant="h1" mb={1.5}>
+						<Typography
+							variant="h1"
+							sx={{
+								mb: 1.5,
+							}}
+						>
 							{title}
 						</Typography>
-						<Typography variant="body1" color="text.secondary" mb={5}>
+						<Typography
+							variant="body1"
+							sx={{
+								color: "text.secondary",
+								mb: 5,
+							}}
+						>
 							{subtitle}
 						</Typography>
 						{children}
@@ -58,7 +89,12 @@ export function AuthSplitLayout({ title, subtitle, children }: AuthSplitLayoutPr
 						borderLeft: "1px solid var(--line)",
 					}}
 				>
-					<Stack spacing={4} maxWidth={560}>
+					<Stack
+						spacing={4}
+						sx={{
+							maxWidth: 560,
+						}}
+					>
 						<Box
 							sx={{
 								width: "100%",
@@ -73,7 +109,13 @@ export function AuthSplitLayout({ title, subtitle, children }: AuthSplitLayoutPr
 								overflow: "hidden",
 							}}
 						>
-							<Stack direction="row" justifyContent="space-between" alignItems="center">
+							<Stack
+								direction="row"
+								sx={{
+									justifyContent: "space-between",
+									alignItems: "center",
+								}}
+							>
 								<Typography sx={{ fontWeight: 800 }}>Mai 2026</Typography>
 								<Typography sx={{ color: "var(--primary-blue)", fontWeight: 800 }}>3 créneaux</Typography>
 							</Stack>
@@ -92,10 +134,20 @@ export function AuthSplitLayout({ title, subtitle, children }: AuthSplitLayoutPr
 							</Box>
 						</Box>
 						<Box>
-							<Typography variant="h3" mb={1.5}>
+							<Typography
+								variant="h3"
+								sx={{
+									mb: 1.5,
+								}}
+							>
 								Une réservation claire, sans friction.
 							</Typography>
-							<Typography variant="body1" color="text.secondary">
+							<Typography
+								variant="body1"
+								sx={{
+									color: "text.secondary",
+								}}
+							>
 								Un calendrier partagé propre, lisible et pensé pour les usages rapides des copropriétaires.
 							</Typography>
 						</Box>

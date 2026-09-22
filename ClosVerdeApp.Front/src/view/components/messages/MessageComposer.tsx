@@ -1,5 +1,5 @@
 import { Box, Button, IconButton, LinearProgress, Stack, Tooltip, Typography } from "@mui/material";
-import { AttachFile, Close, ErrorOutline, Image as ImageIcon, InsertDriveFile, PictureAsPdf, Send } from "@mui/icons-material";
+import { AttachFile, Close, ErrorOutlined, Image as ImageIcon, InsertDriveFile, PictureAsPdf, Send } from "@mui/icons-material";
 import { EditorContent, ReactRenderer, useEditor, useEditorState } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Link from "@tiptap/extension-link";
@@ -186,10 +186,10 @@ export function MessageComposer({
 				} catch (e) {
 					const message = extractApiError(e, "Téléversement impossible.");
 					setPending((prev) =>
-						prev.map((p) => (p.tempId === tempId ? { kind: "error", tempId, fileName: file.name, contentType: file.type, sizeBytes: file.size, message } : p)),
+						prev.map((p) => (p.tempId === tempId ? { kind: "error", tempId, fileName: file.name, contentType: file.type, sizeBytes: file.size, message } : p))
 					);
 				}
-			}),
+			})
 		);
 	}, []);
 
@@ -217,7 +217,7 @@ export function MessageComposer({
 			const files = event.dataTransfer?.files;
 			if (files && files.length > 0) void handleFiles(files);
 		},
-		[allowAttachments, handleFiles],
+		[allowAttachments, handleFiles]
 	);
 
 	return (
@@ -260,7 +260,6 @@ export function MessageComposer({
 			>
 				<EditorContent editor={editor} />
 			</Box>
-
 			{pending.length > 0 && (
 				<Box
 					data-testid="message-composer-attachments"
@@ -288,8 +287,14 @@ export function MessageComposer({
 					))}
 				</Box>
 			)}
-
-			<Stack direction="row" justifyContent="space-between" alignItems="center" spacing={1}>
+			<Stack
+				direction="row"
+				spacing={1}
+				sx={{
+					justifyContent: "space-between",
+					alignItems: "center",
+				}}
+			>
 				{allowAttachments ? (
 					<Tooltip title="Joindre des fichiers (max 25 Mo chacun)">
 						<span>
@@ -374,7 +379,7 @@ function PendingAttachmentCard({ pending, onRemove }: { pending: PendingAttachme
 					flexShrink: 0,
 				}}
 			>
-				{pending.kind === "error" ? <ErrorOutline sx={{ fontSize: 18 }} /> : pickFileIcon(contentType)}
+				{pending.kind === "error" ? <ErrorOutlined sx={{ fontSize: 18 }} /> : pickFileIcon(contentType)}
 			</Box>
 			<Stack sx={{ flex: 1, minWidth: 0 }}>
 				<Typography

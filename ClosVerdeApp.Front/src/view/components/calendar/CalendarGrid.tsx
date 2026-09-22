@@ -21,7 +21,14 @@ export function CalendarGrid({ monthDate, reservations, currentUser, onSelectRes
 	return (
 		<Box sx={{ overflowX: "auto", pb: 1 }}>
 			<Box sx={{ minWidth: 760 }}>
-				<Box display="grid" gridTemplateColumns="repeat(7, minmax(0, 1fr))" gap="1px" mb="1px">
+				<Box
+					sx={{
+						display: "grid",
+						gridTemplateColumns: "repeat(7, minmax(0, 1fr))",
+						gap: "1px",
+						mb: "1px",
+					}}
+				>
 					{weekdays.map((day) => (
 						<Typography key={day.toISOString()} className="kicker" sx={{ py: 1, textAlign: "center", color: "var(--ink-mute)" }}>
 							{format(day, "eee", { locale: fr })}

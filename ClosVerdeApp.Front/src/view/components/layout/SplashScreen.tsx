@@ -3,8 +3,19 @@ import { motion } from "motion/react";
 
 export function SplashScreen() {
 	return (
-		<Box minHeight="100vh" display="grid" sx={{ placeItems: "center", backgroundColor: "var(--app-bg)" }}>
-			<Box textAlign="center">
+		<Box
+			sx={{
+				minHeight: "100vh",
+				display: "grid",
+				placeItems: "center",
+				backgroundColor: "var(--app-bg)",
+			}}
+		>
+			<Box
+				sx={{
+					textAlign: "center",
+				}}
+			>
 				<Typography component="p" sx={{ fontSize: { xs: 40, md: 54 }, lineHeight: 1, fontWeight: 800 }}>
 					Clos Verde
 				</Typography>

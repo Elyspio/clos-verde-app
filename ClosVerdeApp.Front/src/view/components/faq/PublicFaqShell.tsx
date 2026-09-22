@@ -62,9 +62,12 @@ export function PublicFaqShell({ children }: Props) {
 						component={RouterLink}
 						to={isAuthenticated ? routes.app.calendar.path : routes.app.faq.path}
 						direction="row"
-						alignItems="center"
 						spacing={1.2}
-						sx={{ flexShrink: 0, textDecoration: "none" }}
+						sx={{
+							alignItems: "center",
+							flexShrink: 0,
+							textDecoration: "none",
+						}}
 					>
 						<Box
 							aria-hidden
@@ -101,7 +104,6 @@ export function PublicFaqShell({ children }: Props) {
 					</Box>
 				</Container>
 			</Box>
-
 			<Box
 				component="main"
 				sx={{
@@ -115,7 +117,6 @@ export function PublicFaqShell({ children }: Props) {
 			>
 				{children}
 			</Box>
-
 			<Box
 				component="footer"
 				sx={{

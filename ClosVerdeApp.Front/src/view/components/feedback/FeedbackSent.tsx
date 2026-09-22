@@ -1,5 +1,5 @@
 import { Box, Button, Stack, Typography } from "@mui/material";
-import { CheckCircleOutline } from "@mui/icons-material";
+import { CheckCircleOutlined } from "@mui/icons-material";
 import { motion } from "motion/react";
 
 type Props = {
@@ -12,7 +12,14 @@ type Props = {
  */
 export function FeedbackSent({ onClose }: Props) {
 	return (
-		<Stack alignItems="center" spacing={2.5} sx={{ py: 3 }} data-testid="feedback-sent">
+		<Stack
+			spacing={2.5}
+			data-testid="feedback-sent"
+			sx={{
+				alignItems: "center",
+				py: 3,
+			}}
+		>
 			<Box sx={{ position: "relative", width: 88, height: 88 }}>
 				<Box
 					sx={{
@@ -33,10 +40,16 @@ export function FeedbackSent({ onClose }: Props) {
 						placeItems: "center",
 					}}
 				>
-					<CheckCircleOutline sx={{ fontSize: 56, color: "var(--mint)" }} />
+					<CheckCircleOutlined sx={{ fontSize: 56, color: "var(--mint)" }} />
 				</motion.div>
 			</Box>
-			<Stack spacing={0.75} alignItems="center" textAlign="center">
+			<Stack
+				spacing={0.75}
+				sx={{
+					alignItems: "center",
+					textAlign: "center",
+				}}
+			>
 				<Typography variant="h4" sx={{ color: "var(--ink)" }}>
 					Votre retour a bien été reçu.
 				</Typography>

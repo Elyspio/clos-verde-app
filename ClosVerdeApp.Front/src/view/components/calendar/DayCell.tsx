@@ -58,7 +58,13 @@ export function DayCell({ day, currentMonth, reservations, currentUser, onSelect
 				"&:hover": free && !past && sameMonth ? { bgcolor: "var(--surface-blue)" } : undefined,
 			}}
 		>
-			<Stack minHeight="100%" justifyContent="space-between" spacing={1}>
+			<Stack
+				spacing={1}
+				sx={{
+					minHeight: "100%",
+					justifyContent: "space-between",
+				}}
+			>
 				<Typography
 					sx={{
 						fontSize: { xs: 18, md: 20 },

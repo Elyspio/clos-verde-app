@@ -1,4 +1,4 @@
-import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
+import ErrorOutlineIcon from "@mui/icons-material/ErrorOutlined";
 import LoginIcon from "@mui/icons-material/Login";
 import { Alert, Box, Button, Stack, Typography } from "@mui/material";
 import { useEffect, useRef } from "react";
@@ -39,10 +39,21 @@ export function TokenErrorPage() {
 						p: 2.5,
 					}}
 				>
-					<Typography variant="h5" mb={1}>
+					<Typography
+						variant="h5"
+						sx={{
+							mb: 1,
+						}}
+					>
 						Connexion requise
 					</Typography>
-					<Typography color="text.secondary">Reconnectez-vous pour reprendre votre navigation dans le calendrier et les réservations.</Typography>
+					<Typography
+						sx={{
+							color: "text.secondary",
+						}}
+					>
+						Reconnectez-vous pour reprendre votre navigation dans le calendrier et les réservations.
+					</Typography>
 				</Box>
 				<Button startIcon={<LoginIcon />} onClick={handleLogin} variant="contained" fullWidth disabled={auth.activeNavigator !== undefined || auth.isLoading}>
 					Se reconnecter

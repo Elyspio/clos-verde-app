@@ -1,5 +1,5 @@
 import { Badge, Box, Drawer, IconButton, Stack, Tooltip, Typography } from "@mui/material";
-import { ChevronRight, Home, HelpOutline, Menu as MenuIcon, NotificationsNoneOutlined, ShieldOutlined } from "@mui/icons-material";
+import { ChevronRight, Home, HelpOutlined, Menu as MenuIcon, NotificationsNoneOutlined, ShieldOutlined } from "@mui/icons-material";
 import { useState } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { useUnreadQueries } from "@data/unread/unread.queries";
@@ -38,7 +38,6 @@ export function AppShell() {
 			<Box sx={{ display: { xs: "none", md: "flex" }, flex: `0 0 ${SIDEBAR_WIDTH}px`, width: SIDEBAR_WIDTH }}>
 				<SidebarBody isAdmin={isAdmin} />
 			</Box>
-
 			{/* Temporary sidebar (mobile) */}
 			<Drawer
 				open={drawerOpen}
@@ -48,7 +47,6 @@ export function AppShell() {
 			>
 				<SidebarBody isAdmin={isAdmin} onNavigate={() => setDrawerOpen(false)} />
 			</Drawer>
-
 			{/* Content column */}
 			<Box sx={{ flex: "1 1 0", minWidth: 0, display: "flex", flexDirection: "column" }}>
 				<Box
@@ -73,14 +71,28 @@ export function AppShell() {
 					>
 						<MenuIcon />
 					</IconButton>
-					<Stack direction="row" alignItems="center" spacing={1} sx={{ minWidth: 0 }}>
+					<Stack
+						direction="row"
+						spacing={1}
+						sx={{
+							alignItems: "center",
+							minWidth: 0,
+						}}
+					>
 						<Typography sx={{ fontSize: 12, fontWeight: 700, color: "var(--ink-mute)", display: { xs: "none", sm: "block" } }}>{crumb.group}</Typography>
 						<ChevronRight sx={{ fontSize: 16, color: "var(--line-strong)", display: { xs: "none", sm: "block" } }} />
 						<Typography noWrap sx={{ fontSize: 14, fontWeight: 800, color: "var(--ink)" }}>
 							{crumb.label}
 						</Typography>
 					</Stack>
-					<Stack direction="row" alignItems="center" spacing={1.25} sx={{ ml: "auto" }}>
+					<Stack
+						direction="row"
+						spacing={1.25}
+						sx={{
+							alignItems: "center",
+							ml: "auto",
+						}}
+					>
 						<FeedbackTrigger />
 						<Tooltip title="Aide">
 							<IconButton
@@ -96,7 +108,7 @@ export function AppShell() {
 									"&:hover": { color: "var(--primary-blue)", backgroundColor: "var(--surface-blue)", borderColor: "var(--primary-blue)" },
 								}}
 							>
-								<HelpOutline />
+								<HelpOutlined />
 							</IconButton>
 						</Tooltip>
 					</Stack>
@@ -141,10 +153,14 @@ function SidebarBody({ isAdmin, onNavigate }: { isAdmin: boolean; onNavigate?: (
 				component={NavLink}
 				to={routes.app.calendar.path}
 				direction="row"
-				alignItems="center"
 				spacing={1.25}
 				onClick={onNavigate}
-				sx={{ px: 0.5, pb: 0.5, flexShrink: 0 }}
+				sx={{
+					alignItems: "center",
+					px: 0.5,
+					pb: 0.5,
+					flexShrink: 0,
+				}}
 			>
 				<Box
 					aria-hidden
@@ -166,7 +182,6 @@ function SidebarBody({ isAdmin, onNavigate }: { isAdmin: boolean; onNavigate?: (
 					<Typography sx={{ fontSize: 10.5, color: "var(--ink-mute)", fontWeight: 700, mt: 0.3 }}>Place partagée</Typography>
 				</Box>
 			</Stack>
-
 			<Box component="nav" data-testid="main-navigation" sx={{ flex: 1, overflowY: "auto", mt: 0.5 }}>
 				{GROUP_ORDER.map((group) => {
 					const items = visible.filter((it) => it.group === group);
@@ -174,7 +189,16 @@ function SidebarBody({ isAdmin, onNavigate }: { isAdmin: boolean; onNavigate?: (
 					const isAdminGroup = group === "admin";
 					return (
 						<Box key={group}>
-							<Stack direction="row" alignItems="center" spacing={0.5} sx={{ px: 1.5, pt: 1.75, pb: 0.75 }}>
+							<Stack
+								direction="row"
+								spacing={0.5}
+								sx={{
+									alignItems: "center",
+									px: 1.5,
+									pt: 1.75,
+									pb: 0.75,
+								}}
+							>
 								{isAdminGroup && <ShieldOutlined sx={{ fontSize: 13, color: "var(--warning)" }} />}
 								<Typography
 									sx={{
@@ -233,7 +257,6 @@ function SidebarBody({ isAdmin, onNavigate }: { isAdmin: boolean; onNavigate?: (
 					);
 				})}
 			</Box>
-
 			<Box sx={{ flexShrink: 0, pt: 1, borderTop: "1px solid var(--line)" }}>
 				<UserMenu />
 			</Box>

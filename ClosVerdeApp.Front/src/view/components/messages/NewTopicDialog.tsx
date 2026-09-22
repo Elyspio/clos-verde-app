@@ -39,7 +39,17 @@ export function NewTopicDialog({ open, onClose }: { open: boolean; onClose: () =
 						{error}
 					</Alert>
 				)}
-				<TextField autoFocus fullWidth label="Nom du salon" value={name} onChange={(e) => setName(e.target.value)} inputProps={{ maxLength: 80 }} sx={{ mt: 1 }} />
+				<TextField
+					autoFocus
+					fullWidth
+					label="Nom du salon"
+					value={name}
+					onChange={(e) => setName(e.target.value)}
+					sx={{ mt: 1 }}
+					slotProps={{
+						htmlInput: { maxLength: 80 },
+					}}
+				/>
 			</DialogContent>
 			<DialogActions>
 				<Button onClick={handleClose} disabled={submitting}>
