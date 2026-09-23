@@ -9,7 +9,9 @@ import { AuthSplitLayout } from "./AuthSplitLayout";
 export function TokenErrorPage() {
 	const auth = useAuth();
 	const authRef = useRef(auth);
-	authRef.current = auth;
+	useEffect(() => {
+		authRef.current = auth;
+	}, [auth]);
 
 	// `auth` est une nouvelle référence à chaque changement d'état OIDC. Le dépendre ici
 	// déclenche une boucle infinie pendant `signinRedirect` (cf. handleLogin).

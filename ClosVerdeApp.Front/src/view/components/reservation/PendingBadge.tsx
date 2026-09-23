@@ -22,7 +22,7 @@ function formatRemaining(ms: number): string {
  */
 export function PendingBadge({ reservation, compact = false }: { reservation: Reservation; compact?: boolean }) {
 	const deadline = new Date(reservation.validation.deadline).getTime();
-	const [now, setNow] = useState(Date.now());
+	const [now, setNow] = useState(() => Date.now());
 
 	useEffect(() => {
 		const id = window.setInterval(() => setNow(Date.now()), 1000);

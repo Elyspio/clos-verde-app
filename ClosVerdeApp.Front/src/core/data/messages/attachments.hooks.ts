@@ -11,37 +11,39 @@ type ObjectUrlState = { status: "idle" } | { status: "loading" } | { status: "re
  * URLs are revoked when the consumer unmounts or when the source url changes.
  */
 export function useAuthenticatedObjectUrl(downloadUrl: string | null | undefined): ObjectUrlState {
-	const [state, setState] = useState<ObjectUrlState>({ status: "idle" });
+	// Results are keyed by the url they were fetched for: "idle" and "loading" are derived
+	// during render, so the effect only sets state from the async fetch callbacks.
+	const [result, setResult] = useState<{ downloadUrl: string; state: ObjectUrlState } | null>(null);
 
 	useEffect(() => {
-		if (!downloadUrl) {
-			setState({ status: "idle" });
-			return;
-		}
+		if (!downloadUrl) return;
 
 		const controller = new AbortController();
 		let createdUrl: string | null = null;
-		setState({ status: "loading" });
 
 		axiosInstance
 			.get<Blob>(downloadUrl, { responseType: "blob", signal: controller.signal })
 			.then(({ data }) => {
 				createdUrl = URL.createObjectURL(data);
-				setState({ status: "ready", url: createdUrl });
+				setResult({ downloadUrl, state: { status: "ready", url: createdUrl } });
 			})
 			.catch((error: unknown) => {
 				if (controller.signal.aborted) return;
 				const message = error instanceof Error ? error.message : "Téléchargement impossible.";
-				setState({ status: "error", message });
+				setResult({ downloadUrl, state: { status: "error", message } });
 			});
 
 		return () => {
 			controller.abort();
 			if (createdUrl) URL.revokeObjectURL(createdUrl);
+			// Forget the (now revoked) object URL so a later return to this url shows "loading".
+			setResult((prev) => (prev?.downloadUrl === downloadUrl ? null : prev));
 		};
 	}, [downloadUrl]);
 
-	return state;
+	if (!downloadUrl) return { status: "idle" };
+	if (result?.downloadUrl !== downloadUrl) return { status: "loading" };
+	return result.state;
 }
 
 /**

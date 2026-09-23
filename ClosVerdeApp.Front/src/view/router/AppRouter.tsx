@@ -27,7 +27,9 @@ export function AppRouter() {
 	const navigate = useNavigate();
 	const location = useLocation();
 	const authRef = useRef(auth);
-	authRef.current = auth;
+	useEffect(() => {
+		authRef.current = auth;
+	}, [auth]);
 
 	useEffect(() => {
 		setUnauthorizedHandler(() => {

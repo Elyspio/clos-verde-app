@@ -60,16 +60,16 @@ export function AdminFeedbackPage() {
 	}, [items, search]);
 
 	// Deep-link from the dashboard: ?selected=<id> opens that ticket once it lands in the list.
+	// Selection is adjusted during render; the effect only cleans up the URL once it is applied.
 	const targetId = searchParams.get("selected");
+	const deepLinked = targetId && !selected ? items.find((f) => f.id === targetId) : undefined;
+	if (deepLinked) setSelected(deepLinked);
 	useEffect(() => {
-		if (!targetId || selected) return;
-		const found = items.find((f) => f.id === targetId);
-		if (!found) return;
-		setSelected(found);
+		if (!targetId || selected?.id !== targetId) return;
 		const next = new URLSearchParams(searchParams);
 		next.delete("selected");
 		setSearchParams(next, { replace: true });
-	}, [targetId, selected, items, searchParams, setSearchParams]);
+	}, [targetId, selected, searchParams, setSearchParams]);
 
 	if (!isAdmin) return <Navigate to={routes.app.calendar.path} replace />;
 
@@ -296,17 +296,16 @@ function MasterRow({ feedback, active, onClick }: { feedback: Feedback; active: 
 	const meta = CATEGORY_META[feedback.category];
 	return (
 		<Box
+			component="button"
+			type="button"
 			data-testid={`admin-feedback-row-${feedback.id}`}
-			role="button"
-			tabIndex={0}
 			onClick={onClick}
-			onKeyDown={(e) => {
-				if (e.key === "Enter" || e.key === " ") {
-					e.preventDefault();
-					onClick();
-				}
-			}}
 			sx={{
+				// Reset native <button> styles so the row keeps its list look.
+				font: "inherit",
+				color: "inherit",
+				textAlign: "left",
+				width: "100%",
 				display: "flex",
 				gap: 1.25,
 				p: 1.5,
@@ -391,10 +390,16 @@ function DetailPane({ feedback, onUpdated, onBack }: { feedback: Feedback | null
 	const updateMutation = useFeedbackMutations.updateStatus();
 	const replyMutation = useFeedbackMutations.addReply();
 	const [reply, setReply] = useState("");
+	const [replyFeedbackId, setReplyFeedbackId] = useState(feedback?.id);
 	const scrollRef = useRef<HTMLDivElement>(null);
 
-	useEffect(() => {
+	// Reset the draft reply during render when another ticket is shown; the effect only syncs the DOM scroll.
+	if (replyFeedbackId !== feedback?.id) {
+		setReplyFeedbackId(feedback?.id);
 		setReply("");
+	}
+
+	useEffect(() => {
 		if (scrollRef.current) scrollRef.current.scrollTop = 0;
 	}, [feedback?.id]);
 

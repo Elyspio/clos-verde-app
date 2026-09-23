@@ -42,6 +42,19 @@ export function TopicView() {
 	const [editingMessage, setEditingMessage] = useState<Message | null>(null);
 	const [renameOpen, setRenameOpen] = useState(false);
 	const [deleteOpen, setDeleteOpen] = useState(false);
+	const [editingTopicId, setEditingTopicId] = useState(topicId);
+
+	// State adjustments are made during render (not in effects), so they land before any effect runs.
+	// Switching topics drops any in-progress message edit.
+	if (editingTopicId !== topicId) {
+		setEditingTopicId(topicId);
+		setEditingMessage(null);
+	}
+	// Capture the user's last-read timestamp the first time `topicDetails` is available
+	// for this topic, before the markRead effect's optimistic patch can overwrite it.
+	if (topicId && topicDetails && capturedLastReadAt?.topicId !== topicId) {
+		setCapturedLastReadAt({ topicId, at: topicDetails.lastReadAt ?? null });
+	}
 
 	const initialScrollMessageId = useMemo(() => {
 		if (highlightedMessageId) return null; // notification takes precedence
@@ -67,21 +80,11 @@ export function TopicView() {
 		if (lastMarkedReadRef.current.topicId !== topicId) {
 			lastMarkedReadRef.current = { topicId, at: null };
 		}
-		setEditingMessage(null);
 		useClientStore.getState().setFocusedTopic(topicId);
 		return () => {
 			useClientStore.getState().clearFocusedTopicIf(topicId);
 		};
 	}, [topicId]);
-
-	// Capture the user's last-read timestamp the first time `topicDetails` is available
-	// for this topic. Declared BEFORE the markRead effect so it lands first on the same
-	// render — and even if it didn't, `markRead` is async so the optimistic patch can't
-	// race past us within a single tick.
-	useEffect(() => {
-		if (!topicId || !topicDetails) return;
-		setCapturedLastReadAt((prev) => (prev?.topicId === topicId ? prev : { topicId, at: topicDetails.lastReadAt ?? null }));
-	}, [topicId, topicDetails]);
 
 	useEffect(() => {
 		if (!topicId || messages.length === 0) return;

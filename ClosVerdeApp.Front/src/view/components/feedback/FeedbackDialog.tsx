@@ -1,7 +1,7 @@
 import { Dialog, DialogContent, DialogTitle, IconButton } from "@mui/material";
 import { Close } from "@mui/icons-material";
 import { AnimatePresence, motion } from "motion/react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useFeedbackMutations } from "@data/feedback/feedback.mutations";
 import type { FeedbackCategory } from "@apis/rest/api/generated";
 import { CategoryPicker } from "./CategoryPicker";
@@ -28,15 +28,18 @@ export function FeedbackDialog({ open, onClose }: Props) {
 	const [submitError, setSubmitError] = useState<string | null>(null);
 	const createMutation = useFeedbackMutations.create();
 
-	// Reset internal state whenever the dialog (re-)opens, so a previously-sent
-	// flow doesn't start its successor on the "Sent" screen.
-	useEffect(() => {
+	const [wasOpen, setWasOpen] = useState(open);
+
+	// Reset internal state (during render) whenever the dialog (re-)opens, so a
+	// previously-sent flow doesn't start its successor on the "Sent" screen.
+	if (open !== wasOpen) {
+		setWasOpen(open);
 		if (open) {
 			setStep("category");
 			setCategory(null);
 			setSubmitError(null);
 		}
-	}, [open]);
+	}
 
 	const handlePick = (picked: FeedbackCategory) => {
 		setCategory(picked);

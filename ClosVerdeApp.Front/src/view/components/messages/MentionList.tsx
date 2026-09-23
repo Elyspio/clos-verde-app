@@ -1,5 +1,5 @@
 import { Box, MenuItem, MenuList, Paper } from "@mui/material";
-import { forwardRef, useEffect, useImperativeHandle, useState } from "react";
+import { forwardRef, useImperativeHandle, useState } from "react";
 
 export type MentionItem = {
 	id: string;
@@ -21,8 +21,13 @@ export type MentionListRef = {
  */
 export const MentionList = forwardRef<MentionListRef, MentionListProps>((props, ref) => {
 	const [selectedIndex, setSelectedIndex] = useState(0);
+	const [itemsForSelection, setItemsForSelection] = useState(props.items);
 
-	useEffect(() => setSelectedIndex(0), [props.items]);
+	// New suggestions reset the highlighted entry (adjusted during render, not in an effect).
+	if (itemsForSelection !== props.items) {
+		setItemsForSelection(props.items);
+		setSelectedIndex(0);
+	}
 
 	useImperativeHandle(ref, () => ({
 		onKeyDown: ({ event }) => {
