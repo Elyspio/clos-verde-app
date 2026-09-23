@@ -1,4 +1,4 @@
-<Project Sdk="Aspire.AppHost.Sdk/13.4.0">
+<Project Sdk="Aspire.AppHost.Sdk/13.5.4">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -7,12 +7,15 @@
     <Nullable>enable</Nullable>
     <UserSecretsId>f1722d60-c1e7-41d8-9fbd-c22f23f009d3</UserSecretsId>
     <IsAspireHost>true</IsAspireHost>
+    <!-- Aspire 13.5 warns that the CLI bundle is disabled (the default): DCP and the dashboard keep coming from
+         NuGet packages so plain `dotnet build` / `dotnet run` work without the Aspire CLI. -->
+    <NoWarn>$(NoWarn);ASPIRE010</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Aspire.Hosting.Keycloak" Version="13.4.0-preview.1.26281.18" />
-    <PackageReference Include="Aspire.Hosting.MongoDB" Version="13.4.0" />
-    <PackageReference Include="Aspire.Hosting.JavaScript" Version="13.4.0" />
+    <PackageReference Include="Aspire.Hosting.Keycloak" Version="13.5.4-preview.1.26464.4" />
+    <PackageReference Include="Aspire.Hosting.MongoDB" Version="13.5.4" />
+    <PackageReference Include="Aspire.Hosting.JavaScript" Version="13.5.4" />
     <!-- Override transitive Snappier 1.0.0 (GHSA-pggp-6c3x-2xmx) brought in via Aspire.Hosting.MongoDB. -->
     <PackageReference Include="Snappier" Version="1.3.1" />
   </ItemGroup>

@@ -43,7 +43,7 @@ public static class SwaggerExtentions
 			{
 				if (!request.Headers.Referer.FirstOrDefault()?.StartsWith("https://") == true) return;
 
-				foreach (var openApiServer in document.Servers) openApiServer.Url = openApiServer.Url.Replace("http://", "https://");
+				foreach (var openApiServer in document.Servers ?? []) openApiServer.Url = openApiServer.Url?.Replace("http://", "https://");
 			});
 		});
 		app.UseSwaggerUI();
