@@ -59,6 +59,7 @@ pnpm dev
 
 ```bash
 dotnet build ClosVerdeApp.slnx
+dotnet test --solution ClosVerdeApp.slnx
 dotnet run --project ClosVerdeApp.AppHost/ClosVerdeApp.AppHost.csproj
 dotnet run --project ClosVerdeApp.Api/ClosVerdeApp.Api.Web/ClosVerdeApp.Api.Web.csproj
 ```

@@ -21,7 +21,7 @@ Run these from `ClosVerdeApp.Front`:
 ### Tests
 
 - Front E2E tests:`pnpm e2e:auth` then `pnpm e2e`
-- Backend unit/integration tests: `aspire test`
+- Backend unit/integration tests: `dotnet test --solution ClosVerdeApp.slnx` (xunit.v3 on Microsoft.Testing.Platform; integration tests start MongoDB with Testcontainers, so Docker must be running)
 
 ## Architecture
 
