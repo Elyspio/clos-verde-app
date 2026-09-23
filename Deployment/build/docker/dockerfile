@@ -9,11 +9,15 @@ RUN dotnet publish ./ClosVerdeApp.Api/ClosVerdeApp.Api.Web/ClosVerdeApp.Api.Web.
   -o /app/out
 
 # Building front
-FROM node:24 AS builder-front
+FROM node:26 AS builder-front
+ARG PNPM_VERSION=12.5.1
 WORKDIR /src/ClosVerdeApp.Front
 
+# Node 25+ images no longer ship corepack
+RUN npm install -g pnpm@$PNPM_VERSION
+
 COPY ClosVerdeApp.Front/package.json ClosVerdeApp.Front/pnpm-lock.yaml ClosVerdeApp.Front/pnpm-workspace.yaml ./
-RUN corepack enable && pnpm install --frozen-lockfile
+RUN pnpm install --frozen-lockfile
 
 COPY ClosVerdeApp.Front/ ./
 RUN pnpm build
