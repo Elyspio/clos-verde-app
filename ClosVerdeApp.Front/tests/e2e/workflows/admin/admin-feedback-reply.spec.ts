@@ -19,7 +19,7 @@ test.describe("Admin — fil d'échanges sur un avis", () => {
 
 			await page.getByTestId("admin-feedback-reply").locator("textarea").first().fill(replyText);
 			const replyPromise = page.waitForResponse(
-				(response) => response.request().method() === "POST" && new URL(response.url()).pathname === `/api/feedback/${created.id}/replies` && response.status() === 200,
+				(response) => response.request().method() === "POST" && new URL(response.url()).pathname === `/api/feedback/${created.id}/replies` && response.status() === 200
 			);
 			await page.getByTestId("admin-feedback-reply-send").click();
 			await replyPromise;

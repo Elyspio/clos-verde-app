@@ -1,5 +1,5 @@
 import { Alert, Button, Dialog, DialogActions, DialogContent, DialogTitle, TextField } from "@mui/material";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 type Props = {
 	open: boolean;
@@ -14,12 +14,16 @@ export function RenameTopicDialog({ open, currentName, onClose, onSubmit }: Prop
 	const [submitting, setSubmitting] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 
-	useEffect(() => {
+	const [syncedWith, setSyncedWith] = useState({ open, currentName });
+
+	// Re-seed the form (during render) when the dialog opens or the topic is renamed elsewhere.
+	if (open !== syncedWith.open || currentName !== syncedWith.currentName) {
+		setSyncedWith({ open, currentName });
 		if (open) {
 			setName(currentName);
 			setError(null);
 		}
-	}, [open, currentName]);
+	}
 
 	const handleClose = () => {
 		if (submitting) return;
@@ -59,13 +63,15 @@ export function RenameTopicDialog({ open, currentName, onClose, onSubmit }: Prop
 					label="Nom"
 					value={name}
 					onChange={(e) => setName(e.target.value)}
-					inputProps={{ maxLength: 80 }}
 					sx={{ mt: 1 }}
 					onKeyDown={(e) => {
 						if (e.key === "Enter") {
 							e.preventDefault();
 							void handleSubmit();
 						}
+					}}
+					slotProps={{
+						htmlInput: { maxLength: 80 },
 					}}
 				/>
 			</DialogContent>

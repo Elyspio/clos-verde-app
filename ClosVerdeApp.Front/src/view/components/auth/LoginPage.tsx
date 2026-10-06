@@ -1,7 +1,7 @@
 import { Alert, Button, Stack } from "@mui/material";
 import { useEffect } from "react";
 import { useAuth } from "react-oidc-context";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 import { AuthSplitLayout } from "./AuthSplitLayout";
 
 export function LoginPage() {

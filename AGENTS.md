@@ -13,15 +13,15 @@ Run these from `ClosVerdeApp.Front`:
 - `pnpm install`
 - `pnpm dev`
 - `pnpm build`
-- `pnpm check:types`
-- `pnpm check:lint` (`eslint src --fix`)
-- `pnpm format`
+- `pnpm check` (`vp check`: Oxfmt + type-aware Oxlint + type checking)
+- `pnpm lint` (`vp lint`)
+- `pnpm fmt` (`vp fmt`)
 - `pnpm refresh-api`
 
 ### Tests
 
 - Front E2E tests:`pnpm e2e:auth` then `pnpm e2e`
-- Backend unit/integration tests: `aspire test`
+- Backend unit/integration tests: `dotnet test --solution ClosVerdeApp.slnx` (xunit.v3 on Microsoft.Testing.Platform; integration tests start MongoDB with Testcontainers, so Docker must be running)
 
 ## Architecture
 
@@ -33,7 +33,7 @@ Run these from `ClosVerdeApp.Front`:
   - `ClosVerdeApp.Api.Adapters.Mongo`: MongoDB repositories and persistence helpers
   - `ClosVerdeApp.Api.Adapters.Rest`: external REST adapter layer
   - `ClosVerdeApp.Api.Web`: controllers, startup wiring, Swagger, CORS, JWT auth, SignalR, and telemetry
-- `ClosVerdeApp.Front` is a Vite + React + TypeScript app with Redux Toolkit state, generated API clients, and SignalR-based reservation updates.
+- `ClosVerdeApp.Front` is a Vite+ (vite-plus) + React + TypeScript app with Redux Toolkit state, generated API clients, and SignalR-based reservation updates.
 
 ## Conventions
 
@@ -50,4 +50,4 @@ Run these from `ClosVerdeApp.Front`:
 - Never update frontend's api client or DTOs manually; always update the backend models and run `pnpm refresh-api` to regenerate them.
 - Never declare stub/placeholder/duplicate frontend DTOs that shadow types owned by the generated client (no local `XxxDto` aliases, no `declare module "@apis/rest/api/generated"` augmentations to "pre-fill" missing fields, no copy-pasted shapes in helpers/tests). If the type is missing, the backend model is the source of truth: add/update it there, then run `pnpm refresh-api` yourself before continuing the frontend work. The only acceptable manual types are ones with no backend counterpart (e.g. pure UI-state shapes).
 - Always add unit / integration tests or E2E tests for new features and bug fixes, and update existing tests if the behavior changes. If you are unsure about how to write tests for a particular change, ask for guidance.
-- Always run the full test suite and linting before pushing changes, and ensure that your code is formatted according to the existing style. Use `pnpm format` and `pnpm check:lint` to help with this.
+- Always run the full test suite and linting before pushing changes, and ensure that your code is formatted according to the existing style. Use `pnpm fmt` and `pnpm check` to help with this.

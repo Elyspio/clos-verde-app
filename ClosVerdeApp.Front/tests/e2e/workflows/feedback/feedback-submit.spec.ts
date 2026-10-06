@@ -42,7 +42,7 @@ test.describe("Feedback — submit flow", () => {
 		await expect(drawer).toContainText(body);
 
 		const closePromise = page.waitForResponse(
-			(response) => response.request().method() === "PATCH" && /\/api\/feedback\/me\/[^/]+\/close$/.test(new URL(response.url()).pathname),
+			(response) => response.request().method() === "PATCH" && /\/api\/feedback\/me\/[^/]+\/close$/.test(new URL(response.url()).pathname)
 		);
 		await drawer.getByTestId("my-feedback-close-ticket").click();
 		const closeResponse = await closePromise;

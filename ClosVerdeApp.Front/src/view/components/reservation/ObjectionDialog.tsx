@@ -44,7 +44,12 @@ export function ObjectionDialog({ reservation, onClose }: Props) {
 			<DialogContent>
 				<Stack spacing={2} sx={{ mt: 1 }}>
 					{reservation && (
-						<Typography variant="body2" color="text.secondary">
+						<Typography
+							variant="body2"
+							sx={{
+								color: "text.secondary",
+							}}
+						>
 							Réservation de {reservation.user.displayName}. Une objection bloque la validation automatique et ouvre un fil de discussion.
 						</Typography>
 					)}

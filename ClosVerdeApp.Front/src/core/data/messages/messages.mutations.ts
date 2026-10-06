@@ -45,7 +45,7 @@ function usePost(topicId: string) {
 				return await messagesService.post(
 					topicId,
 					contentHtml,
-					attachments.map((a) => a.id),
+					attachments.map((a) => a.id)
 				);
 			} catch (e) {
 				throw new Error(extractApiError(e, "Envoi impossible."));

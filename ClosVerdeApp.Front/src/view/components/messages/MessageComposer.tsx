@@ -1,6 +1,6 @@
 import { Box, Button, IconButton, LinearProgress, Stack, Tooltip, Typography } from "@mui/material";
-import { AttachFile, Close, ErrorOutline, Image as ImageIcon, InsertDriveFile, PictureAsPdf, Send } from "@mui/icons-material";
-import { EditorContent, ReactRenderer, useEditor, useEditorState } from "@tiptap/react";
+import { AttachFile, Close, ErrorOutlined, Image as ImageIcon, InsertDriveFile, PictureAsPdf, Send } from "@mui/icons-material";
+import { type Editor, EditorContent, ReactRenderer, useEditor, useEditorState } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Link from "@tiptap/extension-link";
 import Placeholder from "@tiptap/extension-placeholder";
@@ -37,6 +37,72 @@ const EMPTY_USERS: DirectoryUser[] = [];
 function deriveMentionables(users: DirectoryUser[]): Mentionable[] {
 	return users.map((u) => ({ id: u.id, label: u.displayName }));
 }
+
+/**
+ * Mention candidates per editor instance. Tiptap configures extensions once, so the list is kept
+ * outside React state and refreshed from an effect whenever the directory changes.
+ */
+const mentionablesByEditor = new WeakMap<Editor, Mentionable[]>();
+
+/** `@mention` extension: suggestions are read lazily from `mentionablesByEditor` when a query runs. */
+const MentionExtension = Mention.configure({
+	HTMLAttributes: { class: "mention" },
+	renderHTML({ options, node }) {
+		const id = node.attrs.id ?? "";
+		const label = node.attrs.label ?? id;
+		return [
+			"span",
+			{
+				class: "mention",
+				"data-mention-id": id,
+				"data-mention-name": label,
+			},
+			`${options.suggestion.char}${label}`,
+		];
+	},
+	suggestion: {
+		char: "@",
+		items: ({ query, editor }) => (mentionablesByEditor.get(editor) ?? []).filter((u) => u.label.toLowerCase().includes(query.toLowerCase())).slice(0, 6),
+		render: () => {
+			let component: ReactRenderer<MentionListRef> | null = null;
+			let popup: Instance | null = null;
+			return {
+				onStart: async (props) => {
+					component = new ReactRenderer(MentionList, {
+						props,
+						editor: props.editor,
+					});
+					if (!props.clientRect) return;
+					const tippy = (await import("tippy.js")).default;
+					popup = tippy(document.body, {
+						getReferenceClientRect: props.clientRect as () => DOMRect,
+						appendTo: () => document.body,
+						content: component.element,
+						showOnCreate: true,
+						interactive: true,
+						trigger: "manual",
+						placement: "top-start",
+					});
+				},
+				onUpdate: (props) => {
+					component?.updateProps(props);
+					if (props.clientRect) popup?.setProps({ getReferenceClientRect: props.clientRect as () => DOMRect });
+				},
+				onKeyDown: (props) => {
+					if (props.event.key === "Escape") {
+						popup?.hide();
+						return true;
+					}
+					return component?.ref?.onKeyDown(props) ?? false;
+				},
+				onExit: () => {
+					popup?.destroy();
+					component?.destroy();
+				},
+			};
+		},
+	},
+});
 
 type PendingAttachment =
 	| { kind: "uploading"; tempId: string; fileName: string; contentType: string; sizeBytes: number; progressRatio?: number }
@@ -77,78 +143,20 @@ export function MessageComposer({
 	const [pending, setPending] = useState<PendingAttachment[]>([]);
 	const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-	// Tiptap configures extensions once; ref keeps mentionables fresh without re-creating the editor.
-	const mentionablesRef = useRef<Mentionable[]>(mentionables);
-	useEffect(() => {
-		mentionablesRef.current = mentionables;
-	}, [mentionables]);
-
 	const editor = useEditor({
 		extensions: [
 			StarterKit,
 			Link.configure({ openOnClick: false, autolink: true, HTMLAttributes: { rel: "noopener noreferrer", target: "_blank" } }),
 			Placeholder.configure({ placeholder }),
-			Mention.configure({
-				HTMLAttributes: { class: "mention" },
-				renderHTML({ options, node }) {
-					const id = node.attrs.id ?? "";
-					const label = node.attrs.label ?? id;
-					return [
-						"span",
-						{
-							class: "mention",
-							"data-mention-id": id,
-							"data-mention-name": label,
-						},
-						`${options.suggestion.char}${label}`,
-					];
-				},
-				suggestion: {
-					char: "@",
-					items: ({ query }: { query: string }) => mentionablesRef.current.filter((u) => u.label.toLowerCase().includes(query.toLowerCase())).slice(0, 6),
-					render: () => {
-						let component: ReactRenderer<MentionListRef> | null = null;
-						let popup: Instance | null = null;
-						return {
-							onStart: async (props) => {
-								component = new ReactRenderer(MentionList, {
-									props,
-									editor: props.editor,
-								});
-								if (!props.clientRect) return;
-								const tippy = (await import("tippy.js")).default;
-								popup = tippy(document.body, {
-									getReferenceClientRect: props.clientRect as () => DOMRect,
-									appendTo: () => document.body,
-									content: component.element,
-									showOnCreate: true,
-									interactive: true,
-									trigger: "manual",
-									placement: "top-start",
-								});
-							},
-							onUpdate: (props) => {
-								component?.updateProps(props);
-								if (props.clientRect) popup?.setProps({ getReferenceClientRect: props.clientRect as () => DOMRect });
-							},
-							onKeyDown: (props) => {
-								if (props.event.key === "Escape") {
-									popup?.hide();
-									return true;
-								}
-								return component?.ref?.onKeyDown(props) ?? false;
-							},
-							onExit: () => {
-								popup?.destroy();
-								component?.destroy();
-							},
-						};
-					},
-				},
-			}),
+			MentionExtension,
 		],
 		content: initialHtml,
 	});
+
+	// Tiptap configures extensions once: publish fresh mention candidates without re-creating the editor.
+	useEffect(() => {
+		if (editor) mentionablesByEditor.set(editor, mentionables);
+	}, [editor, mentionables]);
 
 	// useEditor in @tiptap/react v3 does not re-render on every transaction. Subscribe explicitly
 	// so the submit button reflects the current emptiness of the editor.
@@ -186,10 +194,10 @@ export function MessageComposer({
 				} catch (e) {
 					const message = extractApiError(e, "Téléversement impossible.");
 					setPending((prev) =>
-						prev.map((p) => (p.tempId === tempId ? { kind: "error", tempId, fileName: file.name, contentType: file.type, sizeBytes: file.size, message } : p)),
+						prev.map((p) => (p.tempId === tempId ? { kind: "error", tempId, fileName: file.name, contentType: file.type, sizeBytes: file.size, message } : p))
 					);
 				}
-			}),
+			})
 		);
 	}, []);
 
@@ -217,7 +225,7 @@ export function MessageComposer({
 			const files = event.dataTransfer?.files;
 			if (files && files.length > 0) void handleFiles(files);
 		},
-		[allowAttachments, handleFiles],
+		[allowAttachments, handleFiles]
 	);
 
 	return (
@@ -260,7 +268,6 @@ export function MessageComposer({
 			>
 				<EditorContent editor={editor} />
 			</Box>
-
 			{pending.length > 0 && (
 				<Box
 					data-testid="message-composer-attachments"
@@ -288,8 +295,14 @@ export function MessageComposer({
 					))}
 				</Box>
 			)}
-
-			<Stack direction="row" justifyContent="space-between" alignItems="center" spacing={1}>
+			<Stack
+				direction="row"
+				spacing={1}
+				sx={{
+					justifyContent: "space-between",
+					alignItems: "center",
+				}}
+			>
 				{allowAttachments ? (
 					<Tooltip title="Joindre des fichiers (max 25 Mo chacun)">
 						<span>
@@ -374,7 +387,7 @@ function PendingAttachmentCard({ pending, onRemove }: { pending: PendingAttachme
 					flexShrink: 0,
 				}}
 			>
-				{pending.kind === "error" ? <ErrorOutline sx={{ fontSize: 18 }} /> : pickFileIcon(contentType)}
+				{pending.kind === "error" ? <ErrorOutlined sx={{ fontSize: 18 }} /> : pickFileIcon(contentType)}
 			</Box>
 			<Stack sx={{ flex: 1, minWidth: 0 }}>
 				<Typography

@@ -1,7 +1,7 @@
 import { Add } from "@mui/icons-material";
 import { Badge, Box, Button, Stack, Typography } from "@mui/material";
 import { useState } from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink } from "react-router";
 import { useTopicsQueries } from "@data/topics/topics.queries";
 import { useUnreadQueries } from "@data/unread/unread.queries";
 import type { Topic } from "@apis/rest/api/generated";
@@ -69,7 +69,15 @@ export function TopicList() {
 
 	return (
 		<Box data-testid="topic-list" sx={{ borderRight: { md: "1px solid var(--line)" }, height: "100%", display: "flex", flexDirection: "column" }}>
-			<Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ px: 2, py: 1.5 }}>
+			<Stack
+				direction="row"
+				sx={{
+					alignItems: "center",
+					justifyContent: "space-between",
+					px: 2,
+					py: 1.5,
+				}}
+			>
 				<Typography sx={{ fontWeight: 800 }}>Discussions</Typography>
 				<Button data-testid="new-topic-button" size="small" startIcon={<Add fontSize="inherit" />} onClick={() => setCreating(true)}>
 					Nouveau

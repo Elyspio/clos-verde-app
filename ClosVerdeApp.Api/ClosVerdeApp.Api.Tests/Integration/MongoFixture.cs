@@ -13,8 +13,7 @@ namespace ClosVerdeApp.Api.Tests.Integration;
 /// </summary>
 public sealed class MongoFixture : IAsyncLifetime
 {
-	private readonly IContainer _container = new ContainerBuilder()
-		.WithImage("mongo:7")
+	private readonly IContainer _container = new ContainerBuilder("mongo:7")
 		.WithPortBinding(27017, true)
 		.WithWaitStrategy(Wait.ForUnixContainer().UntilMessageIsLogged("Waiting for connections"))
 		.Build();

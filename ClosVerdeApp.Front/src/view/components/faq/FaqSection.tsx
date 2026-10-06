@@ -31,7 +31,14 @@ export function FaqSection({ section, index }: Props) {
 					backgroundColor: "var(--surface)",
 				}}
 			>
-				<Stack direction="row" alignItems="center" spacing={1.5} sx={{ mb: 1.5 }}>
+				<Stack
+					direction="row"
+					spacing={1.5}
+					sx={{
+						alignItems: "center",
+						mb: 1.5,
+					}}
+				>
 					<Box
 						sx={{
 							width: 40,

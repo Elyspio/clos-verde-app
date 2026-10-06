@@ -179,7 +179,13 @@ export function NotificationPromptDialog({ open, onAccept, onDecline, onDismiss 
 
 function FeatureRow({ icon, label }: { icon: React.ReactNode; label: string }) {
 	return (
-		<Stack direction="row" alignItems="center" spacing={1.5}>
+		<Stack
+			direction="row"
+			spacing={1.5}
+			sx={{
+				alignItems: "center",
+			}}
+		>
 			<Box
 				sx={{
 					width: 32,

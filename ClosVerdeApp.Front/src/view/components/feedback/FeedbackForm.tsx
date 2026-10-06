@@ -15,7 +15,7 @@ import {
 	Tooltip,
 	Typography,
 } from "@mui/material";
-import { ArrowBack, AttachFile, Close, ErrorOutline, ExpandMore, Image as ImageIcon, InsertDriveFile, PictureAsPdf, SendOutlined } from "@mui/icons-material";
+import { ArrowBack, AttachFile, Close, ErrorOutlined, ExpandMore, Image as ImageIcon, InsertDriveFile, PictureAsPdf, SendOutlined } from "@mui/icons-material";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { extractApiError } from "@apis/rest/api/clients/api.client";
 import type { Attachment, FeedbackCategory } from "@apis/rest/api/generated";
@@ -108,13 +108,13 @@ export function FeedbackForm({ category, onBack, onSubmit, submitError, isSubmit
 					} catch (e) {
 						const message = extractApiError(e, "Téléversement impossible.");
 						setPending((prev) =>
-							prev.map((p) => (p.tempId === tempId ? { kind: "error", tempId, fileName: file.name, contentType: file.type, sizeBytes: file.size, message } : p)),
+							prev.map((p) => (p.tempId === tempId ? { kind: "error", tempId, fileName: file.name, contentType: file.type, sizeBytes: file.size, message } : p))
 						);
 					}
-				}),
+				})
 			);
 		},
-		[pending.length],
+		[pending.length]
 	);
 
 	const removePending = useCallback((tempId: string) => {
@@ -135,7 +135,13 @@ export function FeedbackForm({ category, onBack, onSubmit, submitError, isSubmit
 
 	return (
 		<Stack spacing={2.5} data-testid="feedback-form">
-			<Stack direction="row" alignItems="center" spacing={1.5}>
+			<Stack
+				direction="row"
+				spacing={1.5}
+				sx={{
+					alignItems: "center",
+				}}
+			>
 				<Tooltip title="Changer de catégorie">
 					<IconButton size="small" onClick={onBack} aria-label="Changer de catégorie" data-testid="feedback-back" sx={{ color: "var(--ink-soft)" }}>
 						<ArrowBack sx={{ fontSize: 18 }} />
@@ -153,7 +159,6 @@ export function FeedbackForm({ category, onBack, onSubmit, submitError, isSubmit
 					}}
 				/>
 			</Stack>
-
 			<Box
 				sx={{
 					display: "grid",
@@ -190,7 +195,13 @@ export function FeedbackForm({ category, onBack, onSubmit, submitError, isSubmit
 					/>
 
 					<Box>
-						<Stack direction="row" alignItems="center" justifyContent="space-between">
+						<Stack
+							direction="row"
+							sx={{
+								alignItems: "center",
+								justifyContent: "space-between",
+							}}
+						>
 							<Typography variant="overline">Pièces jointes</Typography>
 							<Tooltip title={`Joindre une image ou un PDF (max ${MAX_ATTACHMENTS}, 25 Mo chacun)`}>
 								<span>
@@ -230,7 +241,14 @@ export function FeedbackForm({ category, onBack, onSubmit, submitError, isSubmit
 
 					{submitError && <Alert severity="error">{submitError}</Alert>}
 
-					<Stack direction={{ xs: "column-reverse", sm: "row" }} alignItems={{ xs: "stretch", sm: "center" }} justifyContent="space-between" spacing={1.25}>
+					<Stack
+						direction={{ xs: "column-reverse", sm: "row" }}
+						spacing={1.25}
+						sx={{
+							alignItems: { xs: "stretch", sm: "center" },
+							justifyContent: "space-between",
+						}}
+					>
 						<Typography variant="caption" sx={{ color: "var(--ink-mute)" }}>
 							Votre adresse email est transmise avec le retour afin de pouvoir vous répondre.
 						</Typography>
@@ -256,7 +274,13 @@ export function FeedbackForm({ category, onBack, onSubmit, submitError, isSubmit
 function ChecklistPanel({ meta, Icon }: { meta: CategoryMeta; Icon: CategoryMeta["icon"] }) {
 	const content = (
 		<Stack spacing={1.5}>
-			<Stack direction="row" alignItems="center" spacing={1}>
+			<Stack
+				direction="row"
+				spacing={1}
+				sx={{
+					alignItems: "center",
+				}}
+			>
 				<Box
 					sx={{
 						width: 36,
@@ -402,7 +426,7 @@ function PendingAttachmentCard({ pending, onRemove }: { pending: PendingAttachme
 					flexShrink: 0,
 				}}
 			>
-				{pending.kind === "error" ? <ErrorOutline sx={{ fontSize: 18 }} /> : pickFileIcon(contentType)}
+				{pending.kind === "error" ? <ErrorOutlined sx={{ fontSize: 18 }} /> : pickFileIcon(contentType)}
 			</Box>
 			<Stack sx={{ flex: 1, minWidth: 0 }}>
 				<Typography sx={{ fontSize: 13, fontWeight: 600, color: "var(--ink)", lineHeight: 1.2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>

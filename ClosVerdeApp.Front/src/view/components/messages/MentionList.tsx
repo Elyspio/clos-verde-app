@@ -1,5 +1,5 @@
-import { Box, MenuItem, Paper } from "@mui/material";
-import { forwardRef, useEffect, useImperativeHandle, useState } from "react";
+import { Box, MenuItem, MenuList, Paper } from "@mui/material";
+import { forwardRef, useImperativeHandle, useState } from "react";
 
 export type MentionItem = {
 	id: string;
@@ -21,8 +21,13 @@ export type MentionListRef = {
  */
 export const MentionList = forwardRef<MentionListRef, MentionListProps>((props, ref) => {
 	const [selectedIndex, setSelectedIndex] = useState(0);
+	const [itemsForSelection, setItemsForSelection] = useState(props.items);
 
-	useEffect(() => setSelectedIndex(0), [props.items]);
+	// New suggestions reset the highlighted entry (adjusted during render, not in an effect).
+	if (itemsForSelection !== props.items) {
+		setItemsForSelection(props.items);
+		setSelectedIndex(0);
+	}
 
 	useImperativeHandle(ref, () => ({
 		onKeyDown: ({ event }) => {
@@ -53,11 +58,14 @@ export const MentionList = forwardRef<MentionListRef, MentionListProps>((props, 
 
 	return (
 		<Paper elevation={3} sx={{ minWidth: 180 }}>
-			{props.items.map((item, index) => (
-				<MenuItem key={item.id} selected={index === selectedIndex} onClick={() => props.command({ id: item.id, label: item.label })} sx={{ fontSize: 13 }}>
-					{item.label}
-				</MenuItem>
-			))}
+			{/* MUI 9: MenuItem must be rendered inside a Menu or MenuList. */}
+			<MenuList disablePadding>
+				{props.items.map((item, index) => (
+					<MenuItem key={item.id} selected={index === selectedIndex} onClick={() => props.command({ id: item.id, label: item.label })} sx={{ fontSize: 13 }}>
+						{item.label}
+					</MenuItem>
+				))}
+			</MenuList>
 		</Paper>
 	);
 });

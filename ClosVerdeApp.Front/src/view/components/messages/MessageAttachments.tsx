@@ -118,9 +118,9 @@ function ImageAttachment({ attachment }: { attachment: Attachment }) {
 				/>
 			) : (
 				<Stack
-					alignItems="center"
-					justifyContent="center"
 					sx={{
+						alignItems: "center",
+						justifyContent: "center",
 						width: "100%",
 						height: "100%",
 						color: "var(--ink-mute)",
@@ -134,12 +134,11 @@ function ImageAttachment({ attachment }: { attachment: Attachment }) {
 					)}
 				</Stack>
 			)}
-
 			{downloading && (
 				<Stack
-					alignItems="center"
-					justifyContent="center"
 					sx={{
+						alignItems: "center",
+						justifyContent: "center",
 						position: "absolute",
 						inset: 0,
 						bgcolor: "rgba(15, 23, 42, 0.45)",
@@ -148,7 +147,6 @@ function ImageAttachment({ attachment }: { attachment: Attachment }) {
 					<CircularProgress size={22} thickness={4} sx={{ color: "white" }} />
 				</Stack>
 			)}
-
 			<Box
 				sx={{
 					position: "absolute",
@@ -215,7 +213,15 @@ function FileAttachment({ attachment, alignEnd }: { attachment: Attachment; alig
 				justifyContent: "space-between",
 			}}
 		>
-			<Stack direction={alignEnd ? "row-reverse" : "row"} spacing={1} alignItems="center" sx={{ minWidth: 0, flex: 1 }}>
+			<Stack
+				direction={alignEnd ? "row-reverse" : "row"}
+				spacing={1}
+				sx={{
+					alignItems: "center",
+					minWidth: 0,
+					flex: 1,
+				}}
+			>
 				<Box
 					sx={{
 						display: "flex",

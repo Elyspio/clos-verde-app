@@ -1,4 +1,4 @@
-import { BugReportOutlined, ChatBubbleOutline, HelpOutlineOutlined, LightbulbOutlined } from "@mui/icons-material";
+import { BugReportOutlined, ChatBubbleOutlined, HelpOutlineOutlined, LightbulbOutlined } from "@mui/icons-material";
 import type { SvgIconComponent } from "@mui/icons-material";
 import type { FeedbackCategory } from "@apis/rest/api/generated";
 
@@ -57,7 +57,7 @@ export const CATEGORY_META: Record<FeedbackCategory, CategoryMeta> = {
 		category: "Other",
 		label: "Autre",
 		tagline: "Tout retour ne correspondant à aucune des catégories ci-dessus.",
-		icon: ChatBubbleOutline,
+		icon: ChatBubbleOutlined,
 		accent: "var(--ink-soft)",
 		accentSoft: "var(--surface-soft)",
 		titlePlaceholder: "Résumez votre retour",

@@ -25,7 +25,14 @@ export function FaqCta() {
 					borderColor: "var(--line)",
 				}}
 			>
-				<Stack direction={{ xs: "column", sm: "row" }} spacing={2} alignItems={{ sm: "center" }} justifyContent="space-between">
+				<Stack
+					direction={{ xs: "column", sm: "row" }}
+					spacing={2}
+					sx={{
+						alignItems: { sm: "center" },
+						justifyContent: "space-between",
+					}}
+				>
 					<Stack spacing={0.5} sx={{ maxWidth: 480 }}>
 						<Typography variant="h4" sx={{ color: "var(--ink)" }}>
 							Une question sans réponse ?

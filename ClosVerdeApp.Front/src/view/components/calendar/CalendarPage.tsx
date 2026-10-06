@@ -1,9 +1,9 @@
 import { Alert, Box, Button, Container, Stack } from "@mui/material";
 import { Add, CalendarMonth, LeaderboardOutlined } from "@mui/icons-material";
 import { getMonth, getYear, parseISO, startOfMonth } from "date-fns";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "react-oidc-context";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router";
 import { useReservationsQueries } from "@data/reservations/reservations.queries";
 import type { Reservation } from "@apis/rest/api/generated";
 import type { AuthUser } from "@/core/auth/auth.types";
@@ -40,34 +40,44 @@ export function CalendarPage() {
 	const [searchParams, setSearchParams] = useSearchParams();
 	const targetReservationId = searchParams.get("reservation");
 	const targetReservationDate = searchParams.get("date");
-	const consumedDeepLinkRef = useRef<string | null>(null);
+	const [consumedDeepLinkId, setConsumedDeepLinkId] = useState<string | null>(null);
+	const pendingDeepLink = targetReservationId !== null && consumedDeepLinkId !== targetReservationId;
 
-	useEffect(() => {
-		if (!targetReservationId || !targetReservationDate) return;
-		if (consumedDeepLinkRef.current === targetReservationId) return;
+	// State adjustments are made during render (not in effects) so the calendar never
+	// paints the wrong month or a closed dialog for a frame.
+	if (pendingDeepLink && targetReservationDate) {
 		const targetMonth = startOfMonth(parseISO(targetReservationDate));
 		if (targetMonth.getTime() !== monthDate.getTime()) {
 			setMonthDate(targetMonth);
 		}
-	}, [targetReservationId, targetReservationDate, monthDate]);
+	}
+	const deepLinkedReservation = pendingDeepLink ? reservations.find((r) => r.id === targetReservationId) : undefined;
+	if (deepLinkedReservation) {
+		setConsumedDeepLinkId(deepLinkedReservation.id);
+		setSelectedReservation(deepLinkedReservation);
+	}
 
 	useEffect(() => {
-		if (!targetReservationId) return;
-		if (consumedDeepLinkRef.current === targetReservationId) return;
-		const found = reservations.find((r) => r.id === targetReservationId);
-		if (!found) return;
-		consumedDeepLinkRef.current = targetReservationId;
-		setSelectedReservation(found);
+		if (!targetReservationId || consumedDeepLinkId !== targetReservationId) return;
 		// Strip the params so a refresh doesn't re-open the dialog endlessly.
 		const next = new URLSearchParams(searchParams);
 		next.delete("reservation");
 		next.delete("date");
 		setSearchParams(next, { replace: true });
-	}, [reservations, targetReservationId, searchParams, setSearchParams]);
+	}, [consumedDeepLinkId, targetReservationId, searchParams, setSearchParams]);
 
 	return (
 		<Container maxWidth="xl" sx={{ maxWidth: "1280px", px: { xs: 2.5, md: 5 }, py: { xs: 4, md: 6 } }}>
-			<Stack direction="row" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap={2} mb={3}>
+			<Stack
+				direction="row"
+				sx={{
+					alignItems: "center",
+					justifyContent: "space-between",
+					flexWrap: "wrap",
+					gap: 2,
+					mb: 3,
+				}}
+			>
 				<CalendarTabs tab={tab} onChange={setTab} />
 				<Button variant="contained" startIcon={<Add />} onClick={() => void navigate(routes.app.reservation.path)} data-testid="reserve-day">
 					Réserver un jour

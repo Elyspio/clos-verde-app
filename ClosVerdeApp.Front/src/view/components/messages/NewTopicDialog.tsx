@@ -1,6 +1,6 @@
 import { Alert, Button, Dialog, DialogActions, DialogContent, DialogTitle, TextField } from "@mui/material";
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 import { useTopicsMutations } from "@data/topics/topics.mutations";
 
 /** Dialog to create a new Custom topic. The current user becomes its sole owner. */
@@ -39,7 +39,17 @@ export function NewTopicDialog({ open, onClose }: { open: boolean; onClose: () =
 						{error}
 					</Alert>
 				)}
-				<TextField autoFocus fullWidth label="Nom du salon" value={name} onChange={(e) => setName(e.target.value)} inputProps={{ maxLength: 80 }} sx={{ mt: 1 }} />
+				<TextField
+					autoFocus
+					fullWidth
+					label="Nom du salon"
+					value={name}
+					onChange={(e) => setName(e.target.value)}
+					sx={{ mt: 1 }}
+					slotProps={{
+						htmlInput: { maxLength: 80 },
+					}}
+				/>
 			</DialogContent>
 			<DialogActions>
 				<Button onClick={handleClose} disabled={submitting}>

@@ -2,7 +2,7 @@ import { Box, Button, Container, Stack, Typography } from "@mui/material";
 import { ArrowBack, Home, LoginOutlined } from "@mui/icons-material";
 import type { ReactNode } from "react";
 import { useAuth } from "react-oidc-context";
-import { Link as RouterLink } from "react-router-dom";
+import { Link as RouterLink } from "react-router";
 import { routes } from "@/config/routes";
 
 type Props = {
@@ -62,9 +62,12 @@ export function PublicFaqShell({ children }: Props) {
 						component={RouterLink}
 						to={isAuthenticated ? routes.app.calendar.path : routes.app.faq.path}
 						direction="row"
-						alignItems="center"
 						spacing={1.2}
-						sx={{ flexShrink: 0, textDecoration: "none" }}
+						sx={{
+							alignItems: "center",
+							flexShrink: 0,
+							textDecoration: "none",
+						}}
 					>
 						<Box
 							aria-hidden
@@ -101,7 +104,6 @@ export function PublicFaqShell({ children }: Props) {
 					</Box>
 				</Container>
 			</Box>
-
 			<Box
 				component="main"
 				sx={{
@@ -115,7 +117,6 @@ export function PublicFaqShell({ children }: Props) {
 			>
 				{children}
 			</Box>
-
 			<Box
 				component="footer"
 				sx={{

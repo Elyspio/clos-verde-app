@@ -172,13 +172,18 @@ export const theme: Theme = createTheme({
 					"&:active": {
 						transform: "translateY(1px)",
 					},
-				},
-				containedPrimary: {
-					backgroundColor: tokens.primaryBlue,
-					color: tokens.surface,
-					"&:hover": {
-						backgroundColor: tokens.primaryBlueDark,
-					},
+					variants: [
+						{
+							props: { variant: "contained", color: "primary" },
+							style: {
+								backgroundColor: tokens.primaryBlue,
+								color: tokens.surface,
+								"&:hover": {
+									backgroundColor: tokens.primaryBlueDark,
+								},
+							},
+						},
+					],
 				},
 				outlined: {
 					borderColor: tokens.lineStrong,
@@ -280,21 +285,32 @@ export const theme: Theme = createTheme({
 					padding: "12px 14px",
 					alignItems: "center",
 					fontWeight: 650,
-				},
-				standardWarning: {
-					backgroundColor: tokens.warningSoft,
-					color: tokens.ink,
-					border: `1px solid ${tokens.warning}`,
-				},
-				standardError: {
-					backgroundColor: tokens.dangerSoft,
-					color: tokens.danger,
-					border: `1px solid ${tokens.danger}`,
-				},
-				standardSuccess: {
-					backgroundColor: tokens.mintSoft,
-					color: "#047857",
-					border: `1px solid ${tokens.mint}`,
+					variants: [
+						{
+							props: { variant: "standard", color: "warning" },
+							style: {
+								backgroundColor: tokens.warningSoft,
+								color: tokens.ink,
+								border: `1px solid ${tokens.warning}`,
+							},
+						},
+						{
+							props: { variant: "standard", color: "error" },
+							style: {
+								backgroundColor: tokens.dangerSoft,
+								color: tokens.danger,
+								border: `1px solid ${tokens.danger}`,
+							},
+						},
+						{
+							props: { variant: "standard", color: "success" },
+							style: {
+								backgroundColor: tokens.mintSoft,
+								color: "#047857",
+								border: `1px solid ${tokens.mint}`,
+							},
+						},
+					],
 				},
 			},
 		},

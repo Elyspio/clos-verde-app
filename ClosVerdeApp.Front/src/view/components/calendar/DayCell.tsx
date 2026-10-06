@@ -1,7 +1,7 @@
 import { Add } from "@mui/icons-material";
 import { Box, Button, Stack, Typography } from "@mui/material";
 import { format, isBefore, isSameMonth, isToday, parseISO, startOfToday } from "date-fns";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 import type { Reservation } from "@apis/rest/api/generated";
 import type { AuthUser } from "@/core/auth/auth.types";
 import { coversDay, hasEmptySpaceInReservation, isFullDay } from "@/utils/date.utils";
@@ -58,7 +58,13 @@ export function DayCell({ day, currentMonth, reservations, currentUser, onSelect
 				"&:hover": free && !past && sameMonth ? { bgcolor: "var(--surface-blue)" } : undefined,
 			}}
 		>
-			<Stack minHeight="100%" justifyContent="space-between" spacing={1}>
+			<Stack
+				spacing={1}
+				sx={{
+					minHeight: "100%",
+					justifyContent: "space-between",
+				}}
+			>
 				<Typography
 					sx={{
 						fontSize: { xs: 18, md: 20 },

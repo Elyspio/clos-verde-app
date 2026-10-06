@@ -1,9 +1,9 @@
 import { Alert, Box, Button, Chip, CircularProgress, Container, IconButton, Pagination, Stack, TextField, Typography } from "@mui/material";
-import { ArrowBack, AttachFile, CheckCircleOutline, Close, DoNotDisturbAltOutlined, ReplayOutlined, Search, Send, TouchAppOutlined } from "@mui/icons-material";
+import { ArrowBack, AttachFile, CheckCircleOutlined, Close, DoNotDisturbAltOutlined, ReplayOutlined, Search, Send, TouchAppOutlined } from "@mui/icons-material";
 import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Navigate, useSearchParams } from "react-router-dom";
+import { Navigate, useSearchParams } from "react-router";
 import type { Feedback, FeedbackCategory, FeedbackStatus } from "@apis/rest/api/generated";
 import { useFeedbackMutations } from "@data/feedback/feedback.mutations";
 import { useFeedbackQueries } from "@data/feedback/feedback.queries";
@@ -60,16 +60,16 @@ export function AdminFeedbackPage() {
 	}, [items, search]);
 
 	// Deep-link from the dashboard: ?selected=<id> opens that ticket once it lands in the list.
+	// Selection is adjusted during render; the effect only cleans up the URL once it is applied.
 	const targetId = searchParams.get("selected");
+	const deepLinked = targetId && !selected ? items.find((f) => f.id === targetId) : undefined;
+	if (deepLinked) setSelected(deepLinked);
 	useEffect(() => {
-		if (!targetId || selected) return;
-		const found = items.find((f) => f.id === targetId);
-		if (!found) return;
-		setSelected(found);
+		if (!targetId || selected?.id !== targetId) return;
 		const next = new URLSearchParams(searchParams);
 		next.delete("selected");
 		setSearchParams(next, { replace: true });
-	}, [targetId, selected, items, searchParams, setSearchParams]);
+	}, [targetId, selected, searchParams, setSearchParams]);
 
 	if (!isAdmin) return <Navigate to={routes.app.calendar.path} replace />;
 
@@ -212,7 +212,14 @@ function MasterPane({
 						);
 					})}
 				</Stack>
-				<Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap>
+				<Stack
+					direction="row"
+					spacing={0.5}
+					useFlexGap
+					sx={{
+						flexWrap: "wrap",
+					}}
+				>
 					<CategoryChip
 						selected={category === undefined}
 						onClick={() => onCategory(undefined)}
@@ -235,18 +242,30 @@ function MasterPane({
 					})}
 				</Stack>
 			</Stack>
-
 			<Box sx={{ flex: "1 1 0", minHeight: 0, overflowY: "auto", p: 1 }}>
 				{isError ? (
 					<Alert severity="error" sx={{ m: 1 }}>
 						Chargement impossible.
 					</Alert>
 				) : isPending ? (
-					<Stack alignItems="center" sx={{ py: 6 }}>
+					<Stack
+						sx={{
+							alignItems: "center",
+							py: 6,
+						}}
+					>
 						<CircularProgress size={26} />
 					</Stack>
 				) : items.length === 0 ? (
-					<Stack alignItems="center" spacing={1} sx={{ py: 6, color: "var(--ink-mute)" }} data-testid="admin-feedback-empty">
+					<Stack
+						spacing={1}
+						data-testid="admin-feedback-empty"
+						sx={{
+							alignItems: "center",
+							py: 6,
+							color: "var(--ink-mute)",
+						}}
+					>
 						<Typography sx={{ fontWeight: 700 }}>Aucun ticket pour ces filtres.</Typography>
 					</Stack>
 				) : (
@@ -257,9 +276,15 @@ function MasterPane({
 					</Stack>
 				)}
 			</Box>
-
 			{totalPages > 1 && (
-				<Stack alignItems="center" sx={{ p: 1, borderTop: "1px solid var(--line)", flexShrink: 0 }}>
+				<Stack
+					sx={{
+						alignItems: "center",
+						p: 1,
+						borderTop: "1px solid var(--line)",
+						flexShrink: 0,
+					}}
+				>
 					<Pagination count={totalPages} page={page} onChange={(_, p) => onPage(p)} color="primary" size="small" />
 				</Stack>
 			)}
@@ -271,17 +296,16 @@ function MasterRow({ feedback, active, onClick }: { feedback: Feedback; active: 
 	const meta = CATEGORY_META[feedback.category];
 	return (
 		<Box
+			component="button"
+			type="button"
 			data-testid={`admin-feedback-row-${feedback.id}`}
-			role="button"
-			tabIndex={0}
 			onClick={onClick}
-			onKeyDown={(e) => {
-				if (e.key === "Enter" || e.key === " ") {
-					e.preventDefault();
-					onClick();
-				}
-			}}
 			sx={{
+				// Reset native <button> styles so the row keeps its list look.
+				font: "inherit",
+				color: "inherit",
+				textAlign: "left",
+				width: "100%",
 				display: "flex",
 				gap: 1.25,
 				p: 1.5,
@@ -296,7 +320,13 @@ function MasterRow({ feedback, active, onClick }: { feedback: Feedback; active: 
 		>
 			<Box sx={{ mt: 0.6, flexShrink: 0, width: 8, height: 8, borderRadius: "50%", bgcolor: meta.accent }} />
 			<Box sx={{ flex: 1, minWidth: 0 }}>
-				<Stack direction="row" alignItems="center" spacing={0.75}>
+				<Stack
+					direction="row"
+					spacing={0.75}
+					sx={{
+						alignItems: "center",
+					}}
+				>
 					<Typography
 						sx={{
 							flex: 1,
@@ -316,7 +346,14 @@ function MasterRow({ feedback, active, onClick }: { feedback: Feedback; active: 
 				<Typography sx={{ fontSize: 12, color: "var(--ink-soft)", mt: 0.25, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
 					{feedback.body}
 				</Typography>
-				<Stack direction="row" alignItems="center" spacing={1} sx={{ mt: 0.75 }}>
+				<Stack
+					direction="row"
+					spacing={1}
+					sx={{
+						alignItems: "center",
+						mt: 0.75,
+					}}
+				>
 					<Typography sx={{ fontSize: 11, fontWeight: 600, color: "var(--ink-mute)", minWidth: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
 						{feedback.author.displayName} · {formatDistanceToNow(new Date(feedback.createdAt), { addSuffix: true, locale: fr })}
 					</Typography>
@@ -353,17 +390,29 @@ function DetailPane({ feedback, onUpdated, onBack }: { feedback: Feedback | null
 	const updateMutation = useFeedbackMutations.updateStatus();
 	const replyMutation = useFeedbackMutations.addReply();
 	const [reply, setReply] = useState("");
+	const [replyFeedbackId, setReplyFeedbackId] = useState(feedback?.id);
 	const scrollRef = useRef<HTMLDivElement>(null);
 
-	useEffect(() => {
+	// Reset the draft reply during render when another ticket is shown; the effect only syncs the DOM scroll.
+	if (replyFeedbackId !== feedback?.id) {
+		setReplyFeedbackId(feedback?.id);
 		setReply("");
+	}
+
+	useEffect(() => {
 		if (scrollRef.current) scrollRef.current.scrollTop = 0;
 	}, [feedback?.id]);
 
 	if (!feedback) {
 		return (
 			<Box sx={{ flex: 1, display: "grid", placeItems: "center", color: "var(--ink-mute)", p: 4 }}>
-				<Stack alignItems="center" spacing={1.5} textAlign="center">
+				<Stack
+					spacing={1.5}
+					sx={{
+						alignItems: "center",
+						textAlign: "center",
+					}}
+				>
 					<Box sx={{ width: 52, height: 52, borderRadius: "14px", bgcolor: "var(--surface-soft)", display: "grid", placeItems: "center" }}>
 						<TouchAppOutlined sx={{ fontSize: 26, color: "var(--ink-mute)" }} />
 					</Box>
@@ -392,7 +441,13 @@ function DetailPane({ feedback, onUpdated, onBack }: { feedback: Feedback | null
 	return (
 		<Box ref={scrollRef} data-testid="admin-feedback-detail" sx={{ flex: 1, minWidth: 0, overflowY: "auto", p: { xs: 2.25, md: 3 } }}>
 			<Stack spacing={2} sx={{ maxWidth: 760 }}>
-				<Stack direction="row" alignItems="center" justifyContent="space-between">
+				<Stack
+					direction="row"
+					sx={{
+						alignItems: "center",
+						justifyContent: "space-between",
+					}}
+				>
 					<Button onClick={onBack} startIcon={<ArrowBack />} variant="text" sx={{ display: { xs: "inline-flex", md: "none" }, minHeight: 0, p: 0.5 }}>
 						Liste
 					</Button>
@@ -403,7 +458,14 @@ function DetailPane({ feedback, onUpdated, onBack }: { feedback: Feedback | null
 
 				<Stack spacing={1}>
 					<Typography variant="h4">{feedback.title}</Typography>
-					<Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap>
+					<Stack
+						direction="row"
+						spacing={0.75}
+						useFlexGap
+						sx={{
+							flexWrap: "wrap",
+						}}
+					>
 						<DetailCategoryChip category={feedback.category} />
 						<StatusChip status={feedback.status} />
 					</Stack>
@@ -521,12 +583,21 @@ function DetailPane({ feedback, onUpdated, onBack }: { feedback: Feedback | null
 					</Stack>
 				</Box>
 
-				<Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap sx={{ borderTop: "1px solid var(--line)", pt: 2 }}>
+				<Stack
+					direction="row"
+					spacing={1}
+					useFlexGap
+					sx={{
+						flexWrap: "wrap",
+						borderTop: "1px solid var(--line)",
+						pt: 2,
+					}}
+				>
 					{feedback.status !== "Resolved" && (
 						<Button
 							variant="contained"
 							color="secondary"
-							startIcon={<CheckCircleOutline />}
+							startIcon={<CheckCircleOutlined />}
 							onClick={() => void handleStatus("Resolved")}
 							disabled={updateMutation.isPending}
 							sx={{ bgcolor: "var(--mint-soft)", color: "#047857", "&:hover": { bgcolor: "var(--mint-soft)" } }}

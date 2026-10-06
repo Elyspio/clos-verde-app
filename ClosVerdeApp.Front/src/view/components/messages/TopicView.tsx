@@ -1,8 +1,8 @@
 import { Alert, Box, Button, CircularProgress, Stack, Typography } from "@mui/material";
-import { DeleteOutline, Edit, NotificationsActive, NotificationsOff } from "@mui/icons-material";
+import { DeleteOutlined, Edit, NotificationsActive, NotificationsOff } from "@mui/icons-material";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "react-oidc-context";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router";
 import { useClientStore } from "@data/client/clientStore";
 import { useIsAdmin } from "@data/client/useIsAdmin";
 import { useMessagesQueries } from "@data/messages/messages.queries";
@@ -42,6 +42,19 @@ export function TopicView() {
 	const [editingMessage, setEditingMessage] = useState<Message | null>(null);
 	const [renameOpen, setRenameOpen] = useState(false);
 	const [deleteOpen, setDeleteOpen] = useState(false);
+	const [editingTopicId, setEditingTopicId] = useState(topicId);
+
+	// State adjustments are made during render (not in effects), so they land before any effect runs.
+	// Switching topics drops any in-progress message edit.
+	if (editingTopicId !== topicId) {
+		setEditingTopicId(topicId);
+		setEditingMessage(null);
+	}
+	// Capture the user's last-read timestamp the first time `topicDetails` is available
+	// for this topic, before the markRead effect's optimistic patch can overwrite it.
+	if (topicId && topicDetails && capturedLastReadAt?.topicId !== topicId) {
+		setCapturedLastReadAt({ topicId, at: topicDetails.lastReadAt ?? null });
+	}
 
 	const initialScrollMessageId = useMemo(() => {
 		if (highlightedMessageId) return null; // notification takes precedence
@@ -67,21 +80,11 @@ export function TopicView() {
 		if (lastMarkedReadRef.current.topicId !== topicId) {
 			lastMarkedReadRef.current = { topicId, at: null };
 		}
-		setEditingMessage(null);
 		useClientStore.getState().setFocusedTopic(topicId);
 		return () => {
 			useClientStore.getState().clearFocusedTopicIf(topicId);
 		};
 	}, [topicId]);
-
-	// Capture the user's last-read timestamp the first time `topicDetails` is available
-	// for this topic. Declared BEFORE the markRead effect so it lands first on the same
-	// render — and even if it didn't, `markRead` is async so the optimistic patch can't
-	// race past us within a single tick.
-	useEffect(() => {
-		if (!topicId || !topicDetails) return;
-		setCapturedLastReadAt((prev) => (prev?.topicId === topicId ? prev : { topicId, at: topicDetails.lastReadAt ?? null }));
-	}, [topicId, topicDetails]);
 
 	useEffect(() => {
 		if (!topicId || messages.length === 0) return;
@@ -110,7 +113,7 @@ export function TopicView() {
 		async (m: Message) => {
 			await deleteMessageMutation.mutateAsync(m.id);
 		},
-		[deleteMessageMutation],
+		[deleteMessageMutation]
 	);
 
 	const handleSubmitEdit = async ({ html }: { html: string }) => {
@@ -126,7 +129,7 @@ export function TopicView() {
 			if (!topic) return;
 			await renameMutation.mutateAsync({ id: topic.id, name });
 		},
-		[renameMutation, topic],
+		[renameMutation, topic]
 	);
 
 	const handleConfirmDelete = useCallback(async () => {
@@ -144,7 +147,13 @@ export function TopicView() {
 	if (!topic) {
 		return (
 			<Box sx={{ p: 3 }}>
-				<Typography color="text.secondary">Sélectionnez un topic pour voir les messages.</Typography>
+				<Typography
+					sx={{
+						color: "text.secondary",
+					}}
+				>
+					Sélectionnez un topic pour voir les messages.
+				</Typography>
 			</Box>
 		);
 	}
@@ -153,7 +162,16 @@ export function TopicView() {
 
 	return (
 		<Box data-testid="topic-view" data-topic-id={topic.id} sx={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 0 }}>
-			<Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1} sx={{ p: 2, borderBottom: "1px solid var(--line)" }}>
+			<Stack
+				direction="row"
+				spacing={1}
+				sx={{
+					alignItems: "center",
+					justifyContent: "space-between",
+					p: 2,
+					borderBottom: "1px solid var(--line)",
+				}}
+			>
 				<Box sx={{ minWidth: 0 }}>
 					<Typography data-testid="topic-title" sx={{ fontWeight: 800, fontSize: 18 }}>
 						{topic.name}
@@ -178,7 +196,7 @@ export function TopicView() {
 								data-testid="topic-delete-button"
 								size="small"
 								color="error"
-								startIcon={<DeleteOutline fontSize="inherit" />}
+								startIcon={<DeleteOutlined fontSize="inherit" />}
 								onClick={() => setDeleteOpen(true)}
 							>
 								Supprimer

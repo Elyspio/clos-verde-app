@@ -46,7 +46,13 @@ export function UserMenu() {
 						{initial}
 					</Avatar>
 					<Box sx={{ display: { xs: "none", md: "block" }, maxWidth: 150 }}>
-						<Typography noWrap variant="body2" color="text.primary">
+						<Typography
+							noWrap
+							variant="body2"
+							sx={{
+								color: "text.primary",
+							}}
+						>
 							{label}
 						</Typography>
 					</Box>

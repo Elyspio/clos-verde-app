@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useAuth } from "react-oidc-context";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router";
 import { routes } from "@/config/routes";
 import { useFeedbackBridge } from "@/core/bridges/feedback.bridge";
 import { useRealtimeBridge } from "@/core/bridges/realtime.bridge";

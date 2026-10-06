@@ -1,7 +1,7 @@
 import { Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Stack, Typography } from "@mui/material";
-import { Close, DeleteOutline, EditOutlined, EventOutlined } from "@mui/icons-material";
+import { Close, DeleteOutlined, EditOutlined, EventOutlined } from "@mui/icons-material";
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 import type { Reservation } from "@apis/rest/api/generated";
 import { useIsAdmin } from "@data/client/useIsAdmin";
 import { useReservationsMutations } from "@data/reservations/reservations.mutations";
@@ -76,18 +76,26 @@ export function DeleteReservationDialog({ reservation, currentUser, onClose }: D
 			<Dialog
 				open={Boolean(reservation)}
 				onClose={onClose}
-				PaperProps={{
-					["data-testid" as string]: "reservation-dialog",
-					["data-reservation-id" as string]: reservation?.id,
-					sx: {
-						borderRadius: { xs: "14px", sm: "18px" },
-						boxShadow: "0 18px 48px rgba(15, 23, 42, 0.24)",
-						overflow: "hidden",
+				slotProps={{
+					paper: {
+						["data-testid" as string]: "reservation-dialog",
+						["data-reservation-id" as string]: reservation?.id,
+						sx: {
+							borderRadius: { xs: "14px", sm: "18px" },
+							boxShadow: "0 18px 48px rgba(15, 23, 42, 0.24)",
+							overflow: "hidden",
+						},
 					},
 				}}
 			>
 				<DialogTitle sx={{ p: { xs: 2.25, sm: 2.75 }, pb: 1.25 }}>
-					<Stack direction="row" spacing={1.25} alignItems="flex-start">
+					<Stack
+						direction="row"
+						spacing={1.25}
+						sx={{
+							alignItems: "flex-start",
+						}}
+					>
 						<Box
 							aria-hidden
 							sx={{
@@ -108,7 +116,16 @@ export function DeleteReservationDialog({ reservation, currentUser, onClose }: D
 								{canManage ? "Gérer la réservation" : "Détail de la réservation"}
 							</Typography>
 							{reservation && (
-								<Stack direction="row" alignItems="center" spacing={1} flexWrap="wrap" useFlexGap sx={{ mt: 1 }}>
+								<Stack
+									direction="row"
+									spacing={1}
+									useFlexGap
+									sx={{
+										alignItems: "center",
+										flexWrap: "wrap",
+										mt: 1,
+									}}
+								>
 									<Typography sx={{ color: "var(--primary-blue)", fontSize: 15.5, fontWeight: 750 }}>{reservation.user.displayName}</Typography>
 									<PendingBadge reservation={reservation} />
 								</Stack>
@@ -171,13 +188,12 @@ export function DeleteReservationDialog({ reservation, currentUser, onClose }: D
 					)}
 
 					{canManage && !showDecisionPanel && (
-						<Button onClick={handleConfirm} variant="contained" disabled={deleteMutation.isPending} startIcon={<DeleteOutline />} sx={destructiveButtonSx}>
+						<Button onClick={handleConfirm} variant="contained" disabled={deleteMutation.isPending} startIcon={<DeleteOutlined />} sx={destructiveButtonSx}>
 							{isPending ? "Annuler la réservation" : "Supprimer"}
 						</Button>
 					)}
 				</DialogActions>
 			</Dialog>
-
 			<ObjectionDialog reservation={objecting} onClose={() => setObjecting(null)} />
 		</>
 	);

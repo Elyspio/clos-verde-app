@@ -108,7 +108,7 @@ test.describe("Messaging — admin UI affordances", () => {
 		await expect(renameDialog).toBeVisible();
 		await renameDialog.getByLabel("Nom").fill(newName);
 		const renamePromise = page.waitForResponse(
-			(response) => response.request().method() === "PUT" && response.url().endsWith(`/api/topics/${topic.id}`) && response.status() === 200,
+			(response) => response.request().method() === "PUT" && response.url().endsWith(`/api/topics/${topic.id}`) && response.status() === 200
 		);
 		await renameDialog.getByRole("button", { name: "Enregistrer" }).click();
 		await renamePromise;
@@ -119,7 +119,7 @@ test.describe("Messaging — admin UI affordances", () => {
 		const confirmDialog = page.getByRole("dialog", { name: "Supprimer le salon" });
 		await expect(confirmDialog).toBeVisible();
 		const deletePromise = page.waitForResponse(
-			(response) => response.request().method() === "DELETE" && response.url().endsWith(`/api/topics/${topic.id}`) && response.status() === 204,
+			(response) => response.request().method() === "DELETE" && response.url().endsWith(`/api/topics/${topic.id}`) && response.status() === 204
 		);
 		await confirmDialog.getByRole("button", { name: "Supprimer" }).click();
 		await deletePromise;

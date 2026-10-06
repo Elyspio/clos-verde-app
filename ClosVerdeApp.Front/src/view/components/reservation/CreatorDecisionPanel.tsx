@@ -1,7 +1,7 @@
 import { Alert, Box, Button, Stack, Typography } from "@mui/material";
-import { CheckCircleOutline, DeleteOutline, EditOutlined, ForumOutlined, ReportProblemOutlined } from "@mui/icons-material";
+import { CheckCircleOutlined, DeleteOutlined, EditOutlined, ForumOutlined, ReportProblemOutlined } from "@mui/icons-material";
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 import { format } from "date-fns";
 import { useReservationsMutations } from "@data/reservations/reservations.mutations";
 import type { Reservation } from "@apis/rest/api/generated";
@@ -80,7 +80,13 @@ export function CreatorDecisionPanel({ reservation, onChanged, isOwner = true }:
 			}}
 		>
 			<Box aria-hidden sx={{ position: "absolute", inset: "0 auto 0 0", width: 4, bgcolor: "#d97706" }} />
-			<Stack direction="row" spacing={1.25} alignItems="flex-start">
+			<Stack
+				direction="row"
+				spacing={1.25}
+				sx={{
+					alignItems: "flex-start",
+				}}
+			>
 				<Box
 					aria-hidden
 					sx={{
@@ -113,7 +119,15 @@ export function CreatorDecisionPanel({ reservation, onChanged, isOwner = true }:
 			<Stack spacing={1} sx={{ mt: 1.5 }}>
 				{objection && (
 					<Box sx={{ p: 1.25, borderRadius: "11px", bgcolor: "rgba(255,255,255,0.88)", border: "1px solid rgba(148, 163, 184, 0.28)" }}>
-						<Stack direction="row" alignItems="baseline" spacing={0.75} flexWrap="wrap" useFlexGap>
+						<Stack
+							direction="row"
+							spacing={0.75}
+							useFlexGap
+							sx={{
+								alignItems: "baseline",
+								flexWrap: "wrap",
+							}}
+						>
 							<Typography sx={{ color: "var(--ink)", fontSize: 13.5, fontWeight: 800 }}>{objection.user.displayName}</Typography>
 							<Typography component="span" sx={{ color: "var(--ink-mute)", fontSize: 12, fontWeight: 700 }}>
 								{format(new Date(objection.createdAt), "dd/MM HH:mm")}
@@ -144,7 +158,7 @@ export function CreatorDecisionPanel({ reservation, onChanged, isOwner = true }:
 					onClick={validate}
 					disabled={submitting}
 					color="success"
-					startIcon={<CheckCircleOutline />}
+					startIcon={<CheckCircleOutlined />}
 					size="medium"
 					sx={decisionButtonSx}
 				>
@@ -167,7 +181,7 @@ export function CreatorDecisionPanel({ reservation, onChanged, isOwner = true }:
 					onClick={cancel}
 					disabled={submitting}
 					color="error"
-					startIcon={<DeleteOutline />}
+					startIcon={<DeleteOutlined />}
 					size="medium"
 					sx={decisionButtonSx}
 				>

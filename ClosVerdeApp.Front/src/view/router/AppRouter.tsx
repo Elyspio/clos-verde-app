@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useRef } from "react";
 import { useAuth } from "react-oidc-context";
-import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router";
 import { routes } from "@/config/routes";
 import { setUnauthorizedHandler } from "@apis/rest/api/clients/api.client";
 import { clearStoredAuthSession } from "@/core/auth/session";
@@ -27,7 +27,9 @@ export function AppRouter() {
 	const navigate = useNavigate();
 	const location = useLocation();
 	const authRef = useRef(auth);
-	authRef.current = auth;
+	useEffect(() => {
+		authRef.current = auth;
+	}, [auth]);
 
 	useEffect(() => {
 		setUnauthorizedHandler(() => {

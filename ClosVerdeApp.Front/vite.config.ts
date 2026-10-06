@@ -28,6 +28,14 @@ export default defineConfig({
 			...projectAliases,
 		},
 	},
+	lint: {
+		...base.lint,
+		overrides: [
+			...(base.lint?.overrides ?? []),
+			// Playwright fixtures receive a `use` callback: not React code, so the hooks rules do not apply.
+			{ files: ["tests/e2e/**"], rules: { "react/rules-of-hooks": "off" } },
+		],
+	},
 	build: {
 		chunkSizeWarningLimit: 700,
 		rolldownOptions: {
