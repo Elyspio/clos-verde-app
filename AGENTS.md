@@ -38,7 +38,7 @@ Run these from `ClosVerdeApp.Front`:
 ## Conventions
 
 - Service and repository registration is done through `IDotnetModule` and Scrutor scanning. Keep new classes in the existing namespaces so they are picked up automatically.
-- Controllers use tracing base classes and `HttpException`; API errors are shaped by the `HttpExceptionFilter`.
+- Controllers, services and repositories open `using var trace = logger.Trace(...)` scopes (`Elyspio.Utils.Telemetry`, configured by the standard `OTEL_*` variables) and throw `HttpException`; API errors are shaped by the `HttpExceptionFilter`.
 - Keep transport/models in `ClosVerdeApp.Api.Abstractions`; controllers and services should not depend on frontend types.
 - User-facing messages are written in French in both backend and frontend code.
 - JWT claims use `sub`, `email`, and `name`; the frontend stores the token in `sessionStorage` or `localStorage` under `clos-verde-app.token`.

@@ -1,3 +1,4 @@
+using Elyspio.Utils.Telemetry;
 using System.Net;
 using System.Text.Json;
 using ClosVerdeApp.Api.Abstractions.Exceptions;
@@ -5,7 +6,6 @@ using ClosVerdeApp.Api.Abstractions.Interfaces.Services;
 using ClosVerdeApp.Api.Abstractions.Models.Configuration;
 using ClosVerdeApp.Api.Abstractions.Models.Entities;
 using ClosVerdeApp.Api.Abstractions.Models.Transports;
-using Elyspio.Utils.Telemetry.Tracing.Elements;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using WebPush;
@@ -15,13 +15,13 @@ namespace ClosVerdeApp.Api.Core.Services;
 public class WebPushTransport(
 	IOptionsMonitor<PushNotificationOptions> options,
 	ILogger<WebPushTransport> logger
-) : TracingService(logger), IPushTransport
+) : IPushTransport
 {
 	private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
 	public async Task Send(PushSubscriptionEntity subscription, PushNotificationPayload payload, CancellationToken cancellationToken = default)
 	{
-		using var logger = LogService();
+		using var trace = logger.Trace();
 		var opts = options.CurrentValue;
 		if (!opts.Enabled || !opts.HasVapidKeys) return;
 

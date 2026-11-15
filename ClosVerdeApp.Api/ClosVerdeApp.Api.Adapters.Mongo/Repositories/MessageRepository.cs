@@ -1,3 +1,4 @@
+using Elyspio.Utils.Telemetry;
 using ClosVerdeApp.Api.Abstractions.Common.Extensions;
 using ClosVerdeApp.Api.Abstractions.Common.Helpers;
 using ClosVerdeApp.Api.Abstractions.Interfaces.Repositories;
@@ -22,7 +23,7 @@ internal class MessageRepository : BaseRepository<MessageEntity>, IMessageReposi
 
 	public async Task<List<MessageEntity>> GetByTopic(Guid topicId, Guid? before, int limit)
 	{
-		using var logger = LogAdapter($"{Log.F(topicId)} {Log.F(before)} {Log.F(limit)}");
+		using var trace = Logger.Trace($"{Log.F(topicId)} {Log.F(before)} {Log.F(limit)}");
 		var q = EntityCollection.AsQueryable().Where(m => m.TopicId == topicId);
 		if (before.HasValue)
 		{
@@ -42,7 +43,7 @@ internal class MessageRepository : BaseRepository<MessageEntity>, IMessageReposi
 
 	public async Task<MessageEntity?> GetById(Guid id)
 	{
-		using var logger = LogAdapter($"{Log.F(id)}");
+		using var trace = Logger.Trace($"{Log.F(id)}");
 		var oid = id.AsObjectId();
 		return await EntityCollection.AsQueryable().FirstOrDefaultAsync(m => m.Id == oid);
 	}
@@ -56,7 +57,7 @@ internal class MessageRepository : BaseRepository<MessageEntity>, IMessageReposi
 		List<MessageAttachmentEntity> attachments,
 		bool isSystem)
 	{
-		using var logger = LogAdapter($"{Log.F(topicId)} {Log.F(authorUserId)}");
+		using var trace = Logger.Trace($"{Log.F(topicId)} {Log.F(authorUserId)}");
 
 		var entity = new MessageEntity
 		{
@@ -75,7 +76,7 @@ internal class MessageRepository : BaseRepository<MessageEntity>, IMessageReposi
 
 	public async Task<MessageEntity?> Update(Guid id, string contentHtml, List<Guid> mentions)
 	{
-		using var logger = LogAdapter($"{Log.F(id)}");
+		using var trace = Logger.Trace($"{Log.F(id)}");
 		var oid = id.AsObjectId();
 		var update = Builders<MessageEntity>.Update
 			.Set(m => m.ContentHtml, contentHtml)
@@ -90,7 +91,7 @@ internal class MessageRepository : BaseRepository<MessageEntity>, IMessageReposi
 
 	public async Task<MessageEntity?> SoftDelete(Guid id)
 	{
-		using var logger = LogAdapter($"{Log.F(id)}");
+		using var trace = Logger.Trace($"{Log.F(id)}");
 		var oid = id.AsObjectId();
 		var update = Builders<MessageEntity>.Update
 			.Set(m => m.IsDeleted, true)
@@ -106,13 +107,13 @@ internal class MessageRepository : BaseRepository<MessageEntity>, IMessageReposi
 
 	public async Task DeleteByTopic(Guid topicId)
 	{
-		using var logger = LogAdapter($"{Log.F(topicId)}");
+		using var trace = Logger.Trace($"{Log.F(topicId)}");
 		await EntityCollection.DeleteManyAsync(m => m.TopicId == topicId);
 	}
 
 	public async Task<int> CountAfter(Guid topicId, DateTime after, Guid excludeAuthorId)
 	{
-		using var logger = LogAdapter($"{Log.F(topicId)} {Log.F(after)}");
+		using var trace = Logger.Trace($"{Log.F(topicId)} {Log.F(after)}");
 		// `after` is the read-receipt timestamp (1-second resolution, like ObjectId timestamps).
 		// Using the *maximum* ObjectId of that second as the exclusive lower bound treats every
 		// message created within the read second as already read — so a freshly-read topic does
@@ -126,7 +127,7 @@ internal class MessageRepository : BaseRepository<MessageEntity>, IMessageReposi
 
 	public async Task<List<Guid>> GetEngagedTopicIds(Guid userId)
 	{
-		using var logger = LogAdapter($"{Log.F(userId)}");
+		using var trace = Logger.Trace($"{Log.F(userId)}");
 		var filter = Builders<MessageEntity>.Filter.And(
 			Builders<MessageEntity>.Filter.Eq(m => m.IsDeleted, false),
 			Builders<MessageEntity>.Filter.Or(

@@ -1,5 +1,5 @@
 # Building back
-FROM mcr.microsoft.com/dotnet/sdk:10.0 AS builder-back
+FROM mcr.microsoft.com/dotnet/sdk:11.0 AS builder-back
 WORKDIR /src
 
 COPY ClosVerdeApp.Api/ ./ClosVerdeApp.Api/
@@ -23,7 +23,7 @@ COPY ClosVerdeApp.Front/ ./
 RUN pnpm build
 
 # Running
-FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS production
+FROM mcr.microsoft.com/dotnet/aspnet:11.0 AS production
 WORKDIR /back
 
 COPY --from=builder-back /app/out ./

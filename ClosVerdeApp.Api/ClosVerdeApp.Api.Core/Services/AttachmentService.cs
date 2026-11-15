@@ -1,9 +1,9 @@
+using Elyspio.Utils.Telemetry;
 using ClosVerdeApp.Api.Abstractions.Common.Helpers;
 using ClosVerdeApp.Api.Abstractions.Exceptions;
 using ClosVerdeApp.Api.Abstractions.Interfaces.Repositories;
 using ClosVerdeApp.Api.Abstractions.Interfaces.Services;
 using ClosVerdeApp.Api.Abstractions.Models.Transports;
-using Elyspio.Utils.Telemetry.Tracing.Elements;
 using Microsoft.Extensions.Logging;
 
 namespace ClosVerdeApp.Api.Core.Services;
@@ -16,7 +16,7 @@ namespace ClosVerdeApp.Api.Core.Services;
 public class AttachmentService(
 	IAttachmentRepository attachmentRepository,
 	ILogger<AttachmentService> logger
-) : TracingService(logger), IAttachmentService
+) : IAttachmentService
 {
 	public long MaxFileSizeBytes => 25L * 1024 * 1024;
 
@@ -29,7 +29,7 @@ public class AttachmentService(
 
 	public async Task<Attachment> Upload(Guid uploaderUserId, string fileName, string contentType, Stream content)
 	{
-		using var logger = LogService($"{Log.F(uploaderUserId)} {Log.F(fileName)}");
+		using var trace = logger.Trace($"{Log.F(uploaderUserId)} {Log.F(fileName)}");
 
 		if (string.IsNullOrWhiteSpace(fileName))
 			throw new HttpException.BadRequest("Le nom de fichier est requis.");
@@ -64,7 +64,7 @@ public class AttachmentService(
 
 	public async Task<(AttachmentMetadata Metadata, Stream Content)> Download(Guid attachmentId)
 	{
-		using var logger = LogService($"{Log.F(attachmentId)}");
+		using var trace = logger.Trace($"{Log.F(attachmentId)}");
 		var metadata = await attachmentRepository.GetMetadata(attachmentId)
 			?? throw new HttpException.NotFound<Attachment>(attachmentId);
 		var stream = await attachmentRepository.OpenDownloadStream(attachmentId);
@@ -73,7 +73,7 @@ public class AttachmentService(
 
 	public async Task<AttachmentMetadata> RequireOwnedByUploader(Guid attachmentId, Guid expectedUploaderUserId)
 	{
-		using var logger = LogService($"{Log.F(attachmentId)} {Log.F(expectedUploaderUserId)}");
+		using var trace = logger.Trace($"{Log.F(attachmentId)} {Log.F(expectedUploaderUserId)}");
 		var metadata = await attachmentRepository.GetMetadata(attachmentId)
 			?? throw new HttpException.BadRequest($"La pièce jointe {attachmentId} est introuvable.");
 		if (metadata.UploaderUserId != expectedUploaderUserId)
@@ -93,7 +93,7 @@ public class AttachmentService(
 
 	public async Task Delete(Guid attachmentId)
 	{
-		using var logger = LogService($"{Log.F(attachmentId)}");
+		using var trace = logger.Trace($"{Log.F(attachmentId)}");
 		await attachmentRepository.Delete(attachmentId);
 	}
 }

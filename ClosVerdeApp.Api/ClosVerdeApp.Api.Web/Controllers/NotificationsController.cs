@@ -1,9 +1,9 @@
+using Elyspio.Utils.Telemetry;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using ClosVerdeApp.Api.Abstractions.Exceptions;
 using ClosVerdeApp.Api.Abstractions.Interfaces.Services;
 using ClosVerdeApp.Api.Abstractions.Models.Transports;
-using Elyspio.Utils.Telemetry.Tracing.Elements;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -15,7 +15,7 @@ namespace ClosVerdeApp.Api.Web.Controllers;
 public class NotificationsController(
 	IPushSubscriptionService pushSubscriptionService,
 	ILogger<NotificationsController> logger)
-	: TracingController(logger)
+	: ControllerBase
 {
 	private Guid CurrentUserId
 	{
@@ -33,7 +33,7 @@ public class NotificationsController(
 	[ProducesResponseType(StatusCodes.Status404NotFound)]
 	public async Task<IActionResult> GetVapidPublicKey()
 	{
-		using var logger = LogController();
+		using var trace = logger.Trace();
 		var response = await pushSubscriptionService.GetPublicKey();
 		return response is null ? NotFound() : Ok(response);
 	}
@@ -42,7 +42,7 @@ public class NotificationsController(
 	[ProducesResponseType(StatusCodes.Status204NoContent)]
 	public async Task<IActionResult> SavePushSubscription([FromBody] PushSubscriptionRequest request)
 	{
-		using var logger = LogController();
+		using var trace = logger.Trace();
 		await pushSubscriptionService.Save(CurrentUserId, request);
 		return NoContent();
 	}
@@ -51,7 +51,7 @@ public class NotificationsController(
 	[ProducesResponseType(StatusCodes.Status204NoContent)]
 	public async Task<IActionResult> DeletePushSubscription([FromBody] DeletePushSubscriptionRequest request)
 	{
-		using var logger = LogController();
+		using var trace = logger.Trace();
 		await pushSubscriptionService.Delete(CurrentUserId, request);
 		return NoContent();
 	}

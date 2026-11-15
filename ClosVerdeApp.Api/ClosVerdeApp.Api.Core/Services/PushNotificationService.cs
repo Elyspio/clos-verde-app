@@ -1,3 +1,4 @@
+using Elyspio.Utils.Telemetry;
 using System.Text.RegularExpressions;
 using ClosVerdeApp.Api.Abstractions.Common.Helpers;
 using ClosVerdeApp.Api.Abstractions.Exceptions;
@@ -5,7 +6,6 @@ using ClosVerdeApp.Api.Abstractions.Interfaces.Repositories;
 using ClosVerdeApp.Api.Abstractions.Interfaces.Services;
 using ClosVerdeApp.Api.Abstractions.Models.Entities;
 using ClosVerdeApp.Api.Abstractions.Models.Transports;
-using Elyspio.Utils.Telemetry.Tracing.Elements;
 using Microsoft.Extensions.Logging;
 
 namespace ClosVerdeApp.Api.Core.Services;
@@ -15,11 +15,11 @@ public class PushNotificationService(
 	IUserDirectoryService userDirectoryService,
 	IPushTransport pushTransport,
 	ILogger<PushNotificationService> logger
-) : TracingService(logger), IPushNotificationService
+) : IPushNotificationService
 {
 	public async Task NotifyMessageMention(Message message, TopicEntity topic, CancellationToken cancellationToken = default)
 	{
-		using var logger = LogService($"{Log.F(message.Id)} {Log.F(message.TopicId)}");
+		using var trace = logger.Trace($"{Log.F(message.Id)} {Log.F(message.TopicId)}");
 
 		if (message.IsDeleted || message.IsSystem || message.Mentions.Count == 0) return;
 
@@ -45,7 +45,7 @@ public class PushNotificationService(
 
 	public async Task NotifyReservationCreated(Reservation reservation, CancellationToken cancellationToken = default)
 	{
-		using var logger = LogService($"{Log.F(reservation.Id)}");
+		using var trace = logger.Trace($"{Log.F(reservation.Id)}");
 
 		var users = await userDirectoryService.ListAsync(cancellationToken);
 		var recipientIds = users

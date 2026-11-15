@@ -1,3 +1,4 @@
+using Elyspio.Utils.Telemetry;
 using ClosVerdeApp.Api.Abstractions.Common.Extensions;
 using ClosVerdeApp.Api.Abstractions.Common.Helpers;
 using ClosVerdeApp.Api.Abstractions.Exceptions;
@@ -6,7 +7,6 @@ using ClosVerdeApp.Api.Abstractions.Interfaces.Services;
 using ClosVerdeApp.Api.Abstractions.Models.Entities;
 using ClosVerdeApp.Api.Abstractions.Models.Transports;
 using ClosVerdeApp.Api.Core.Helpers;
-using Elyspio.Utils.Telemetry.Tracing.Elements;
 using Microsoft.Extensions.Logging;
 
 namespace ClosVerdeApp.Api.Core.Services;
@@ -23,11 +23,11 @@ public class MessageService(
 	IAttachmentService attachmentService,
 	IBackgroundDispatcher backgroundDispatcher,
 	ILogger<MessageService> logger
-) : TracingService(logger), IMessageService
+) : IMessageService
 {
 	public async Task<List<Message>> List(Guid topicId, Guid? before, int limit)
 	{
-		using var logger = LogService($"{Log.F(topicId)} {Log.F(before)} {Log.F(limit)}");
+		using var trace = logger.Trace($"{Log.F(topicId)} {Log.F(before)} {Log.F(limit)}");
 
 		var topic = await topicRepository.GetById(topicId)
 			?? throw new HttpException.NotFound<TopicEntity>(topicId);
@@ -39,7 +39,7 @@ public class MessageService(
 
 	public async Task<Message> Post(Guid topicId, Guid authorUserId, string authorDisplayName, string contentHtml, IReadOnlyList<Guid> attachmentIds)
 	{
-		using var logger = LogService($"{Log.F(topicId)} {Log.F(authorUserId)} attachments={attachmentIds.Count}");
+		using var trace = logger.Trace($"{Log.F(topicId)} {Log.F(authorUserId)} attachments={attachmentIds.Count}");
 
 		var topic = await topicRepository.GetById(topicId)
 			?? throw new HttpException.NotFound<TopicEntity>(topicId);
@@ -93,7 +93,7 @@ public class MessageService(
 
 	public async Task<Message> PostSystem(Guid topicId, Guid actorUserId, string actorDisplayName, string contentHtml)
 	{
-		using var logger = LogService($"{Log.F(topicId)} {Log.F(actorUserId)}");
+		using var trace = logger.Trace($"{Log.F(topicId)} {Log.F(actorUserId)}");
 
 		var topic = await topicRepository.GetById(topicId)
 			?? throw new HttpException.NotFound<TopicEntity>(topicId);
@@ -115,7 +115,7 @@ public class MessageService(
 
 	public async Task<Message> Edit(Guid messageId, Guid currentUserId, string contentHtml)
 	{
-		using var logger = LogService($"{Log.F(messageId)} {Log.F(currentUserId)}");
+		using var trace = logger.Trace($"{Log.F(messageId)} {Log.F(currentUserId)}");
 
 		var existing = await messageRepository.GetById(messageId)
 			?? throw new HttpException.NotFound<MessageEntity>(messageId);
@@ -141,7 +141,7 @@ public class MessageService(
 
 	public async Task<Message> SoftDelete(Guid messageId, Guid currentUserId)
 	{
-		using var logger = LogService($"{Log.F(messageId)} {Log.F(currentUserId)}");
+		using var trace = logger.Trace($"{Log.F(messageId)} {Log.F(currentUserId)}");
 
 		var existing = await messageRepository.GetById(messageId)
 			?? throw new HttpException.NotFound<MessageEntity>(messageId);
@@ -173,7 +173,7 @@ public class MessageService(
 
 	public async Task<DateTime> MarkRead(Guid topicId, Guid currentUserId, DateTime? at)
 	{
-		using var logger = LogService($"{Log.F(topicId)} {Log.F(currentUserId)} {Log.F(at)}");
+		using var trace = logger.Trace($"{Log.F(topicId)} {Log.F(currentUserId)} {Log.F(at)}");
 
 		var topic = await topicRepository.GetById(topicId)
 			?? throw new HttpException.NotFound<TopicEntity>(topicId);

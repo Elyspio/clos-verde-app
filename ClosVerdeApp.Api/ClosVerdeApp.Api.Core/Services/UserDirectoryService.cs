@@ -1,9 +1,9 @@
+using Elyspio.Utils.Telemetry;
 
 using ClosVerdeApp.Api.Abstractions.Interfaces.Adapters;
 using ClosVerdeApp.Api.Abstractions.Interfaces.Services;
 using ClosVerdeApp.Api.Abstractions.Models.Configuration;
 using ClosVerdeApp.Api.Abstractions.Models.Transports;
-using Elyspio.Utils.Telemetry.Tracing.Elements;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -20,13 +20,13 @@ public class UserDirectoryService(
 	IMemoryCache memoryCache,
 	IOptionsMonitor<KeycloakAdminOptions> options,
 	ILogger<UserDirectoryService> logger
-) : TracingService(logger), IUserDirectoryService
+) : IUserDirectoryService
 {
 	private const string CacheKey = "directory.users";
 
 	public async Task<List<DirectoryUser>> ListAsync(CancellationToken cancellationToken = default)
 	{
-		using var logger = LogService();
+		using var trace = logger.Trace();
 		
 		var users = await keycloakAdminClient.ListUsersAsync(cancellationToken);
 		

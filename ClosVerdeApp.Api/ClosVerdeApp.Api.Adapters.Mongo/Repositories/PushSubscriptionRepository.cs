@@ -1,3 +1,4 @@
+using Elyspio.Utils.Telemetry;
 using ClosVerdeApp.Api.Abstractions.Interfaces.Repositories;
 using ClosVerdeApp.Api.Abstractions.Models.Entities;
 using ClosVerdeApp.Api.Adapters.Mongo.Repositories.Base;
@@ -17,7 +18,7 @@ internal class PushSubscriptionRepository : BaseRepository<PushSubscriptionEntit
 
 	public async Task<PushSubscriptionEntity> Upsert(Guid userId, string endpoint, string p256dh, string auth, string? userAgent)
 	{
-		using var logger = LogAdapter();
+		using var trace = Logger.Trace();
 
 		var update = Builders<PushSubscriptionEntity>.Update
 			.Set(s => s.UserId, userId)
@@ -40,7 +41,7 @@ internal class PushSubscriptionRepository : BaseRepository<PushSubscriptionEntit
 
 	public async Task Delete(Guid userId, string endpoint)
 	{
-		using var logger = LogAdapter();
+		using var trace = Logger.Trace();
 		var filter = Builders<PushSubscriptionEntity>.Filter.And(
 			Builders<PushSubscriptionEntity>.Filter.Eq(s => s.UserId, userId),
 			Builders<PushSubscriptionEntity>.Filter.Eq(s => s.Endpoint, endpoint));
@@ -49,13 +50,13 @@ internal class PushSubscriptionRepository : BaseRepository<PushSubscriptionEntit
 
 	public async Task DeleteByEndpoint(string endpoint)
 	{
-		using var logger = LogAdapter();
+		using var trace = Logger.Trace();
 		await EntityCollection.DeleteOneAsync(s => s.Endpoint == endpoint);
 	}
 
 	public async Task<List<PushSubscriptionEntity>> GetByUserIds(IReadOnlyCollection<Guid> userIds)
 	{
-		using var logger = LogAdapter();
+		using var trace = Logger.Trace();
 		if (userIds.Count == 0) return [];
 
 		var filter = Builders<PushSubscriptionEntity>.Filter.In(s => s.UserId, userIds);
@@ -64,7 +65,7 @@ internal class PushSubscriptionRepository : BaseRepository<PushSubscriptionEntit
 
 	public async Task MarkFailure(string endpoint, DateTime failureAt)
 	{
-		using var logger = LogAdapter();
+		using var trace = Logger.Trace();
 		var update = Builders<PushSubscriptionEntity>.Update.Set(s => s.LastFailureAt, failureAt);
 		await EntityCollection.UpdateOneAsync(s => s.Endpoint == endpoint, update);
 	}

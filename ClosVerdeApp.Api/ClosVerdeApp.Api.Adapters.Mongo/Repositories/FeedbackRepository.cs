@@ -1,3 +1,4 @@
+using Elyspio.Utils.Telemetry;
 using ClosVerdeApp.Api.Abstractions.Common.Extensions;
 using ClosVerdeApp.Api.Abstractions.Common.Helpers;
 using ClosVerdeApp.Api.Abstractions.Interfaces.Repositories;
@@ -27,7 +28,7 @@ internal class FeedbackRepository : BaseRepository<FeedbackEntity>, IFeedbackRep
 		List<MessageAttachmentEntity> attachments,
 		FeedbackContext? context)
 	{
-		using var logger = LogAdapter($"{Log.F(category)} {Log.F(author.Id)}");
+		using var trace = Logger.Trace($"{Log.F(category)} {Log.F(author.Id)}");
 
 		var entity = new FeedbackEntity
 		{
@@ -45,14 +46,14 @@ internal class FeedbackRepository : BaseRepository<FeedbackEntity>, IFeedbackRep
 
 	public async Task<FeedbackEntity?> GetById(Guid id)
 	{
-		using var logger = LogAdapter($"{Log.F(id)}");
+		using var trace = Logger.Trace($"{Log.F(id)}");
 		var oid = id.AsObjectId();
 		return await EntityCollection.AsQueryable().FirstOrDefaultAsync(f => f.Id == oid);
 	}
 
 	public async Task<FeedbackEntity?> FindByAttachmentId(Guid attachmentId)
 	{
-		using var logger = LogAdapter($"{Log.F(attachmentId)}");
+		using var trace = Logger.Trace($"{Log.F(attachmentId)}");
 		var oid = attachmentId.AsObjectId();
 		var filter = Builders<FeedbackEntity>.Filter.ElemMatch(
 			f => f.Attachments,
@@ -62,7 +63,7 @@ internal class FeedbackRepository : BaseRepository<FeedbackEntity>, IFeedbackRep
 
 	public async Task<List<FeedbackEntity>> List(FeedbackCategory? category, FeedbackStatus? status, int skip, int take)
 	{
-		using var logger = LogAdapter($"{Log.F(category)} {Log.F(status)} {Log.F(skip)} {Log.F(take)}");
+		using var trace = Logger.Trace($"{Log.F(category)} {Log.F(status)} {Log.F(skip)} {Log.F(take)}");
 
 		var filter = BuildFilter(category, status);
 		return await EntityCollection
@@ -75,14 +76,14 @@ internal class FeedbackRepository : BaseRepository<FeedbackEntity>, IFeedbackRep
 
 	public async Task<long> Count(FeedbackCategory? category, FeedbackStatus? status)
 	{
-		using var logger = LogAdapter($"{Log.F(category)} {Log.F(status)}");
+		using var trace = Logger.Trace($"{Log.F(category)} {Log.F(status)}");
 		var filter = BuildFilter(category, status);
 		return await EntityCollection.CountDocumentsAsync(filter);
 	}
 
 	public async Task<List<FeedbackEntity>> ListByAuthor(Guid authorId, IReadOnlyCollection<FeedbackStatus>? statuses, int skip, int take)
 	{
-		using var logger = LogAdapter($"{Log.F(authorId)} statuses={statuses?.Count ?? 0} {Log.F(skip)} {Log.F(take)}");
+		using var trace = Logger.Trace($"{Log.F(authorId)} statuses={statuses?.Count ?? 0} {Log.F(skip)} {Log.F(take)}");
 
 		var filter = BuildAuthorFilter(authorId, statuses);
 		return await EntityCollection
@@ -95,14 +96,14 @@ internal class FeedbackRepository : BaseRepository<FeedbackEntity>, IFeedbackRep
 
 	public async Task<long> CountByAuthor(Guid authorId, IReadOnlyCollection<FeedbackStatus>? statuses)
 	{
-		using var logger = LogAdapter($"{Log.F(authorId)} statuses={statuses?.Count ?? 0}");
+		using var trace = Logger.Trace($"{Log.F(authorId)} statuses={statuses?.Count ?? 0}");
 		var filter = BuildAuthorFilter(authorId, statuses);
 		return await EntityCollection.CountDocumentsAsync(filter);
 	}
 
 	public async Task<FeedbackEntity?> UpdateStatus(Guid id, FeedbackStatus status, string? adminNote, DateTime? resolvedAt)
 	{
-		using var logger = LogAdapter($"{Log.F(id)} {Log.F(status)}");
+		using var trace = Logger.Trace($"{Log.F(id)} {Log.F(status)}");
 		var oid = id.AsObjectId();
 
 		var update = Builders<FeedbackEntity>.Update
@@ -118,7 +119,7 @@ internal class FeedbackRepository : BaseRepository<FeedbackEntity>, IFeedbackRep
 
 	public async Task<FeedbackEntity?> AddReply(Guid id, FeedbackReply reply)
 	{
-		using var logger = LogAdapter($"{Log.F(id)} {Log.F(reply.AuthorId)}");
+		using var trace = Logger.Trace($"{Log.F(id)} {Log.F(reply.AuthorId)}");
 		var oid = id.AsObjectId();
 
 		var update = Builders<FeedbackEntity>.Update.Push(f => f.Replies, reply);
