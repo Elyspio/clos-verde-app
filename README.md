@@ -1,6 +1,6 @@
 # ClosVerdeApp
 
-ClosVerdeApp is a full-stack reservation app built with **.NET 10**, **Aspire**, **MongoDB**, and a **React + Vite+** frontend. It includes:
+ClosVerdeApp is a full-stack reservation app built with **.NET 11**, **Aspire**, **MongoDB**, and a **React + Vite+** frontend. It includes:
 
 - JWT authentication with register/login flow
 - Reservation creation, update, deletion, and monthly browsing
@@ -21,7 +21,7 @@ ClosVerdeApp is a full-stack reservation app built with **.NET 10**, **Aspire**,
 
 ## Prerequisites
 
-- .NET 10 SDK
+- .NET 11 SDK
 - Node.js 26+
 - pnpm 12
 - MongoDB when running the API outside Aspire
