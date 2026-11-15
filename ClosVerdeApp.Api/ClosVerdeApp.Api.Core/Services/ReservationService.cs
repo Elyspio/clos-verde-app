@@ -1,3 +1,4 @@
+using Elyspio.Utils.Telemetry;
 using ClosVerdeApp.Api.Abstractions.Common.Extensions;
 using ClosVerdeApp.Api.Abstractions.Common.Helpers;
 using ClosVerdeApp.Api.Abstractions.Exceptions;
@@ -8,7 +9,6 @@ using ClosVerdeApp.Api.Abstractions.Models.Entities;
 using ClosVerdeApp.Api.Abstractions.Models.Entities.Enums;
 using ClosVerdeApp.Api.Abstractions.Models.Transports;
 using ClosVerdeApp.Api.Core.Helpers;
-using Elyspio.Utils.Telemetry.Tracing.Elements;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -18,7 +18,7 @@ namespace ClosVerdeApp.Api.Core.Services;
 /// Implements <see cref="IReservationService"/>. Reservations are created in <see cref="ReservationStatus.Pending"/>
 /// with a deadline = <c>min(ValidationDelay, StartDate − Now)</c>; deletes cascade-clean the linked discussion topic.
 /// </summary>
-public class ReservationService : TracingService, IReservationService
+public class ReservationService : IReservationService
 {
 	private readonly IReservationRepository _reservationRepository;
 	private readonly ITopicRepository _topicRepository;
@@ -30,6 +30,7 @@ public class ReservationService : TracingService, IReservationService
 	private readonly IUserDirectoryService _userDirectoryService;
 	private readonly IBackgroundDispatcher _backgroundDispatcher;
 	private readonly IOptionsMonitor<ReservationOptions> _options;
+	private readonly ILogger<ReservationService> _logger;
 
 	/// <summary>
 	/// Implements <see cref="IReservationService"/>. Reservations are created in <see cref="ReservationStatus.Pending"/>
@@ -45,8 +46,9 @@ public class ReservationService : TracingService, IReservationService
 		IUserDirectoryService userDirectoryService,
 		IBackgroundDispatcher backgroundDispatcher,
 		IOptionsMonitor<ReservationOptions> options,
-		ILogger<ReservationService> logger) : base(logger)
+		ILogger<ReservationService> logger)
 	{
+		_logger = logger;
 		_reservationRepository = reservationRepository;
 		_topicRepository = topicRepository;
 		_messageRepository = messageRepository;
@@ -61,7 +63,7 @@ public class ReservationService : TracingService, IReservationService
 
 	public async Task<List<Reservation>> GetRange(DateTime from, DateTime to)
 	{
-		using var logger = LogService($"{Log.F(from)} {Log.F(to)}");
+		using var trace = _logger.Trace($"{Log.F(from)} {Log.F(to)}");
 
 		var fromUtc = from.AsUtc();
 		var toUtc = to.AsUtc();
@@ -74,14 +76,14 @@ public class ReservationService : TracingService, IReservationService
 
 	public async Task<List<Reservation>> GetAll()
 	{
-		using var logger = LogService();
+		using var trace = _logger.Trace();
 		var entities = await _reservationRepository.GetAll();
 		return entities.Select(ToTransport).ToList();
 	}
 
 	public async Task<List<LeaderboardEntry>> GetLeaderboard()
 	{
-		using var logger = LogService();
+		using var trace = _logger.Trace();
 
 		var entities = await _reservationRepository.GetAll();
 
@@ -112,7 +114,7 @@ public class ReservationService : TracingService, IReservationService
 
 	public async Task<Reservation> Create(CreateReservationRequest request, Guid userId, string displayName, bool isAdmin = false)
 	{
-		using var logger = LogService($"{Log.F(userId)} {Log.F(isAdmin)} {Log.F(request.OnBehalfOfUserId)} {Log.F(request.StartDate)} {Log.F(request.EndDate)}");
+		using var trace = _logger.Trace($"{Log.F(userId)} {Log.F(isAdmin)} {Log.F(request.OnBehalfOfUserId)} {Log.F(request.StartDate)} {Log.F(request.EndDate)}");
 
 		var (ownerId, ownerName) = await ResolveOwner(request, userId, displayName, isAdmin);
 
@@ -154,7 +156,7 @@ public class ReservationService : TracingService, IReservationService
 
 	public async Task<Reservation> Update(Guid id, CreateReservationRequest request, Guid currentUserId, bool isAdmin = false)
 	{
-		using var logger = LogService($"{Log.F(id)} {Log.F(currentUserId)} {Log.F(isAdmin)} {Log.F(request.StartDate)} {Log.F(request.EndDate)}");
+		using var trace = _logger.Trace($"{Log.F(id)} {Log.F(currentUserId)} {Log.F(isAdmin)} {Log.F(request.StartDate)} {Log.F(request.EndDate)}");
 
 		var entity = await _reservationRepository.GetById(id);
 		if (entity is null) throw new HttpException.NotFound<ReservationEntity>(id);
@@ -200,7 +202,7 @@ public class ReservationService : TracingService, IReservationService
 				}
 				catch (Exception ex)
 				{
-					logger.Error(ex, "Could not post objection-cleared system message");
+					trace.LogError(ex, "Could not post objection-cleared system message");
 				}
 			}
 
@@ -221,7 +223,7 @@ public class ReservationService : TracingService, IReservationService
 
 	public async Task Delete(Guid id, Guid currentUserId, bool isAdmin = false)
 	{
-		using var logger = LogService($"{Log.F(id)} {Log.F(currentUserId)} {Log.F(isAdmin)}");
+		using var trace = _logger.Trace($"{Log.F(id)} {Log.F(currentUserId)} {Log.F(isAdmin)}");
 
 		var entity = await _reservationRepository.GetById(id);
 		if (entity is null) throw new HttpException.NotFound<ReservationEntity>(id);
@@ -245,7 +247,7 @@ public class ReservationService : TracingService, IReservationService
 
 	public async Task<Reservation> ForceValidate(Guid id, Guid currentUserId, bool isAdmin = false)
 	{
-		using var logger = LogService($"{Log.F(id)} {Log.F(currentUserId)} {Log.F(isAdmin)}");
+		using var trace = _logger.Trace($"{Log.F(id)} {Log.F(currentUserId)} {Log.F(isAdmin)}");
 
 		var entity = await _reservationRepository.GetById(id);
 		if (entity is null) throw new HttpException.NotFound<ReservationEntity>(id);

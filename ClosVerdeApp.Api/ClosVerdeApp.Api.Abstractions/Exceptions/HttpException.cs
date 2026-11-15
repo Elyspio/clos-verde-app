@@ -1,3 +1,4 @@
+using Elyspio.Utils.Telemetry;
 using System.Net;
 using ClosVerdeApp.Api.Abstractions.Common.Helpers;
 

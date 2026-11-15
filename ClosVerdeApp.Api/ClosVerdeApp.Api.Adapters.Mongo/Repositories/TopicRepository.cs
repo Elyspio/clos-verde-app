@@ -1,3 +1,4 @@
+using Elyspio.Utils.Telemetry;
 using ClosVerdeApp.Api.Abstractions.Common.Extensions;
 using ClosVerdeApp.Api.Abstractions.Common.Helpers;
 using ClosVerdeApp.Api.Abstractions.Interfaces.Repositories;
@@ -22,7 +23,7 @@ internal class TopicRepository : BaseRepository<TopicEntity>, ITopicRepository
 
 	public async Task<List<TopicEntity>> GetAll()
 	{
-		using var logger = LogAdapter();
+		using var trace = Logger.Trace();
 		var topics = await EntityCollection.AsQueryable().ToListAsync();
 		return topics
 			.OrderByDescending(t => t.LastMessageAt ?? t.CreatedAt)
@@ -31,20 +32,20 @@ internal class TopicRepository : BaseRepository<TopicEntity>, ITopicRepository
 
 	public async Task<TopicEntity?> GetById(Guid id)
 	{
-		using var logger = LogAdapter($"{Log.F(id)}");
+		using var trace = Logger.Trace($"{Log.F(id)}");
 		var oid = id.AsObjectId();
 		return await EntityCollection.AsQueryable().FirstOrDefaultAsync(t => t.Id == oid);
 	}
 
 	public async Task<TopicEntity?> GetGlobal()
 	{
-		using var logger = LogAdapter();
+		using var trace = Logger.Trace();
 		return await EntityCollection.AsQueryable().FirstOrDefaultAsync(t => t.Kind == TopicKind.Global);
 	}
 
 	public async Task<TopicEntity?> GetByReservation(Guid reservationId)
 	{
-		using var logger = LogAdapter($"{Log.F(reservationId)}");
+		using var trace = Logger.Trace($"{Log.F(reservationId)}");
 		return await EntityCollection.AsQueryable()
 			.FirstOrDefaultAsync(t => t.Kind == TopicKind.Reservation && t.ReservationId == reservationId);
 	}
@@ -56,7 +57,7 @@ internal class TopicRepository : BaseRepository<TopicEntity>, ITopicRepository
 		string? createdByDisplayName,
 		Guid? reservationId)
 	{
-		using var logger = LogAdapter($"{Log.F(kind)} {Log.F(name)}");
+		using var trace = Logger.Trace($"{Log.F(kind)} {Log.F(name)}");
 
 		var entity = new TopicEntity
 		{
@@ -78,7 +79,7 @@ internal class TopicRepository : BaseRepository<TopicEntity>, ITopicRepository
 
 	public async Task<TopicEntity?> Rename(Guid id, string newName)
 	{
-		using var logger = LogAdapter($"{Log.F(id)} {Log.F(newName)}");
+		using var trace = Logger.Trace($"{Log.F(id)} {Log.F(newName)}");
 		var oid = id.AsObjectId();
 		var update = Builders<TopicEntity>.Update
 			.Set(t => t.Name, newName.Trim())
@@ -94,14 +95,14 @@ internal class TopicRepository : BaseRepository<TopicEntity>, ITopicRepository
 
 	public async Task Delete(Guid id)
 	{
-		using var logger = LogAdapter($"{Log.F(id)}");
+		using var trace = Logger.Trace($"{Log.F(id)}");
 		var oid = id.AsObjectId();
 		await EntityCollection.DeleteOneAsync(t => t.Id == oid);
 	}
 
 	public async Task BumpStatistics(Guid id, DateTime lastMessageAt, int delta)
 	{
-		using var logger = LogAdapter($"{Log.F(id)} {Log.F(delta)}");
+		using var trace = Logger.Trace($"{Log.F(id)} {Log.F(delta)}");
 		var oid = id.AsObjectId();
 		var update = Builders<TopicEntity>.Update
 			.Set(t => t.LastMessageAt, lastMessageAt)
@@ -112,7 +113,7 @@ internal class TopicRepository : BaseRepository<TopicEntity>, ITopicRepository
 
 	public async Task DecrementMessageCount(Guid id)
 	{
-		using var logger = LogAdapter($"{Log.F(id)}");
+		using var trace = Logger.Trace($"{Log.F(id)}");
 		var oid = id.AsObjectId();
 		// Conditional decrement so we never go negative if a delete race fires twice for the same row.
 		var filter = Builders<TopicEntity>.Filter.And(
@@ -126,7 +127,7 @@ internal class TopicRepository : BaseRepository<TopicEntity>, ITopicRepository
 
 	public async Task MarkRead(Guid id, Guid userId, DateTime at)
 	{
-		using var logger = LogAdapter($"{Log.F(id)} {Log.F(userId)} {Log.F(at)}");
+		using var trace = Logger.Trace($"{Log.F(id)} {Log.F(userId)} {Log.F(at)}");
 		var oid = id.AsObjectId();
 		var update = Builders<TopicEntity>.Update
 			.Set($"{nameof(TopicEntity.ReadReceipts)}.{UserKey(userId)}", at)
@@ -137,7 +138,7 @@ internal class TopicRepository : BaseRepository<TopicEntity>, ITopicRepository
 
 	public async Task Mute(Guid id, Guid userId)
 	{
-		using var logger = LogAdapter($"{Log.F(id)} {Log.F(userId)}");
+		using var trace = Logger.Trace($"{Log.F(id)} {Log.F(userId)}");
 		var oid = id.AsObjectId();
 		var update = Builders<TopicEntity>.Update
 			.Set($"{nameof(TopicEntity.Muted)}.{UserKey(userId)}", true)
@@ -148,7 +149,7 @@ internal class TopicRepository : BaseRepository<TopicEntity>, ITopicRepository
 
 	public async Task Unmute(Guid id, Guid userId)
 	{
-		using var logger = LogAdapter($"{Log.F(id)} {Log.F(userId)}");
+		using var trace = Logger.Trace($"{Log.F(id)} {Log.F(userId)}");
 		var oid = id.AsObjectId();
 		var update = Builders<TopicEntity>.Update
 			.Unset($"{nameof(TopicEntity.Muted)}.{UserKey(userId)}")

@@ -1,3 +1,4 @@
+using Elyspio.Utils.Telemetry;
 using System.IdentityModel.Tokens.Jwt;
 using System.Net.Mime;
 using System.Security.Claims;
@@ -6,7 +7,6 @@ using ClosVerdeApp.Api.Abstractions.Exceptions;
 using ClosVerdeApp.Api.Abstractions.Interfaces.Services;
 using ClosVerdeApp.Api.Abstractions.Models.Transports;
 using ClosVerdeApp.Api.Web.Technical.Streaming;
-using Elyspio.Utils.Telemetry.Tracing.Elements;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Mvc;
@@ -30,7 +30,7 @@ public class AttachmentsController(
 	IAttachmentService attachmentService,
 	IFeedbackService feedbackService,
 	ILogger<AttachmentsController> logger)
-	: TracingController(logger)
+	: ControllerBase
 {
 	private const long RequestSizeBudgetBytes = 30L * 1024 * 1024;
 	private const int BoundaryLengthLimit = 128;
@@ -53,7 +53,7 @@ public class AttachmentsController(
 	[ProducesResponseType(StatusCodes.Status400BadRequest)]
 	public async Task<IActionResult> Upload(CancellationToken cancellationToken)
 	{
-		using var logger = LogController($"contentType={Request.ContentType}");
+		using var trace = logger.Trace($"contentType={Request.ContentType}");
 
 		if (!MultipartRequestHelper.IsMultipartContentType(Request.ContentType))
 			throw new HttpException.BadRequest("La requête doit être un multipart/form-data.");
@@ -102,7 +102,7 @@ public class AttachmentsController(
 	[ProducesResponseType(StatusCodes.Status404NotFound)]
 	public async Task<IActionResult> Download(Guid id)
 	{
-		using var logger = LogController(Log.F(id));
+		using var trace = logger.Trace($"{Log.F(id)}");
 		await feedbackService.EnsureAttachmentReadable(id, CurrentUserId, User.IsInRole("admin"));
 		var (metadata, content) = await attachmentService.Download(id);
 
@@ -125,7 +125,7 @@ public class AttachmentsController(
 	[ProducesResponseType(StatusCodes.Status404NotFound)]
 	public async Task<IActionResult> GetMetadata(Guid id)
 	{
-		using var logger = LogController(Log.F(id));
+		using var trace = logger.Trace($"{Log.F(id)}");
 		await feedbackService.EnsureAttachmentReadable(id, CurrentUserId, User.IsInRole("admin"));
 		var (metadata, content) = await attachmentService.Download(id);
 		await content.DisposeAsync();

@@ -1,3 +1,4 @@
+using Elyspio.Utils.Telemetry;
 using Elyspio.Utils.Telemetry.MongoDB.Business;
 using MongoDB.Driver;
 

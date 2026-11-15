@@ -1,3 +1,4 @@
+using Elyspio.Utils.Telemetry;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using ClosVerdeApp.Api.Abstractions.Common.Helpers;
@@ -5,7 +6,6 @@ using ClosVerdeApp.Api.Abstractions.Exceptions;
 using ClosVerdeApp.Api.Abstractions.Interfaces.Services;
 using ClosVerdeApp.Api.Abstractions.Models.Entities.Enums;
 using ClosVerdeApp.Api.Abstractions.Models.Transports;
-using Elyspio.Utils.Telemetry.Tracing.Elements;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -22,7 +22,7 @@ namespace ClosVerdeApp.Api.Web.Controllers;
 public class FeedbackController(
 	IFeedbackService feedbackService,
 	ILogger<FeedbackController> logger)
-	: TracingController(logger)
+	: ControllerBase
 {
 	private Guid CurrentUserId
 	{
@@ -46,7 +46,7 @@ public class FeedbackController(
 	[ProducesResponseType(StatusCodes.Status400BadRequest)]
 	public async Task<IActionResult> Create([FromBody] CreateFeedbackRequest request)
 	{
-		using var logger = LogController($"{Log.F(request.Category)}");
+		using var trace = logger.Trace($"{Log.F(request.Category)}");
 
 		var feedback = await feedbackService.Create(request, CurrentUserId, CurrentDisplayName, CurrentEmail);
 		return Created($"/api/feedback/{feedback.Id}", feedback);
@@ -62,7 +62,7 @@ public class FeedbackController(
 		[FromQuery] int page = 1,
 		[FromQuery] int pageSize = 20)
 	{
-		using var logger = LogController($"{Log.F(category)} {Log.F(status)} {Log.F(page)} {Log.F(pageSize)}");
+		using var trace = logger.Trace($"{Log.F(category)} {Log.F(status)} {Log.F(page)} {Log.F(pageSize)}");
 		return Ok(await feedbackService.List(category, status, page, pageSize));
 	}
 
@@ -73,7 +73,7 @@ public class FeedbackController(
 		[FromQuery] int page = 1,
 		[FromQuery] int pageSize = 20)
 	{
-		using var logger = LogController($"statuses={status?.Count ?? 0} {Log.F(page)} {Log.F(pageSize)}");
+		using var trace = logger.Trace($"statuses={status?.Count ?? 0} {Log.F(page)} {Log.F(pageSize)}");
 		return Ok(await feedbackService.ListMine(CurrentUserId, status, page, pageSize));
 	}
 
@@ -83,7 +83,7 @@ public class FeedbackController(
 	[ProducesResponseType(StatusCodes.Status404NotFound)]
 	public async Task<IActionResult> CloseMine(Guid id)
 	{
-		using var logger = LogController(Log.F(id));
+		using var trace = logger.Trace($"{Log.F(id)}");
 		return Ok(await feedbackService.CloseMine(id, CurrentUserId));
 	}
 
@@ -94,7 +94,7 @@ public class FeedbackController(
 	[ProducesResponseType(StatusCodes.Status403Forbidden)]
 	public async Task<IActionResult> GetById(Guid id)
 	{
-		using var logger = LogController(Log.F(id));
+		using var trace = logger.Trace($"{Log.F(id)}");
 		var feedback = await feedbackService.GetById(id);
 		return feedback is null ? NotFound() : Ok(feedback);
 	}
@@ -106,7 +106,7 @@ public class FeedbackController(
 	[ProducesResponseType(StatusCodes.Status403Forbidden)]
 	public async Task<IActionResult> UpdateStatus(Guid id, [FromBody] UpdateFeedbackStatusRequest request)
 	{
-		using var logger = LogController($"{Log.F(id)} {Log.F(request.Status)}");
+		using var trace = logger.Trace($"{Log.F(id)} {Log.F(request.Status)}");
 		return Ok(await feedbackService.UpdateStatus(id, request.Status, request.AdminNote));
 	}
 
@@ -118,7 +118,7 @@ public class FeedbackController(
 	[ProducesResponseType(StatusCodes.Status403Forbidden)]
 	public async Task<IActionResult> AddReply(Guid id, [FromBody] CreateFeedbackReplyRequest request)
 	{
-		using var logger = LogController(Log.F(id));
+		using var trace = logger.Trace($"{Log.F(id)}");
 		return Ok(await feedbackService.AddReply(id, request.Body, CurrentUserId, CurrentDisplayName, isAdmin: true));
 	}
 }

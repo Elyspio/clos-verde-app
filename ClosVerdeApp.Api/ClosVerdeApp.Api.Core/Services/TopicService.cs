@@ -1,3 +1,4 @@
+using Elyspio.Utils.Telemetry;
 using ClosVerdeApp.Api.Abstractions.Common.Extensions;
 using ClosVerdeApp.Api.Abstractions.Common.Helpers;
 using ClosVerdeApp.Api.Abstractions.Exceptions;
@@ -6,7 +7,6 @@ using ClosVerdeApp.Api.Abstractions.Interfaces.Services;
 using ClosVerdeApp.Api.Abstractions.Models.Entities;
 using ClosVerdeApp.Api.Abstractions.Models.Entities.Enums;
 using ClosVerdeApp.Api.Abstractions.Models.Transports;
-using Elyspio.Utils.Telemetry.Tracing.Elements;
 using Microsoft.Extensions.Logging;
 
 namespace ClosVerdeApp.Api.Core.Services;
@@ -22,13 +22,13 @@ public class TopicService(
 	IMessageRepository messageRepository,
 	IMessageRealtimePublisher messageRealtimePublisher,
 	ILogger<TopicService> logger
-) : TracingService(logger), ITopicService
+) : ITopicService
 {
 	private const string GlobalTopicName = "Général";
 
 	public async Task<List<TopicListItem>> ListForUser(Guid currentUserId)
 	{
-		using var logger = LogService($"{Log.F(currentUserId)}");
+		using var trace = logger.Trace($"{Log.F(currentUserId)}");
 
 		await EnsureGlobalSeeded();
 
@@ -60,33 +60,33 @@ public class TopicService(
 
 	public async Task<List<Guid>> ListEngagedTopicIds(Guid currentUserId)
 	{
-		using var logger = LogService($"{Log.F(currentUserId)}");
+		using var trace = logger.Trace($"{Log.F(currentUserId)}");
 		return await messageRepository.GetEngagedTopicIds(currentUserId);
 	}
 
 	public async Task Mute(Guid topicId, Guid currentUserId)
 	{
-		using var logger = LogService($"{Log.F(topicId)} {Log.F(currentUserId)}");
+		using var trace = logger.Trace($"{Log.F(topicId)} {Log.F(currentUserId)}");
 		_ = await topicRepository.GetById(topicId) ?? throw new HttpException.NotFound<TopicEntity>(topicId);
 		await topicRepository.Mute(topicId, currentUserId);
 	}
 
 	public async Task Unmute(Guid topicId, Guid currentUserId)
 	{
-		using var logger = LogService($"{Log.F(topicId)} {Log.F(currentUserId)}");
+		using var trace = logger.Trace($"{Log.F(topicId)} {Log.F(currentUserId)}");
 		await topicRepository.Unmute(topicId, currentUserId);
 	}
 
 	public async Task<Topic> GetById(Guid id)
 	{
-		using var logger = LogService($"{Log.F(id)}");
+		using var trace = logger.Trace($"{Log.F(id)}");
 		var t = await topicRepository.GetById(id) ?? throw new HttpException.NotFound<TopicEntity>(id);
 		return ToTransport(t);
 	}
 
 	public async Task<Topic> CreateCustom(string name, Guid currentUserId, string currentDisplayName)
 	{
-		using var logger = LogService($"{Log.F(currentUserId)} {Log.F(name)}");
+		using var trace = logger.Trace($"{Log.F(currentUserId)} {Log.F(name)}");
 
 		if (string.IsNullOrWhiteSpace(name))
 			throw new HttpException.BadRequest("Le nom du salon est requis.");
@@ -99,7 +99,7 @@ public class TopicService(
 
 	public async Task<Topic> Rename(Guid topicId, string newName, Guid currentUserId, bool isAdmin)
 	{
-		using var logger = LogService($"{Log.F(topicId)} {Log.F(currentUserId)} {Log.F(isAdmin)}");
+		using var trace = logger.Trace($"{Log.F(topicId)} {Log.F(currentUserId)} {Log.F(isAdmin)}");
 
 		if (string.IsNullOrWhiteSpace(newName))
 			throw new HttpException.BadRequest("Le nom du salon est requis.");
@@ -121,7 +121,7 @@ public class TopicService(
 
 	public async Task Delete(Guid topicId, Guid currentUserId, bool isAdmin)
 	{
-		using var logger = LogService($"{Log.F(topicId)} {Log.F(currentUserId)} {Log.F(isAdmin)}");
+		using var trace = logger.Trace($"{Log.F(topicId)} {Log.F(currentUserId)} {Log.F(isAdmin)}");
 
 		var t = await topicRepository.GetById(topicId) ?? throw new HttpException.NotFound<TopicEntity>(topicId);
 		if (!isAdmin)

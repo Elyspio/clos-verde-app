@@ -1,3 +1,4 @@
+using Elyspio.Utils.Telemetry;
 using ClosVerdeApp.Api.Abstractions.Common.Extensions;
 using ClosVerdeApp.Api.Abstractions.Common.Helpers;
 using ClosVerdeApp.Api.Abstractions.Exceptions;
@@ -6,7 +7,6 @@ using ClosVerdeApp.Api.Abstractions.Interfaces.Services;
 using ClosVerdeApp.Api.Abstractions.Models.Entities;
 using ClosVerdeApp.Api.Abstractions.Models.Entities.Enums;
 using ClosVerdeApp.Api.Abstractions.Models.Transports;
-using Elyspio.Utils.Telemetry.Tracing.Elements;
 using Microsoft.Extensions.Logging;
 
 namespace ClosVerdeApp.Api.Core.Services;
@@ -23,11 +23,11 @@ public class ObjectionService(
 	IReservationRealtimePublisher reservationRealtimePublisher,
 	IMessageRealtimePublisher messageRealtimePublisher,
 	ILogger<ObjectionService> logger
-) : TracingService(logger), IObjectionService
+) : IObjectionService
 {
 	public async Task<Objection> Object(Guid reservationId, Guid currentUserId, string currentDisplayName, string? reason)
 	{
-		using var logger = LogService($"{Log.F(reservationId)} {Log.F(currentUserId)}");
+		using var trace = logger.Trace($"{Log.F(reservationId)} {Log.F(currentUserId)}");
 
 		var reservation = await reservationRepository.GetById(reservationId)
 			?? throw new HttpException.NotFound<ReservationEntity>(reservationId);

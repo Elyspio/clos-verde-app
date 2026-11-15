@@ -1,6 +1,6 @@
+using Elyspio.Utils.Telemetry;
 
 using ClosVerdeApp.Api.Adapters.Mongo.Technical;
-using Elyspio.Utils.Telemetry.Tracing.Elements;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
@@ -14,7 +14,7 @@ namespace ClosVerdeApp.Api.Adapters.Mongo.Repositories.Base;
 ///     Manage entity in MongoDB
 /// </summary>
 /// <typeparam name="T">Entity implementation</typeparam>
-public abstract class BaseRepository<T> : TracingAdapter
+public abstract class BaseRepository<T>
 {
 	private readonly string _collectionName;
 	private readonly MongoContext _context;
@@ -24,11 +24,17 @@ public abstract class BaseRepository<T> : TracingAdapter
 	/// </summary>
 	/// <param name="configuration"></param>
 	/// <param name="logger"></param>
-	protected BaseRepository(IConfiguration configuration, ILogger logger) : base(logger)
+	protected BaseRepository(IConfiguration configuration, ILogger<BaseRepository<T>> logger)
 	{
+		Logger = logger;
 		_context = new MongoContext(configuration);
 		_collectionName = typeof(T).Name[..^"Entity".Length];
 	}
+
+	/// <summary>
+	///     Logger of the repository, also used to open trace scopes
+	/// </summary>
+	protected ILogger<BaseRepository<T>> Logger { get; }
 
 	/// <summary>
 	///     Implementation of the collection

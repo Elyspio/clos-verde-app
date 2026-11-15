@@ -1,3 +1,4 @@
+using Elyspio.Utils.Telemetry;
 using ClosVerdeApp.Api.Abstractions.Common.Extensions;
 using ClosVerdeApp.Api.Abstractions.Common.Helpers;
 using ClosVerdeApp.Api.Abstractions.Interfaces.Repositories;
@@ -23,7 +24,7 @@ internal class ReservationRepository : BaseRepository<ReservationEntity>, IReser
 
 	public async Task<List<ReservationEntity>> GetInRange(DateTime from, DateTime to)
 	{
-		using var logger = LogAdapter($"{Log.F(from)} {Log.F(to)}");
+		using var trace = Logger.Trace($"{Log.F(from)} {Log.F(to)}");
 
 		return await EntityCollection.AsQueryable()
 			.Where(r => r.EndDate > from && r.StartDate < to && r.Validation.Status != ReservationStatus.Cancelled)
@@ -32,7 +33,7 @@ internal class ReservationRepository : BaseRepository<ReservationEntity>, IReser
 
 	public async Task<List<ReservationEntity>> GetAll()
 	{
-		using var logger = LogAdapter();
+		using var trace = Logger.Trace();
 		return await EntityCollection.AsQueryable()
 			.Where(r => r.Validation.Status != ReservationStatus.Cancelled)
 			.ToListAsync();
@@ -40,7 +41,7 @@ internal class ReservationRepository : BaseRepository<ReservationEntity>, IReser
 
 	public async Task<List<ReservationEntity>> GetOverlapping(DateTime start, DateTime end, Guid? excludeId = null)
 	{
-		using var logger = LogAdapter($"{Log.F(start)} {Log.F(end)}");
+		using var trace = Logger.Trace($"{Log.F(start)} {Log.F(end)}");
 
 		var excludedOid = excludeId?.AsObjectId();
 
@@ -60,7 +61,7 @@ internal class ReservationRepository : BaseRepository<ReservationEntity>, IReser
 
 	public async Task<ReservationEntity?> GetById(Guid id)
 	{
-		using var logger = LogAdapter($"{Log.F(id)}");
+		using var trace = Logger.Trace($"{Log.F(id)}");
 
 		var oid = id.AsObjectId();
 		return await EntityCollection.AsQueryable().FirstOrDefaultAsync(r => r.Id == oid);
@@ -74,7 +75,7 @@ internal class ReservationRepository : BaseRepository<ReservationEntity>, IReser
 		ReservationStatus status,
 		DateTime validationDeadline)
 	{
-		using var logger = LogAdapter($"{Log.F(user.Id)} {Log.F(start)} {Log.F(end)}");
+		using var trace = Logger.Trace($"{Log.F(user.Id)} {Log.F(start)} {Log.F(end)}");
 
 		var nowUtc = DateTime.UtcNow;
 		var entity = new ReservationEntity
@@ -98,7 +99,7 @@ internal class ReservationRepository : BaseRepository<ReservationEntity>, IReser
 
 	public async Task<ReservationEntity> Update(Guid id, DateTime start, DateTime end, string? note, DateTime newDeadline)
 	{
-		using var logger = LogAdapter($"{Log.F(id)} {Log.F(start)} {Log.F(end)}");
+		using var trace = Logger.Trace($"{Log.F(id)} {Log.F(start)} {Log.F(end)}");
 
 		var oid = id.AsObjectId();
 		var update = Builders<ReservationEntity>.Update
@@ -113,7 +114,7 @@ internal class ReservationRepository : BaseRepository<ReservationEntity>, IReser
 
 	public async Task Delete(Guid id)
 	{
-		using var logger = LogAdapter($"{Log.F(id)}");
+		using var trace = Logger.Trace($"{Log.F(id)}");
 
 		var oid = id.AsObjectId();
 		await EntityCollection.DeleteOneAsync(r => r.Id == oid);
@@ -121,7 +122,7 @@ internal class ReservationRepository : BaseRepository<ReservationEntity>, IReser
 
 	public async Task<List<ReservationEntity>> GetPendingDue(DateTime nowUtc)
 	{
-		using var logger = LogAdapter($"{Log.F(nowUtc)}");
+		using var trace = Logger.Trace($"{Log.F(nowUtc)}");
 		return await EntityCollection.AsQueryable()
 			.Where(r => r.Validation.Status == ReservationStatus.Pending
 						&& r.Objection == null
@@ -131,7 +132,7 @@ internal class ReservationRepository : BaseRepository<ReservationEntity>, IReser
 
 	public async Task<List<ReservationEntity>> GetPendingExpired(DateTime nowUtc)
 	{
-		using var logger = LogAdapter($"{Log.F(nowUtc)}");
+		using var trace = Logger.Trace($"{Log.F(nowUtc)}");
 		return await EntityCollection.AsQueryable()
 			.Where(r => r.Validation.Status == ReservationStatus.Pending
 						&& r.Objection != null

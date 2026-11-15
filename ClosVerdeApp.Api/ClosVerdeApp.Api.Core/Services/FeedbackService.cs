@@ -1,3 +1,4 @@
+using Elyspio.Utils.Telemetry;
 using ClosVerdeApp.Api.Abstractions.Common.Extensions;
 using ClosVerdeApp.Api.Abstractions.Common.Helpers;
 using ClosVerdeApp.Api.Abstractions.Exceptions;
@@ -6,7 +7,6 @@ using ClosVerdeApp.Api.Abstractions.Interfaces.Services;
 using ClosVerdeApp.Api.Abstractions.Models.Entities;
 using ClosVerdeApp.Api.Abstractions.Models.Entities.Enums;
 using ClosVerdeApp.Api.Abstractions.Models.Transports;
-using Elyspio.Utils.Telemetry.Tracing.Elements;
 using Microsoft.Extensions.Logging;
 using MongoDB.Bson;
 
@@ -21,7 +21,7 @@ public class FeedbackService(
 	IAttachmentService attachmentService,
 	IFeedbackRealtimePublisher feedbackRealtimePublisher,
 	ILogger<FeedbackService> logger
-) : TracingService(logger), IFeedbackService
+) : IFeedbackService
 {
 	private const int MaxPageSize = 100;
 	private const int DefaultPageSize = 20;
@@ -32,7 +32,7 @@ public class FeedbackService(
 		string authorDisplayName,
 		string? authorEmail)
 	{
-		using var _ = LogService($"{Log.F(request.Category)} {Log.F(authorId)} attachments={request.AttachmentIds.Count}");
+		using var _ = logger.Trace($"{Log.F(request.Category)} {Log.F(authorId)} attachments={request.AttachmentIds.Count}");
 
 		var title = (request.Title ?? string.Empty).Trim();
 		var body = (request.Body ?? string.Empty).Trim();
@@ -88,7 +88,7 @@ public class FeedbackService(
 
 	public async Task<FeedbackListResult> List(FeedbackCategory? category, FeedbackStatus? status, int page, int pageSize)
 	{
-		using var _ = LogService($"{Log.F(category)} {Log.F(status)} {Log.F(page)} {Log.F(pageSize)}");
+		using var _ = logger.Trace($"{Log.F(category)} {Log.F(status)} {Log.F(page)} {Log.F(pageSize)}");
 
 		var clampedPage = Math.Max(1, page);
 		var clampedSize = Math.Clamp(pageSize <= 0 ? DefaultPageSize : pageSize, 1, MaxPageSize);
@@ -108,7 +108,7 @@ public class FeedbackService(
 
 	public async Task<FeedbackListResult> ListMine(Guid authorId, IReadOnlyCollection<FeedbackStatus>? statuses, int page, int pageSize)
 	{
-		using var _ = LogService($"{Log.F(authorId)} statuses={statuses?.Count ?? 0} {Log.F(page)} {Log.F(pageSize)}");
+		using var _ = logger.Trace($"{Log.F(authorId)} statuses={statuses?.Count ?? 0} {Log.F(page)} {Log.F(pageSize)}");
 
 		var clampedPage = Math.Max(1, page);
 		var clampedSize = Math.Clamp(pageSize <= 0 ? DefaultPageSize : pageSize, 1, MaxPageSize);
@@ -129,7 +129,7 @@ public class FeedbackService(
 
 	public async Task<Feedback> CloseMine(Guid id, Guid authorId)
 	{
-		using var _ = LogService($"{Log.F(id)} {Log.F(authorId)}");
+		using var _ = logger.Trace($"{Log.F(id)} {Log.F(authorId)}");
 
 		var existing = await feedbackRepository.GetById(id)
 			?? throw new HttpException.NotFound<FeedbackEntity>(id);
@@ -148,7 +148,7 @@ public class FeedbackService(
 
 	public async Task<Feedback> UpdateStatus(Guid id, FeedbackStatus newStatus, string? adminNote)
 	{
-		using var _ = LogService($"{Log.F(id)} {Log.F(newStatus)}");
+		using var _ = logger.Trace($"{Log.F(id)} {Log.F(newStatus)}");
 
 		var existing = await feedbackRepository.GetById(id)
 			?? throw new HttpException.NotFound<FeedbackEntity>(id);
@@ -171,7 +171,7 @@ public class FeedbackService(
 
 	public async Task<Feedback> AddReply(Guid id, string body, Guid authorId, string authorDisplayName, bool isAdmin)
 	{
-		using var _ = LogService($"{Log.F(id)} {Log.F(authorId)} {Log.F(isAdmin)}");
+		using var _ = logger.Trace($"{Log.F(id)} {Log.F(authorId)} {Log.F(isAdmin)}");
 
 		var text = (body ?? string.Empty).Trim();
 		if (string.IsNullOrWhiteSpace(text))
@@ -198,14 +198,14 @@ public class FeedbackService(
 
 	public async Task<Feedback?> GetById(Guid id)
 	{
-		using var _ = LogService($"{Log.F(id)}");
+		using var _ = logger.Trace($"{Log.F(id)}");
 		var entity = await feedbackRepository.GetById(id);
 		return entity is null ? null : ToTransport(entity);
 	}
 
 	public async Task EnsureAttachmentReadable(Guid attachmentId, Guid currentUserId, bool isAdmin)
 	{
-		using var _ = LogService($"{Log.F(attachmentId)} {Log.F(currentUserId)} {Log.F(isAdmin)}");
+		using var _ = logger.Trace($"{Log.F(attachmentId)} {Log.F(currentUserId)} {Log.F(isAdmin)}");
 
 		if (isAdmin) return;
 

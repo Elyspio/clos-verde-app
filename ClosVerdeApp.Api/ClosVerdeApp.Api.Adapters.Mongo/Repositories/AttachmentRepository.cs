@@ -1,8 +1,8 @@
+using Elyspio.Utils.Telemetry;
 using ClosVerdeApp.Api.Abstractions.Common.Extensions;
 using ClosVerdeApp.Api.Abstractions.Common.Helpers;
 using ClosVerdeApp.Api.Abstractions.Interfaces.Repositories;
 using ClosVerdeApp.Api.Adapters.Mongo.Technical;
-using Elyspio.Utils.Telemetry.Tracing.Elements;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using MongoDB.Bson;
@@ -16,22 +16,24 @@ namespace ClosVerdeApp.Api.Adapters.Mongo.Repositories;
 /// Stores uploader id + upload timestamp inside the file metadata so the
 /// service layer can enforce ownership without a side collection.
 /// </summary>
-internal class AttachmentRepository : TracingAdapter, IAttachmentRepository
+internal class AttachmentRepository : IAttachmentRepository
 {
 	private const string UploaderUserIdMetaKey = "uploaderUserId";
 	private const string ContentTypeMetaKey = "contentType";
 
 	private readonly IGridFSBucket _bucket;
+	private readonly ILogger<AttachmentRepository> _logger;
 
-	public AttachmentRepository(IConfiguration configuration, ILogger<AttachmentRepository> logger) : base(logger)
+	public AttachmentRepository(IConfiguration configuration, ILogger<AttachmentRepository> logger)
 	{
+		_logger = logger;
 		var context = new MongoContext(configuration);
 		_bucket = context.AttachmentsBucket;
 	}
 
 	public async Task<AttachmentMetadata> Upload(string fileName, string contentType, Guid uploaderUserId, Stream content)
 	{
-		using var logger = LogAdapter($"{Log.F(fileName)} {Log.F(contentType)} {Log.F(uploaderUserId)}");
+		using var trace = _logger.Trace($"{Log.F(fileName)} {Log.F(contentType)} {Log.F(uploaderUserId)}");
 
 		var options = new GridFSUploadOptions
 		{
@@ -62,20 +64,20 @@ internal class AttachmentRepository : TracingAdapter, IAttachmentRepository
 
 	public async Task<AttachmentMetadata?> GetMetadata(Guid id)
 	{
-		using var logger = LogAdapter($"{Log.F(id)}");
+		using var trace = _logger.Trace($"{Log.F(id)}");
 		var info = await FindInfo(id.AsObjectId());
 		return info is null ? null : ToMetadata(info);
 	}
 
 	public async Task<Stream> OpenDownloadStream(Guid id)
 	{
-		using var logger = LogAdapter($"{Log.F(id)}");
+		using var trace = _logger.Trace($"{Log.F(id)}");
 		return await _bucket.OpenDownloadStreamAsync(id.AsObjectId());
 	}
 
 	public async Task Delete(Guid id)
 	{
-		using var logger = LogAdapter($"{Log.F(id)}");
+		using var trace = _logger.Trace($"{Log.F(id)}");
 		try
 		{
 			await _bucket.DeleteAsync(id.AsObjectId());

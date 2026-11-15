@@ -1,4 +1,5 @@
-using Elyspio.Utils.Telemetry.Technical.Extensions;
+using Elyspio.Utils.Telemetry;
+using Elyspio.Utils.Telemetry.MongoDB.Extensions;
 using ClosVerdeApp.Api.Abstractions.Interfaces.Injections;
 using ClosVerdeApp.Api.Abstractions.Models.Configuration;
 using ClosVerdeApp.Api.Adapters.Mongo.Injections;
@@ -10,7 +11,6 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.IdentityModel.Tokens;
-using Serilog;
 
 namespace ClosVerdeApp.Api.Web.Start;
 
@@ -23,9 +23,9 @@ public sealed class AppBuilder
 		builder.Configuration.AddJsonFile("appsettings.docker.json", true, true);
 		builder.Configuration.AddJsonFile("appsettings.secrets.json", true, true);
 
-		builder.AddLogging();
+		// Serilog console, plus traces, metrics and logs over OTLP when OTEL_EXPORTER_OTLP_ENDPOINT is set (Aspire, K8s chart).
+		builder.AddElyspioTelemetry(options => options.Tracing = tracing => tracing.AddAppMongoInstrumentation());
 		builder.AddServiceDefaults();
-		builder.Services.AddAppOpenTelemetry(builder.Configuration);
 
 		builder.Services.AddModule<CoreModule>(builder.Configuration);
 		builder.Services.AddModule<MongoAdapterModule>(builder.Configuration);
@@ -145,8 +145,7 @@ public sealed class AppBuilder
 		builder.Services
 			.AddAppControllers()
 			.AddAppSignalR()
-			.AddAppSwagger()
-			.AddAppOpenTelemetry(builder.Configuration);
+			.AddAppSwagger();
 
 		builder.Services.SetupCors(builder.Configuration, builder.Environment);
 
@@ -158,19 +157,6 @@ public sealed class AppBuilder
 
 public static class Extensions
 {
-	public static IServiceCollection AddLogging(this WebApplicationBuilder builder)
-	{
-		builder.Logging.AddOpenTelemetry(logging =>
-		{
-			logging.IncludeFormattedMessage = true;
-			logging.IncludeScopes = true;
-		});
-
-		builder.Host.UseSerilogWithTelemetry();
-
-		return builder.Services;
-	}
-
 	public static IHostApplicationBuilder AddServiceDefaults(this IHostApplicationBuilder builder)
 	{
 		builder.AddDefaultHealthChecks();
